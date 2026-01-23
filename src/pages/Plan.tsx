@@ -20,7 +20,7 @@ import { usePlan } from '@/hooks/usePlan';
 import { usePlanGeneration } from '@/hooks/usePlanGeneration';
 import { useProgressionEngine, type BlockFeedback } from '@/hooks/useProgressionEngine';
 import { BlockFeedbackDialog, NextBlockSuccessDialog } from '@/components/progression';
-import { BlockSelector } from '@/components/plan';
+import { BlockSelector, ScheduleMismatchBanner, ScheduleDebugBanner } from '@/components/plan';
 import type { DisplayWorkout, WorkoutType } from '@/types/plan';
 
 const typeColors: Record<WorkoutType, string> = {
@@ -44,6 +44,7 @@ export default function Plan() {
     currentWeekIndex, 
     getPlanWeekStart, 
     schedulingDebug,
+    dismissMismatch,
     allPlans,
     selectedPlanId,
     setSelectedPlanId,
@@ -352,24 +353,25 @@ export default function Plan() {
         </Card>
         )}
 
-        {/* Debug Banner (temporary) */}
-        {schedulingDebug && (
-          <div className="rounded-lg border bg-muted/50 p-3 text-sm space-y-1 animate-fade-in">
-            <div className="flex items-center gap-2">
-              <span className="font-medium">Debug:</span>
-              <span>Workout days selected: {schedulingDebug.profileWorkoutDays.join(', ')}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-medium">Scheduled this week:</span>
-              <span>{schedulingDebug.scheduledWorkoutDays.join(', ')}</span>
-            </div>
-            {schedulingDebug.hasMismatch && (
-              <div className="flex items-center gap-2 text-destructive font-medium">
-                <AlertTriangle className="h-4 w-4" />
-                <span>Scheduling mismatch detected. Please regenerate your plan.</span>
-              </div>
-            )}
-          </div>
+        {/* Schedule Mismatch Banner - Friendly CTA */}
+        {schedulingDebug?.hasMismatch && !schedulingDebug.mismatchDismissed && (
+          <ScheduleMismatchBanner
+            profileDays={schedulingDebug.profileWorkoutDays}
+            planDays={schedulingDebug.scheduledWorkoutDays}
+            onUpdateSchedule={handleGeneratePlan}
+            onDismiss={dismissMismatch}
+            isUpdating={isGenerating}
+          />
+        )}
+
+        {/* Debug Banner (only show when mismatch is dismissed or no mismatch) */}
+        {schedulingDebug && (schedulingDebug.mismatchDismissed || !schedulingDebug.hasMismatch) && (
+          <ScheduleDebugBanner
+            profileDays={schedulingDebug.profileWorkoutDays}
+            planDays={schedulingDebug.scheduledWorkoutDays}
+            hasMismatch={schedulingDebug.hasMismatch}
+            isDismissed={schedulingDebug.mismatchDismissed}
+          />
         )}
 
         {/* Generation Issue Warning */}
