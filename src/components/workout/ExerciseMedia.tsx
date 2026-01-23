@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Dumbbell, Play, AlertCircle } from 'lucide-react';
+import { Dumbbell, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { lookupExerciseMedia } from '@/lib/exerciseMediaMap';
 
 interface ExerciseMediaProps {
   videoUrl?: string;
@@ -21,22 +22,29 @@ export function ExerciseMedia({
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const hasMedia = (videoUrl || imageUrl) && !mediaError;
+  // Look up media from central map if not provided directly
+  const mediaLookup = lookupExerciseMedia(exerciseName);
+  
+  // Priority: direct videoUrl > direct imageUrl > lookup video > lookup image
+  const resolvedVideoUrl = videoUrl || mediaLookup?.video_url_optional || null;
+  const resolvedImageUrl = imageUrl || mediaLookup?.image_url || null;
+
+  const hasMedia = (resolvedVideoUrl || resolvedImageUrl) && !mediaError;
 
   // Reset error state when URLs change
   useEffect(() => {
     setMediaError(false);
     setIsVideoLoaded(false);
-  }, [videoUrl, imageUrl]);
+  }, [resolvedVideoUrl, resolvedImageUrl, exerciseName]);
 
   // Handle video autoplay on mount
   useEffect(() => {
-    if (videoRef.current && videoUrl && isVideoLoaded) {
+    if (videoRef.current && resolvedVideoUrl && isVideoLoaded) {
       videoRef.current.play().catch(() => {
         // Autoplay failed, that's okay
       });
     }
-  }, [videoUrl, isVideoLoaded]);
+  }, [resolvedVideoUrl, isVideoLoaded]);
 
   const handleMediaError = () => {
     setMediaError(true);
@@ -67,7 +75,7 @@ export function ExerciseMedia({
   }
 
   // Video available
-  if (videoUrl && !mediaError) {
+  if (resolvedVideoUrl && !mediaError) {
     return (
       <div className={cn(
         "relative rounded-xl overflow-hidden bg-muted",
@@ -80,7 +88,7 @@ export function ExerciseMedia({
         )}
         <video
           ref={videoRef}
-          src={videoUrl}
+          src={resolvedVideoUrl}
           className={cn(
             "w-full object-cover transition-opacity",
             bigMode ? "h-48" : "h-32",
@@ -100,17 +108,17 @@ export function ExerciseMedia({
   }
 
   // Image available
-  if (imageUrl && !mediaError) {
+  if (resolvedImageUrl && !mediaError) {
     return (
       <div className={cn(
         "relative rounded-xl overflow-hidden bg-muted",
         className
       )}>
         <img
-          src={imageUrl}
+          src={resolvedImageUrl}
           alt={`Form guide for ${exerciseName}`}
           className={cn(
-            "w-full object-cover",
+            "w-full object-contain bg-white",
             bigMode ? "h-48" : "h-32"
           )}
           loading="lazy"

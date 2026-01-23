@@ -7,8 +7,10 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { getDefaultCues } from '@/lib/exerciseMediaMap';
 
 interface CoachingCuesProps {
+  exerciseName: string;
   instructions: string;
   coachingCues?: string[];
   bigMode?: boolean;
@@ -87,6 +89,7 @@ function extractCuesFromInstructions(instructions: string): string[] {
 }
 
 export function CoachingCues({
+  exerciseName,
   instructions,
   coachingCues,
   bigMode = false,
@@ -95,10 +98,13 @@ export function CoachingCues({
 }: CoachingCuesProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Use provided cues or extract from instructions
+  // Priority: provided cues > media map cues > extracted from instructions
+  const mapCues = getDefaultCues(exerciseName);
   const cues = coachingCues && coachingCues.length > 0 
     ? coachingCues 
-    : extractCuesFromInstructions(instructions);
+    : mapCues.length > 0
+      ? mapCues
+      : extractCuesFromInstructions(instructions);
 
   const hasFullInstructions = instructions && instructions.trim().length > 0;
   const hasCues = cues.length > 0;
