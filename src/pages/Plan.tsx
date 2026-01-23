@@ -411,6 +411,7 @@ export default function Plan() {
             <BlockSelector
               plans={allPlans}
               selectedPlanId={selectedPlanId}
+              currentPlanId={currentPlanId}
               onSelectPlan={setSelectedPlanId}
               disabled={isGenerating || isGeneratingNextBlock}
             />

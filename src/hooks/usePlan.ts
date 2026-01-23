@@ -142,14 +142,13 @@ export function usePlan(): UsePlanResult {
 
       // Build plan summaries with status
       const planSummaries: PlanSummary[] = [];
-      let fallbackCurrentPlan: Plan | null = null;
 
       for (const p of allPlansData) {
         const pJson = p.plan_json as unknown as PlanJson;
         const blockNumber = (p as Plan & { block_number?: number }).block_number || pJson?.block_number || 1;
         const status = ((p as Plan & { status?: string }).status || 'in_progress') as PlanStatus;
         
-        // Track if this matches current_plan_id
+        // Track if this matches current_plan_id (will be updated after effective ID is determined)
         const isActive = p.id === profileCurrentPlanId;
         
         planSummaries.push({
@@ -160,15 +159,6 @@ export function usePlan(): UsePlanResult {
           isActive,
           status,
         });
-
-        // Fallback: if no current_plan_id, find oldest in_progress or newest plan
-        if (!profileCurrentPlanId) {
-          if (status === 'in_progress') {
-            if (!fallbackCurrentPlan) fallbackCurrentPlan = p;
-          } else if (!fallbackCurrentPlan) {
-            fallbackCurrentPlan = p;
-          }
-        }
       }
 
       // Sort by block number descending
@@ -177,13 +167,44 @@ export function usePlan(): UsePlanResult {
       setAllPlans(planSummaries);
 
       // Determine effective current plan
-      const effectiveCurrentId = profileCurrentPlanId || fallbackCurrentPlan?.id || allPlansData[0]?.id;
+      // Priority: profileCurrentPlanId > newest in_progress plan > newest plan
+      let effectiveCurrentId = profileCurrentPlanId;
       
-      // If current_plan_id was null, set the fallback as isActive
-      if (!profileCurrentPlanId && effectiveCurrentId) {
-        for (const summary of planSummaries) {
-          summary.isActive = summary.id === effectiveCurrentId;
+      if (!effectiveCurrentId) {
+        // Find newest in_progress plan
+        const inProgressPlans = allPlansData.filter(p => 
+          ((p as Plan & { status?: string }).status || 'in_progress') === 'in_progress'
+        );
+        
+        if (inProgressPlans.length > 0) {
+          // Sort by created_at descending
+          inProgressPlans.sort((a, b) => 
+            new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+          );
+          effectiveCurrentId = inProgressPlans[0].id;
+        } else {
+          // Fallback to newest plan
+          effectiveCurrentId = allPlansData[0]?.id;
         }
+        
+        // Persist the effective current_plan_id to the database
+        if (effectiveCurrentId) {
+          supabase
+            .from('users_profile')
+            .update({ current_plan_id: effectiveCurrentId })
+            .eq('id', user.id)
+            .then(() => {
+              console.log('Set current_plan_id to:', effectiveCurrentId);
+            });
+        }
+      }
+      
+      // Update currentPlanId state with the effective value
+      setCurrentPlanId(effectiveCurrentId);
+      
+      // Update isActive flag on plan summaries
+      for (const summary of planSummaries) {
+        summary.isActive = summary.id === effectiveCurrentId;
       }
 
       // Use selected plan or default to current
