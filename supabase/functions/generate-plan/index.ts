@@ -782,10 +782,13 @@ CONTEXT:
 ${completedWorkouts > 0 ? "- Build on their previous progress with appropriate progression" : "- First time user - start conservatively"}
 
 COACH NOTES GUIDELINES (CRITICAL):
-- ALWAYS start coach_notes with: "Welcome back, ${profile.full_name?.split(' ')[0] || 'there'}."
+- Structure: "Welcome back, {first_name}. {training focus content}"
+- The greeting "Welcome back, {first_name}." is added ONCE at the start
+- Do NOT repeat the name anywhere else in coach_notes
+- Do NOT start the training content with the name again (e.g., avoid "John, this block...")
+- Start training content directly with context (e.g., "Since your primary goal is fat loss...")
 - Do NOT reference block numbers, block indices, or progression counts
-- Immediately follow the greeting with the training focus
-- Example format: "Welcome back, John. This block focuses on building your foundational strength with progressive overload on compound movements."
+- Example: "Welcome back, John. Since your primary goal is fat loss with muscle gain as a secondary focus, this block emphasizes high-intensity conditioning paired with compound strength work."
 
 REQUIRED OUTPUT:
 Generate EXACTLY ${totalWorkouts} workouts total:

@@ -25,8 +25,26 @@ const BLOCK_REFERENCE_PATTERNS = [
 ];
 
 /**
+ * Create pattern to match user's name at the start of content
+ */
+function createNamePatterns(firstName: string): RegExp[] {
+  if (!firstName || firstName === 'there') return [];
+  
+  // Escape special regex characters in name
+  const escapedName = firstName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  
+  return [
+    // "Samuel," or "Samuel." or "Samuel!" at start
+    new RegExp(`^${escapedName}[,\\.!]\\s*`, 'i'),
+    // "Samuel —" or "Samuel -"
+    new RegExp(`^${escapedName}\\s*[—–-]\\s*`, 'i'),
+  ];
+}
+
+/**
  * Transform coach notes to ensure consistent greeting format
  * Replaces any block-reference opening with personalized greeting
+ * Also removes duplicate name from the body content
  * 
  * @param notes - Original coach notes string
  * @param firstName - User's first name (defaults to 'there')
@@ -40,10 +58,13 @@ export function transformCoachNotes(notes: string | null | undefined, firstName?
   
   let transformed = notes.trim();
   
-  // Check if already starts with correct greeting
+  // Check if already starts with correct greeting - still need to clean body
   const expectedStart = greeting.toLowerCase();
-  if (transformed.toLowerCase().startsWith(expectedStart)) {
-    return transformed;
+  const alreadyHasGreeting = transformed.toLowerCase().startsWith(expectedStart);
+  
+  if (alreadyHasGreeting) {
+    // Remove existing greeting to process body
+    transformed = transformed.slice(greeting.length).trim();
   }
   
   // Remove any block reference patterns from the start
@@ -51,8 +72,14 @@ export function transformCoachNotes(notes: string | null | undefined, firstName?
     transformed = transformed.replace(pattern, '');
   }
   
-  // Also remove generic "Welcome back, " or "Welcome, " if present (we'll add our own)
+  // Remove generic "Welcome back, " or "Welcome, " if present
   transformed = transformed.replace(/^welcome\s*(back)?\s*[,.]?\s*/i, '');
+  
+  // Remove user's name if it appears at the start of content (duplicate name issue)
+  const namePatterns = createNamePatterns(name);
+  for (const pattern of namePatterns) {
+    transformed = transformed.replace(pattern, '');
+  }
   
   // Trim and ensure first letter is capitalized
   transformed = transformed.trim();
