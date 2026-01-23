@@ -760,10 +760,13 @@ BLOCK STRUCTURE:
 - Week 4: Deload/testing, reduce volume for recovery
 
 COACH NOTES GUIDELINES (CRITICAL):
-- ALWAYS start coach_notes with: "Welcome back, {first_name}." (use user's actual first name)
+- Structure: "Welcome back, {first_name}. {training focus content}"
+- The greeting "Welcome back, {first_name}." is added ONCE at the start
+- Do NOT repeat the name anywhere else in coach_notes
+- Do NOT start the training content with the name again (e.g., avoid "John, this block...")
+- Start training content directly with context (e.g., "Based on your recent performance...")
 - Do NOT reference block numbers, block indices, or progression counts
-- Immediately follow the greeting with the training focus
-- Example: "Welcome back, John. This block focuses on building strength with progressive overload."`;
+- Example: "Welcome back, John. Based on your strong adherence last block, we're progressing your compound lifts while maintaining conditioning intensity."`;
 }
 
 function buildProgressionPrompt(
