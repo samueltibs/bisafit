@@ -19,8 +19,10 @@ import { format, addDays, startOfWeek, isToday } from 'date-fns';
 import { usePlan } from '@/hooks/usePlan';
 import { usePlanGeneration } from '@/hooks/usePlanGeneration';
 import { useProgressionEngine, type BlockFeedback } from '@/hooks/useProgressionEngine';
+import { usePremiumFeature } from '@/hooks/usePremiumFeature';
 import { BlockFeedbackDialog, NextBlockSuccessDialog } from '@/components/progression';
 import { BlockSelector, ScheduleMismatchBanner, ScheduleDebugBanner } from '@/components/plan';
+import { PremiumFeatureModal } from '@/components/subscription';
 import type { DisplayWorkout, WorkoutType } from '@/types/plan';
 import { transformCoachNotes, getFirstName } from '@/lib/coachNotesUtils';
 
@@ -65,6 +67,8 @@ export default function Plan() {
     return transformCoachNotes(planJson.coach_notes, firstName);
   }, [planJson?.coach_notes, userProfile?.full_name]);
   const { generatePlan, isGenerating } = usePlanGeneration();
+  const { showModal: showPremiumModal, setShowModal: setShowPremiumModal, checkPremiumAccess } = usePremiumFeature();
+  
   // For non-current plans, default to week 0 (Week 1) instead of using today's date
   const [weekOffset, setWeekOffset] = useState(0);
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
@@ -156,6 +160,9 @@ export default function Plan() {
   const workoutDaysCount = displayWorkouts.filter(w => !w.isRest).length;
 
   const handleGeneratePlan = async () => {
+    // Gate plan generation behind premium
+    if (!checkPremiumAccess()) return;
+    
     const result = await generatePlan();
     if (result.success) {
       setWeekOffset(0);
@@ -165,6 +172,9 @@ export default function Plan() {
   };
 
   const handleRegenerateClick = () => {
+    // Gate regeneration behind premium
+    if (!checkPremiumAccess()) return;
+    
     if (plan) {
       setShowRegenerateConfirm(true);
     } else {
@@ -174,6 +184,8 @@ export default function Plan() {
 
   // Handle next block generation
   const handleBuildNextBlock = () => {
+    // Gate next block generation behind premium
+    if (!checkPremiumAccess()) return;
     setShowFeedbackDialog(true);
   };
 
@@ -691,6 +703,11 @@ export default function Plan() {
           progressionApplied={generationResult.analysis?.progression_applied}
         />
       )}
+
+      <PremiumFeatureModal
+        open={showPremiumModal}
+        onOpenChange={setShowPremiumModal}
+      />
     </AppLayout>
   );
 }

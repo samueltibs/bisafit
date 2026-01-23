@@ -22,6 +22,8 @@ import { PlanTypeSwitcher } from '@/components/nutrition/PlanTypeSwitcher';
 import { PlanModeBadge } from '@/components/nutrition/PlanModeBadge';
 import { OptionalAdditionsList } from '@/components/nutrition/OptionalAdditionsList';
 import { useIngredientSession, type IngredientMode } from '@/hooks/useIngredientSession';
+import { usePremiumFeature } from '@/hooks/usePremiumFeature';
+import { PremiumFeatureModal } from '@/components/subscription';
 import { supabase } from '@/integrations/supabase/client';
 
 const macroColors = {
@@ -218,6 +220,8 @@ export default function Nutrition() {
     retryTargets,
   } = useNutrition();
 
+  const { showModal: showPremiumModal, setShowModal: setShowPremiumModal, checkPremiumAccess } = usePremiumFeature();
+
   const [selectedDay, setSelectedDay] = useState(0);
   const [fridgeScanOpen, setFridgeScanOpen] = useState(false);
   const [generatingFromIngredients, setGeneratingFromIngredients] = useState(false);
@@ -329,6 +333,9 @@ export default function Nutrition() {
 
   // Handle the "Generate plan using these" button click
   const handleIngredientPlanClick = useCallback(async () => {
+    // Gate ingredient-based plan behind premium
+    if (!checkPremiumAccess()) return;
+    
     const ingredientNames = getIngredientNames();
     
     if (ingredientNames.length < 2) {
@@ -343,10 +350,13 @@ export default function Nutrition() {
       // Reuse previous mode automatically
       await handleGeneratePlanFromIngredients();
     }
-  }, [getIngredientNames, lastPlanMode, handleGeneratePlanFromIngredients]);
+  }, [getIngredientNames, lastPlanMode, handleGeneratePlanFromIngredients, checkPremiumAccess]);
 
   // Handle generate generic meal plan
   const handleGenerateMealPlan = useCallback(async (days = 7) => {
+    // Gate meal plan generation behind premium
+    if (!checkPremiumAccess()) return;
+    
     try {
       const { data, error } = await supabase.functions.invoke('generate-meal-plan', {
         body: { days, weekCuisineTheme },
@@ -364,7 +374,7 @@ export default function Nutrition() {
       console.error('Generate meal plan error:', err);
       toast.error("Couldn't generate plan right now. Try again.");
     }
-  }, [refetch, weekCuisineTheme, updateLastPlanMode]);
+  }, [refetch, weekCuisineTheme, updateLastPlanMode, checkPremiumAccess]);
 
   // Handle regenerate based on last plan mode
   const handleRegenerate = useCallback(async () => {
@@ -415,7 +425,11 @@ export default function Nutrition() {
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => setFridgeScanOpen(true)}
+            onClick={() => {
+              // Gate fridge scan behind premium
+              if (!checkPremiumAccess()) return;
+              setFridgeScanOpen(true);
+            }}
             className="gap-2"
           >
             <Camera className="h-4 w-4" />
@@ -830,6 +844,11 @@ export default function Nutrition() {
             )}
           </div>
         )}
+
+        <PremiumFeatureModal
+          open={showPremiumModal}
+          onOpenChange={setShowPremiumModal}
+        />
       </div>
     </AppLayout>
   );

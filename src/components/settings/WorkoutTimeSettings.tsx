@@ -16,6 +16,8 @@ import {
   Plus,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePremiumFeature } from '@/hooks/usePremiumFeature';
+import { PremiumFeatureModal } from '@/components/subscription';
 import { 
   WorkoutTimePreferences, 
   parseTimePreferences, 
@@ -55,6 +57,7 @@ export function WorkoutTimeSettings({
 }: WorkoutTimeSettingsProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const { showModal: showPremiumModal, setShowModal: setShowPremiumModal, checkPremiumAccess } = usePremiumFeature();
 
   const handleTimeChange = (time: string) => {
     onPreferencesChange({ ...preferences, default_time: time });
@@ -75,6 +78,9 @@ export function WorkoutTimeSettings({
   };
 
   const handleDownloadICS = async () => {
+    // Gate calendar sync behind premium
+    if (!checkPremiumAccess()) return;
+    
     if (!currentPlan || currentPlanWorkouts.length === 0) {
       toast.error('No current plan with workouts to export');
       return;
@@ -206,7 +212,11 @@ export function WorkoutTimeSettings({
             <Switch
               id="calendar-sync"
               checked={calendarSyncEnabled}
-              onCheckedChange={onCalendarSyncChange}
+              onCheckedChange={(enabled) => {
+                // Gate calendar sync toggle behind premium
+                if (enabled && !checkPremiumAccess()) return;
+                onCalendarSyncChange(enabled);
+              }}
             />
           </div>
 
@@ -291,6 +301,11 @@ export function WorkoutTimeSettings({
           'Save Schedule Settings'
         )}
       </Button>
+
+      <PremiumFeatureModal
+        open={showPremiumModal}
+        onOpenChange={setShowPremiumModal}
+      />
     </div>
   );
 }
