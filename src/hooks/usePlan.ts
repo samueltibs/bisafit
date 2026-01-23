@@ -77,6 +77,8 @@ interface UsePlanResult {
   // Lifecycle actions
   startBlock: (planId: string) => Promise<boolean>;
   markBlockComplete: (planId: string) => Promise<boolean>;
+  // Date repair
+  repairPlanDates: () => Promise<number>;
 }
 
 export function usePlan(): UsePlanResult {
@@ -302,6 +304,165 @@ export function usePlan(): UsePlanResult {
     } catch (err) {
       console.error('Failed to mark block complete:', err);
       return false;
+    }
+  }, [user, fetchPlan]);
+
+  // Repair plan start_dates based on earliest workout scheduled_date
+  const repairPlanDates = useCallback(async (): Promise<number> => {
+    if (!user) return 0;
+
+    try {
+      // Fetch all plans for user
+      const { data: plans, error: plansError } = await supabase
+        .from('plans')
+        .select('id, start_date, created_at, block_number, plan_json, status')
+        .eq('user_id', user.id)
+        .order('block_number', { ascending: true });
+
+      if (plansError || !plans) {
+        console.error('Failed to fetch plans for repair:', plansError);
+        return 0;
+      }
+
+      // Fetch all workouts for user to compute earliest dates
+      const { data: allWorkouts, error: workoutsError } = await supabase
+        .from('workouts')
+        .select('plan_id, scheduled_date')
+        .eq('user_id', user.id);
+
+      if (workoutsError) {
+        console.error('Failed to fetch workouts for repair:', workoutsError);
+        return 0;
+      }
+
+      // Group workouts by plan_id
+      const workoutsByPlan = new Map<string, string[]>();
+      for (const w of allWorkouts || []) {
+        if (!w.plan_id || !w.scheduled_date) continue;
+        const dates = workoutsByPlan.get(w.plan_id) || [];
+        dates.push(w.scheduled_date);
+        workoutsByPlan.set(w.plan_id, dates);
+      }
+
+      // Compute correct start_date for each plan
+      interface PlanRepairInfo {
+        id: string;
+        currentStartDate: string | null;
+        correctStartDate: string;
+        blockNumber: number;
+        status: string;
+        needsUpdate: boolean;
+        needsRegenFlag: boolean;
+      }
+
+      const repairInfos: PlanRepairInfo[] = [];
+
+      for (const p of plans) {
+        const planWorkouts = workoutsByPlan.get(p.id) || [];
+        let correctStartDate: string;
+        let needsRegenFlag = false;
+
+        if (planWorkouts.length > 0) {
+          // Compute earliest workout date
+          planWorkouts.sort();
+          correctStartDate = planWorkouts[0];
+        } else {
+          // No workouts - fallback to created_at
+          correctStartDate = p.created_at ? format(new Date(p.created_at), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
+          needsRegenFlag = true;
+        }
+
+        // Check if update needed (null or differs by more than 2 days)
+        let needsUpdate = false;
+        if (!p.start_date) {
+          needsUpdate = true;
+        } else {
+          const currentDate = new Date(p.start_date);
+          const correctDate = new Date(correctStartDate);
+          const diffDays = Math.abs((currentDate.getTime() - correctDate.getTime()) / (1000 * 60 * 60 * 24));
+          if (diffDays > 2) {
+            needsUpdate = true;
+          }
+        }
+
+        repairInfos.push({
+          id: p.id,
+          currentStartDate: p.start_date,
+          correctStartDate,
+          blockNumber: (p as unknown as { block_number: number }).block_number || 1,
+          status: (p as unknown as { status: string }).status || 'in_progress',
+          needsUpdate,
+          needsRegenFlag,
+        });
+      }
+
+      // Sort by block number for sequential consistency check
+      repairInfos.sort((a, b) => a.blockNumber - b.blockNumber);
+
+      // Check for sequential overlap issues on queued blocks
+      for (let i = 1; i < repairInfos.length; i++) {
+        const prevBlock = repairInfos[i - 1];
+        const currBlock = repairInfos[i];
+
+        if (currBlock.status === 'queued') {
+          const prevEnd = addDays(new Date(prevBlock.correctStartDate), 27);
+          const currStart = new Date(currBlock.correctStartDate);
+
+          // If current block overlaps previous by more than 7 days, shift it
+          if (currStart < addDays(prevEnd, -7)) {
+            const newStart = addDays(new Date(prevBlock.correctStartDate), 28);
+            currBlock.correctStartDate = format(newStart, 'yyyy-MM-dd');
+            currBlock.needsUpdate = true;
+          }
+        }
+      }
+
+      // Apply updates
+      let updatedCount = 0;
+      for (const info of repairInfos) {
+        if (info.needsUpdate) {
+          const updateData: Record<string, unknown> = {
+            start_date: info.correctStartDate,
+          };
+
+          // If needs regen flag, update plan_json
+          if (info.needsRegenFlag) {
+            const { data: planData } = await supabase
+              .from('plans')
+              .select('plan_json')
+              .eq('id', info.id)
+              .single();
+
+            if (planData?.plan_json) {
+              const updatedJson = {
+                ...(planData.plan_json as object),
+                needs_regeneration: true,
+              };
+              updateData.plan_json = updatedJson;
+            }
+          }
+
+          const { error } = await supabase
+            .from('plans')
+            .update(updateData)
+            .eq('id', info.id);
+
+          if (!error) {
+            updatedCount++;
+            console.log(`Repaired plan ${info.id}: ${info.currentStartDate} -> ${info.correctStartDate}`);
+          }
+        }
+      }
+
+      // Refresh data after repairs
+      if (updatedCount > 0) {
+        await fetchPlan();
+      }
+
+      return updatedCount;
+    } catch (err) {
+      console.error('Failed to repair plan dates:', err);
+      return 0;
     }
   }, [user, fetchPlan]);
 
@@ -562,6 +723,8 @@ export function usePlan(): UsePlanResult {
     // Lifecycle actions
     startBlock,
     markBlockComplete,
+    // Date repair
+    repairPlanDates,
   };
 }
 

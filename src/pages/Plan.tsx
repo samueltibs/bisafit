@@ -52,12 +52,14 @@ export default function Plan() {
     isViewingCurrentPlan,
     startBlock,
     markBlockComplete,
+    repairPlanDates,
   } = usePlan();
   const { generatePlan, isGenerating } = usePlanGeneration();
   // For non-current plans, default to week 0 (Week 1) instead of using today's date
   const [weekOffset, setWeekOffset] = useState(0);
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
   const [showMarkCompleteConfirm, setShowMarkCompleteConfirm] = useState(false);
+  const [hasRepairedDates, setHasRepairedDates] = useState(false);
 
   // Progression engine state
   const {
@@ -89,6 +91,24 @@ export default function Plan() {
       checkEligibility().then(setEligibility);
     }
   }, [plan, planJson, checkEligibility]);
+
+  // Auto-repair plan dates on initial load
+  useEffect(() => {
+    if (!loading && allPlans.length > 0 && !hasRepairedDates) {
+      // Check if any plan has missing or suspicious start_date
+      const needsRepair = allPlans.some(p => !p.startDate);
+      if (needsRepair) {
+        repairPlanDates().then(count => {
+          if (count > 0) {
+            console.log(`Auto-repaired ${count} plan date(s)`);
+          }
+          setHasRepairedDates(true);
+        });
+      } else {
+        setHasRepairedDates(true);
+      }
+    }
+  }, [loading, allPlans, hasRepairedDates, repairPlanDates]);
 
   // Calculate week start based on plan start + current week offset
   // For non-current plans, start from Week 1 (offset 0)
