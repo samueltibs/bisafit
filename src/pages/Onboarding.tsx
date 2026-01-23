@@ -19,6 +19,12 @@ import { StepNutrition } from '@/components/onboarding/StepNutrition';
 
 const TOTAL_STEPS = 6;
 
+interface WorkoutTimePrefs {
+  default_time: string;
+  fallback_duration_minutes: number;
+  buffer_minutes: number;
+}
+
 interface FormData {
   // Step 1: About You
   fullName: string;
@@ -34,6 +40,7 @@ interface FormData {
   daysPerWeek: number;
   sessionMinutes: number;
   workoutDays: string[];
+  workoutTimePrefs: WorkoutTimePrefs | null;
   // Step 4: Equipment
   equipment: string[];
   // Step 5: Health
@@ -63,6 +70,7 @@ const initialFormData: FormData = {
   daysPerWeek: 4,
   sessionMinutes: 45,
   workoutDays: ['Monday', 'Wednesday', 'Thursday', 'Friday'],
+  workoutTimePrefs: null,
   equipment: ['bodyweight'],
   constraints: {
     injury_flags: [],
@@ -99,6 +107,13 @@ export default function Onboarding() {
         notes?: string;
       } | null;
 
+      // Parse workout time preferences
+      const workoutTimePrefsJson = profile.workout_time_preferences_json as {
+        default_time?: string;
+        fallback_duration_minutes?: number;
+        buffer_minutes?: number;
+      } | null;
+
       setFormData((prev) => ({
         ...prev,
         fullName: profile.full_name || '',
@@ -112,6 +127,11 @@ export default function Onboarding() {
         daysPerWeek: profile.days_per_week || 4,
         sessionMinutes: profile.session_minutes || 45,
         workoutDays: (profile as any).workout_days || ['Monday', 'Wednesday', 'Thursday', 'Friday'],
+        workoutTimePrefs: workoutTimePrefsJson ? {
+          default_time: workoutTimePrefsJson.default_time || '06:00',
+          fallback_duration_minutes: workoutTimePrefsJson.fallback_duration_minutes || 60,
+          buffer_minutes: workoutTimePrefsJson.buffer_minutes || 5,
+        } : null,
         equipment: equipmentJson || ['bodyweight'],
         constraints: {
           injury_flags: constraintsJson?.injury_flags || [],
@@ -185,7 +205,7 @@ export default function Onboarding() {
     setSaveError(null);
 
     try {
-      // Update user profile
+      // Update user profile (include workout time prefs if set)
       const profileSuccess = await update({
         full_name: formData.fullName.trim(),
         gender: formData.gender || null,
@@ -200,6 +220,10 @@ export default function Onboarding() {
         workout_days: formData.workoutDays,
         equipment_json: formData.equipment,
         constraints_json: formData.constraints,
+        // Only save workout time prefs if user set them
+        ...(formData.workoutTimePrefs && {
+          workout_time_preferences_json: formData.workoutTimePrefs,
+        }),
       } as any);
 
       if (!profileSuccess) {
@@ -303,9 +327,11 @@ export default function Onboarding() {
               daysPerWeek={formData.workoutDays.length}
               sessionMinutes={formData.sessionMinutes}
               workoutDays={formData.workoutDays}
+              workoutTimePrefs={formData.workoutTimePrefs}
               onDaysChange={(v) => setFormData({ ...formData, daysPerWeek: v })}
               onSessionChange={(v) => setFormData({ ...formData, sessionMinutes: v })}
               onWorkoutDaysChange={(v) => setFormData({ ...formData, workoutDays: v, daysPerWeek: v.length })}
+              onWorkoutTimePrefsChange={(v) => setFormData({ ...formData, workoutTimePrefs: v })}
             />
           )}
 
