@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { useNutrition, type Meal, type DayPlan, type NutritionTargets } from '@/hooks/useNutrition';
 import { FridgeScanFlow } from '@/components/nutrition/FridgeScanFlow';
 import { CuisineThemeSelector } from '@/components/nutrition/CuisineThemeSelector';
+import { CuisineThemeLabel } from '@/components/nutrition/CuisineThemeLabel';
 import { IngredientModeModal } from '@/components/nutrition/IngredientModeModal';
 import { PlanTypeSwitcher } from '@/components/nutrition/PlanTypeSwitcher';
 import { PlanModeBadge } from '@/components/nutrition/PlanModeBadge';
@@ -777,6 +778,15 @@ export default function Nutrition() {
                 </TabsList>
 
                 <TabsContent value="meals" className="space-y-4 mt-4">
+                  {/* Cuisine theme label */}
+                  {weekCuisineTheme && (
+                    <CuisineThemeLabel 
+                      cuisineTheme={weekCuisineTheme}
+                      isStrictMode={mode === 'strict_only'}
+                      hasIngredients={lastPlanMode === 'ingredients'}
+                    />
+                  )}
+                  
                   {/* Optional additions for flexible mode */}
                   {lastPlanMode === 'ingredients' && mode === 'flexible_prefer' && optionalAdditions && optionalAdditions.length > 0 && (
                     <OptionalAdditionsList additions={optionalAdditions} />
