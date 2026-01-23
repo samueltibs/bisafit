@@ -18,14 +18,27 @@ const experienceLevels = [
 
 interface StepGoalsProps {
   goalPrimary: string;
+  goalSecondary: string;
   experienceLevel: string;
   onGoalChange: (value: string) => void;
+  onSecondaryGoalChange: (value: string) => void;
   onExperienceChange: (value: string) => void;
 }
 
-export function StepGoals({ goalPrimary, experienceLevel, onGoalChange, onExperienceChange }: StepGoalsProps) {
+export function StepGoals({ 
+  goalPrimary, 
+  goalSecondary,
+  experienceLevel, 
+  onGoalChange, 
+  onSecondaryGoalChange,
+  onExperienceChange 
+}: StepGoalsProps) {
+  // Filter out primary goal from secondary options
+  const secondaryGoalOptions = goals.filter(g => g.value !== goalPrimary);
+
   return (
     <div className="space-y-6">
+      {/* Primary Goal */}
       <div className="space-y-3">
         <Label className="text-base font-medium">What's your primary goal?</Label>
         <RadioGroup value={goalPrimary} onValueChange={onGoalChange} className="grid grid-cols-2 gap-3">
@@ -54,6 +67,37 @@ export function StepGoals({ goalPrimary, experienceLevel, onGoalChange, onExperi
         </RadioGroup>
       </div>
 
+      {/* Secondary Goal - Optional */}
+      {goalPrimary && (
+        <div className="space-y-3 animate-fade-in">
+          <div>
+            <Label className="text-base font-medium">Secondary goal (optional)</Label>
+            <p className="text-xs text-muted-foreground mt-1">
+              Helps tailor your conditioning and exercise variety
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {secondaryGoalOptions.map((goal) => (
+              <button
+                key={goal.value}
+                type="button"
+                onClick={() => onSecondaryGoalChange(goalSecondary === goal.value ? '' : goal.value)}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all",
+                  goalSecondary === goal.value
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                )}
+              >
+                <goal.icon className="h-4 w-4" />
+                {goal.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Experience Level */}
       <div className="space-y-3">
         <Label className="text-base font-medium">What's your experience level?</Label>
         <RadioGroup value={experienceLevel} onValueChange={onExperienceChange} className="space-y-2">

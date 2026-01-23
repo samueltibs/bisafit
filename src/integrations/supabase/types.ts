@@ -246,6 +246,7 @@ export type Database = {
           full_name: string | null
           gender: string | null
           goal_primary: string | null
+          goal_secondary: string | null
           height_cm: number | null
           id: string
           is_pro: boolean | null
@@ -264,6 +265,7 @@ export type Database = {
           full_name?: string | null
           gender?: string | null
           goal_primary?: string | null
+          goal_secondary?: string | null
           height_cm?: number | null
           id: string
           is_pro?: boolean | null
@@ -282,6 +284,7 @@ export type Database = {
           full_name?: string | null
           gender?: string | null
           goal_primary?: string | null
+          goal_secondary?: string | null
           height_cm?: number | null
           id?: string
           is_pro?: boolean | null
