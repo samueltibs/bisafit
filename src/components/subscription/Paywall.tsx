@@ -176,8 +176,16 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
         You won't be charged until your trial ends.
       </p>
 
+      {/* Not Now Link */}
+      <button
+        onClick={() => navigate('/home')}
+        className="mt-4 text-center text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+      >
+        Not now
+      </button>
+
       {/* Terms */}
-      <p className="mt-6 text-center text-xs text-muted-foreground/70">
+      <p className="mt-4 text-center text-xs text-muted-foreground/70">
         By starting your trial, you agree to our Terms of Service and Privacy Policy.
         Cancel anytime before your trial ends.
       </p>

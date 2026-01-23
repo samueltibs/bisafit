@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlan } from '@/hooks/usePlan';
@@ -22,6 +23,16 @@ export default function PlanPreview() {
   const { plan, workouts, loading: planLoading } = usePlan();
 
   const isLoading = profileLoading || planLoading;
+  const subscriptionStatus = profile?.subscription_status;
+
+  // Redirect to Home if already subscribed/trialing
+  useEffect(() => {
+    if (!isLoading && subscriptionStatus) {
+      if (subscriptionStatus === 'trialing' || subscriptionStatus === 'active') {
+        navigate('/home', { replace: true });
+      }
+    }
+  }, [isLoading, subscriptionStatus, navigate]);
 
   // Extract preview data
   const workoutDays = profile?.workout_days as string[] | null;
@@ -55,6 +66,11 @@ export default function PlanPreview() {
         </div>
       </div>
     );
+  }
+
+  // If already subscribed, don't render (will redirect)
+  if (subscriptionStatus === 'trialing' || subscriptionStatus === 'active') {
+    return null;
   }
 
   return (
