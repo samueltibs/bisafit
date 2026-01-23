@@ -5,7 +5,8 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { upsertNutritionProfile, getNutritionProfile } from '@/lib/database';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dumbbell, ChevronRight, ChevronLeft, Loader2, Sparkles } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Dumbbell, ChevronRight, ChevronLeft, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { OnboardingProgress } from '@/components/onboarding/OnboardingProgress';
@@ -65,9 +66,10 @@ const initialFormData: FormData = {
 export default function Onboarding() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { profile, loading: profileLoading, update } = useUserProfile();
+  const { profile, loading: profileLoading, update, error: profileError } = useUserProfile();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
 
   // Pre-fill form with existing profile data
@@ -158,6 +160,7 @@ export default function Onboarding() {
     if (!user) return;
 
     setIsLoading(true);
+    setSaveError(null);
 
     try {
       // Update user profile
@@ -172,7 +175,7 @@ export default function Onboarding() {
       });
 
       if (!profileSuccess) {
-        throw new Error('Failed to save profile');
+        throw new Error('Failed to save profile - update returned false');
       }
 
       // Upsert nutrition profile
@@ -188,7 +191,9 @@ export default function Onboarding() {
       toast.success('Profile saved successfully!');
       navigate('/plan');
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       console.error('Onboarding error:', error);
+      setSaveError(errorMessage);
       toast.error('Failed to save your profile. Please try again.');
     } finally {
       setIsLoading(false);
@@ -212,6 +217,17 @@ export default function Onboarding() {
         </div>
         <span className="text-xl font-bold">BisaFit</span>
       </div>
+
+      {/* Error Display */}
+      {(profileError || saveError) && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            {profileError?.message || saveError}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Progress */}
       <OnboardingProgress currentStep={currentStep} />

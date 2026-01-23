@@ -19,11 +19,13 @@ export function useUserProfile() {
 
       try {
         setLoading(true);
+        setError(null);
         const profileData = await getOrCreateUserProfile(user.id);
         setProfile(profileData);
-        setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to load profile'));
+        const error = err instanceof Error ? err : new Error('Failed to load profile');
+        console.error('useUserProfile error:', error);
+        setError(error);
       } finally {
         setLoading(false);
       }
