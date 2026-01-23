@@ -247,7 +247,7 @@ export default function Onboarding() {
 
       if (result.success) {
         toast.success(result.message || 'Your plan is ready!');
-        navigate('/plan');
+        navigate('/plan-preview');
       } else {
         throw new Error(result.error || 'Failed to generate plan');
       }

@@ -10,6 +10,7 @@ import { SubscriptionGate } from "@/components/subscription/SubscriptionGate";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
+import PlanPreview from "./pages/PlanPreview";
 import PaywallPage from "./pages/PaywallPage";
 import Home from "./pages/Home";
 import Plan from "./pages/Plan";
@@ -35,6 +36,11 @@ const App = () => (
             <Route path="/onboarding" element={
               <ProtectedRoute>
                 <Onboarding />
+              </ProtectedRoute>
+            } />
+            <Route path="/plan-preview" element={
+              <ProtectedRoute>
+                <PlanPreview />
               </ProtectedRoute>
             } />
             <Route path="/paywall" element={
