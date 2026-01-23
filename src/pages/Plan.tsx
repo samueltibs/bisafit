@@ -5,7 +5,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ChevronLeft, ChevronRight, Dumbbell, Timer, Check, Sparkles, Calendar, Loader2, AlertTriangle, Bed } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { ChevronLeft, ChevronRight, Dumbbell, Timer, Check, Sparkles, Calendar, Loader2, AlertTriangle, Bed, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, addDays, startOfWeek, isToday } from 'date-fns';
 import { usePlan } from '@/hooks/usePlan';
@@ -23,26 +31,46 @@ const typeColors: Record<WorkoutType, string> = {
 
 export default function Plan() {
   const navigate = useNavigate();
-  const { plan, planJson, loading, getWorkoutsForWeek, refetch, hasGenerationIssue } = usePlan();
+  const { plan, planJson, loading, getWorkoutsForWeek, refetch, hasGenerationIssue, currentWeekIndex, getPlanWeekStart } = usePlan();
   const { generatePlan, isGenerating } = usePlanGeneration();
-  const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
 
-  // If plan exists, align to plan start date initially
+  // Calculate week start based on plan start + current week offset
+  const getWeekStartForOffset = (offset: number): Date => {
+    const planWeekStart = getPlanWeekStart();
+    if (planWeekStart) {
+      // Calculate from plan start
+      return addDays(planWeekStart, (currentWeekIndex + offset) * 7);
+    }
+    // Fallback to current calendar week
+    return addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), offset * 7);
+  };
+
+  const currentWeekStart = getWeekStartForOffset(weekOffset);
+
+  // Initialize to current plan week when plan loads
   useEffect(() => {
     if (plan?.start_date) {
-      const planStart = new Date(plan.start_date);
-      const weekStart = startOfWeek(planStart, { weekStartsOn: 1 });
-      setCurrentWeekStart(weekStart);
+      setWeekOffset(0); // Start at the current week of the plan
     }
   }, [plan?.start_date]);
 
   const goToPreviousWeek = () => {
-    setCurrentWeekStart(addDays(currentWeekStart, -7));
+    if (weekOffset > -currentWeekIndex) { // Don't go before plan start
+      setWeekOffset(weekOffset - 1);
+    }
   };
 
   const goToNextWeek = () => {
-    setCurrentWeekStart(addDays(currentWeekStart, 7));
+    if (currentWeekIndex + weekOffset < 3) { // Don't go past week 4
+      setWeekOffset(weekOffset + 1);
+    }
   };
+
+  // Calculate which plan week we're viewing
+  const viewingPlanWeek = currentWeekIndex + weekOffset + 1; // 1-indexed for display
+  const isViewingCurrentWeek = weekOffset === 0;
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
   const displayWorkouts = plan ? getWorkoutsForWeek(currentWeekStart) : [];
@@ -53,7 +81,17 @@ export default function Plan() {
   const handleGeneratePlan = async () => {
     const result = await generatePlan();
     if (result.success) {
+      setWeekOffset(0);
       await refetch();
+    }
+    setShowRegenerateConfirm(false);
+  };
+
+  const handleRegenerateClick = () => {
+    if (plan) {
+      setShowRegenerateConfirm(true);
+    } else {
+      handleGeneratePlan();
     }
   };
 
@@ -151,7 +189,8 @@ export default function Plan() {
             </h2>
             {planJson && (
               <p className="text-xs text-muted-foreground">
-                Block {planJson.block_number} • {workoutDaysCount} workouts this week
+                Week {viewingPlanWeek} of 4 • Block {planJson.block_number} • {workoutDaysCount} workouts
+                {isViewingCurrentWeek && <Badge variant="outline" className="ml-2 text-[10px]">Current</Badge>}
               </p>
             )}
           </div>
@@ -195,15 +234,31 @@ export default function Plan() {
           })}
         </div>
 
-        {/* Weekly Workouts */}
         <div className="space-y-3 animate-slide-up">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">This Week's Plan</h3>
-            {planJson?.progression_notes && (
-              <Badge variant="secondary" className="text-xs">
-                {planJson.progression_strategy}
-              </Badge>
-            )}
+            <h3 className="text-lg font-semibold">Week {viewingPlanWeek} Plan</h3>
+            <div className="flex items-center gap-2">
+              {planJson?.progression_notes && (
+                <Badge variant="secondary" className="text-xs">
+                  {planJson.progression_strategy}
+                </Badge>
+              )}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRegenerateClick}
+                disabled={isGenerating}
+              >
+                {isGenerating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Regenerate
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
           
           {displayWorkouts.map((workout) => (
@@ -231,6 +286,37 @@ export default function Plan() {
           </Card>
         )}
       </div>
+
+      {/* Regenerate Confirmation Dialog */}
+      <Dialog open={showRegenerateConfirm} onOpenChange={setShowRegenerateConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Regenerate Training Plan?</DialogTitle>
+            <DialogDescription>
+              This will create a new 4-week plan and replace your current workouts. 
+              Any completed workout history will be preserved, but scheduled workouts will be replaced.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowRegenerateConfirm(false)} disabled={isGenerating}>
+              Cancel
+            </Button>
+            <Button onClick={handleGeneratePlan} disabled={isGenerating}>
+              {isGenerating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Regenerate Plan
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

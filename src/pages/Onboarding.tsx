@@ -33,7 +33,7 @@ interface FormData {
   // Step 3: Schedule
   daysPerWeek: number;
   sessionMinutes: number;
-  restDay: string;
+  workoutDays: string[];
   // Step 4: Equipment
   equipment: string[];
   // Step 5: Health
@@ -62,7 +62,7 @@ const initialFormData: FormData = {
   experienceLevel: '',
   daysPerWeek: 4,
   sessionMinutes: 45,
-  restDay: 'Tuesday',
+  workoutDays: ['Monday', 'Wednesday', 'Thursday', 'Friday'],
   equipment: ['bodyweight'],
   constraints: {
     injury_flags: [],
@@ -111,7 +111,7 @@ export default function Onboarding() {
         experienceLevel: profile.experience_level || '',
         daysPerWeek: profile.days_per_week || 4,
         sessionMinutes: profile.session_minutes || 45,
-        restDay: profile.rest_day || 'Tuesday',
+        workoutDays: (profile as any).workout_days || ['Monday', 'Wednesday', 'Thursday', 'Friday'],
         equipment: equipmentJson || ['bodyweight'],
         constraints: {
           injury_flags: constraintsJson?.injury_flags || [],
@@ -154,7 +154,7 @@ export default function Onboarding() {
       case 2:
         return formData.goalPrimary.length > 0 && formData.experienceLevel.length > 0;
       case 3:
-        return formData.daysPerWeek >= 2 && formData.sessionMinutes >= 15;
+        return formData.workoutDays.length >= 2 && formData.sessionMinutes >= 15;
       case 4:
         return formData.equipment.length > 0;
       case 5:
@@ -195,9 +195,9 @@ export default function Onboarding() {
         goal_primary: formData.goalPrimary,
         goal_secondary: formData.goalSecondary || null,
         experience_level: formData.experienceLevel,
-        days_per_week: formData.daysPerWeek,
+        days_per_week: formData.workoutDays.length,
         session_minutes: formData.sessionMinutes,
-        rest_day: formData.restDay,
+        workout_days: formData.workoutDays,
         equipment_json: formData.equipment,
         constraints_json: formData.constraints,
       } as any);
@@ -300,12 +300,12 @@ export default function Onboarding() {
 
           {currentStep === 3 && (
             <StepSchedule
-              daysPerWeek={formData.daysPerWeek}
+              daysPerWeek={formData.workoutDays.length}
               sessionMinutes={formData.sessionMinutes}
-              restDay={formData.restDay}
+              workoutDays={formData.workoutDays}
               onDaysChange={(v) => setFormData({ ...formData, daysPerWeek: v })}
               onSessionChange={(v) => setFormData({ ...formData, sessionMinutes: v })}
-              onRestDayChange={(v) => setFormData({ ...formData, restDay: v })}
+              onWorkoutDaysChange={(v) => setFormData({ ...formData, workoutDays: v, daysPerWeek: v.length })}
             />
           )}
 

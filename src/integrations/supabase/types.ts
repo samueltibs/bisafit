@@ -255,6 +255,7 @@ export type Database = {
           unit_preference: string | null
           updated_at: string | null
           weight_kg: number | null
+          workout_days: Json | null
         }
         Insert: {
           constraints_json?: Json | null
@@ -274,6 +275,7 @@ export type Database = {
           unit_preference?: string | null
           updated_at?: string | null
           weight_kg?: number | null
+          workout_days?: Json | null
         }
         Update: {
           constraints_json?: Json | null
@@ -293,6 +295,7 @@ export type Database = {
           unit_preference?: string | null
           updated_at?: string | null
           weight_kg?: number | null
+          workout_days?: Json | null
         }
         Relationships: []
       }
