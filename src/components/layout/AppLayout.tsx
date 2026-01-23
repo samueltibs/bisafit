@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { BottomNav } from './BottomNav';
 import { Header } from './Header';
+import { TrialBanner } from '@/components/subscription/TrialBanner';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -11,6 +12,7 @@ interface AppLayoutProps {
 export function AppLayout({ children, title = 'BisaFit', showNav = true }: AppLayoutProps) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <TrialBanner />
       <Header title={title} />
       <main className="flex-1 pb-20">
         {children}
