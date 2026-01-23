@@ -777,9 +777,16 @@ ${preferenceNotes}
 ${constraintNotes ? `\nADDITIONAL NOTES: ${constraintNotes}` : ""}
 
 CONTEXT:
-- This is Training Block #${blockNumber}
 - User has completed ${completedWorkouts} workouts previously
-${completedWorkouts > 0 ? "- Build on their previous progress with appropriate progression" : "- First time user - start conservatively"}
+${completedWorkouts > 0 ? "- Build on their previous progress with appropriate progression. In your coach_notes, use phrases like 'Welcome back — this block focuses on...' rather than referencing block numbers." : "- First time user - start conservatively. In your coach_notes, use phrases like 'Welcome — this block focuses on...' rather than referencing block numbers."}
+
+COACH NOTES GUIDELINES:
+- Do NOT reference specific block numbers (e.g., "Block 5", "Training Block #3")
+- Instead, use context-aware phrases like:
+  - "Welcome — this block focuses on..."
+  - "Welcome back — here's the focus for this block"
+  - "In this block, we're prioritizing..."
+  - "This training block is designed to..."
 
 REQUIRED OUTPUT:
 Generate EXACTLY ${totalWorkouts} workouts total:

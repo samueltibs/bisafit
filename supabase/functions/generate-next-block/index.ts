@@ -759,7 +759,14 @@ BLOCK STRUCTURE:
 - Week 3: Peak phase, highest intensity
 - Week 4: Deload/testing, reduce volume for recovery
 
-Generate encouraging, specific coach notes that reference the user's progress.`;
+COACH NOTES GUIDELINES:
+- Do NOT reference specific block numbers in coach_notes (e.g., "Block 5", "Training Block #3")
+- Instead, use context-aware phrases like:
+  - "Welcome back — here's the focus for this block"
+  - "In this block, we're building on your progress by..."
+  - "This training block is designed to..."
+  - "Based on your recent performance, this block will..."
+- Reference the user's actual progress and what they'll be working on, not ordinal numbers.`;
 }
 
 function buildProgressionPrompt(
@@ -798,10 +805,9 @@ ${injuries.map(i => `- ${i}`).join("\n")}`;
     .map(e => `- ${e.name}: performed ${e.frequency}x${e.avg_weight ? `, avg weight: ${e.avg_weight.toFixed(1)}kg` : ""}`)
     .join("\n");
 
-  return `Create Block ${newBlockNumber} (Weeks ${(newBlockNumber - 1) * 4 + 1}-${newBlockNumber * 4}) based on previous performance.
+  return `Create a new training block based on previous performance.
 
 PREVIOUS BLOCK SUMMARY:
-- Block number: ${previousPlan.block_number}
 - Progression strategy used: ${previousPlan.progression_strategy}
 - Previous notes: ${previousPlan.progression_notes}
 

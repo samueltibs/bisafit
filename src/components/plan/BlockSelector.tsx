@@ -105,13 +105,28 @@ function getBlockDateRange(startDateStr: string | null | undefined): {
 }
 
 /**
- * Get block label from block_number
+ * Get user-facing block label
+ * - Current block = Block 1
+ * - Next block = Block 2
+ * - Archived blocks use their internal block number for reference
  */
-function getBlockLabel(plan: PlanSummary): string {
+function getBlockLabel(
+  plan: PlanSummary, 
+  currentPlanId: string | null,
+  nextBlockId: string | null
+): string {
+  // User-facing numbering: Current = Block 1, Next = Block 2
+  if (plan.id === currentPlanId) {
+    return 'Block 1';
+  }
+  if (plan.id === nextBlockId) {
+    return 'Block 2';
+  }
+  // Archived blocks - show internal number for reference
   if (plan.blockNumber && plan.blockNumber > 0) {
     return `Block ${plan.blockNumber}`;
   }
-  return 'Block (unlabeled)';
+  return 'Block';
 }
 
 /**
@@ -198,7 +213,7 @@ export function BlockSelector({
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <History className="h-4 w-4" />
-        <span>{selectedPlan ? getBlockLabel(selectedPlan) : 'Block 1'}</span>
+        <span>{selectedPlan ? getBlockLabel(selectedPlan, currentPlanId, nextBlock?.id || null) : 'Block 1'}</span>
         {statusInfo?.priority === 'current' && (
           <Badge variant={statusInfo.variant} className="text-[10px] flex items-center gap-1">
             {statusInfo.icon}
@@ -221,7 +236,7 @@ export function BlockSelector({
           disabled={disabled}
         >
           <History className="h-4 w-4" />
-          <span>{selectedPlan ? getBlockLabel(selectedPlan) : 'Block 1'}</span>
+          <span>{selectedPlan ? getBlockLabel(selectedPlan, currentPlanId, nextBlock?.id || null) : 'Block 1'}</span>
           {selectedStatusInfo && selectedStatusInfo.priority !== 'archived' && (
             <Badge variant={selectedStatusInfo.variant} className="text-[10px] flex items-center gap-1">
               {selectedStatusInfo.icon}
@@ -260,7 +275,7 @@ export function BlockSelector({
             >
               <div className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">{getBlockLabel(plan)}</span>
+                  <span className="font-medium">{getBlockLabel(plan, currentPlanId, nextBlock?.id || null)}</span>
                   <Badge variant={statusInfo.variant} className="text-[10px] h-4 flex items-center gap-1">
                     {statusInfo.icon}
                     {statusInfo.label}
@@ -323,7 +338,7 @@ export function BlockSelector({
                     >
                       <div className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm">{getBlockLabel(plan)} (Archived)</span>
+                          <span className="text-sm">{getBlockLabel(plan, currentPlanId, nextBlock?.id || null)} (Archived)</span>
                           {plan.status === 'completed' && (
                             <CheckCircle className="h-3 w-3 text-muted-foreground" />
                           )}
@@ -358,7 +373,7 @@ export function BlockSelector({
                         >
                           <div className="flex flex-col gap-0.5">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm">{getBlockLabel(plan)}</span>
+                              <span className="text-sm">{getBlockLabel(plan, currentPlanId, nextBlock?.id || null)}</span>
                               <Badge variant="destructive" className="text-[10px] h-4">
                                 No workouts
                               </Badge>
