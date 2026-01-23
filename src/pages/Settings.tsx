@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useCalendarSync } from '@/hooks/useCalendarSync';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ import {
   Calendar,
   Dumbbell,
   Sparkles,
+  Clock,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -42,8 +44,10 @@ import {
   formatHeight,
   type UnitPreference,
 } from '@/lib/unitConversions';
+import { formatTimeDisplay } from '@/lib/calendarUtils';
 import { WorkoutDaysSelector } from '@/components/settings/WorkoutDaysSelector';
 import { EquipmentEditor, formatEquipmentName, normalizeEquipmentName } from '@/components/settings/EquipmentEditor';
+import { WorkoutTimeSettings } from '@/components/settings/WorkoutTimeSettings';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -56,6 +60,10 @@ export default function Settings() {
   // Profile editing modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isEquipmentModalOpen, setIsEquipmentModalOpen] = useState(false);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  
+  // Calendar sync hook
+  const calendarSync = useCalendarSync();
   const [isSaving, setIsSaving] = useState(false);
   const [showEquipmentBanner, setShowEquipmentBanner] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -79,6 +87,10 @@ export default function Settings() {
       setIsEquipmentModalOpen(true);
       setSearchParams({});
     }
+    if (searchParams.get('schedule') === 'true' && !loading) {
+      setIsScheduleModalOpen(true);
+      setSearchParams({});
+    }
   }, [searchParams, loading, setSearchParams]);
 
   // Initialize equipment list when modal opens
@@ -88,6 +100,17 @@ export default function Settings() {
       setEquipmentList(Array.isArray(equipment) ? equipment : []);
     }
   }, [isEquipmentModalOpen, profile]);
+
+  // Initialize calendar sync settings when schedule modal opens
+  useEffect(() => {
+    if (isScheduleModalOpen && profile) {
+      calendarSync.loadSettings(profile);
+      // Load current plan workouts
+      if (user && (profile as any).current_plan_id) {
+        calendarSync.loadCurrentPlanWorkouts(user.id, (profile as any).current_plan_id);
+      }
+    }
+  }, [isScheduleModalOpen, profile, user]);
 
   // Initialize edit form when modal opens
   useEffect(() => {
@@ -371,18 +394,50 @@ export default function Settings() {
         {(profile as any)?.workout_days && (
           <Card className="border-border animate-slide-up">
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <Calendar className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">Workout Schedule</p>
-                  <p className="text-sm text-muted-foreground">
-                    {((profile as any).workout_days as string[]).join(', ')} ({((profile as any).workout_days as string[]).length} days/week)
-                  </p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">Workout Schedule</p>
+                    <p className="text-sm text-muted-foreground">
+                      {((profile as any).workout_days as string[]).join(', ')} ({((profile as any).workout_days as string[]).length} days/week)
+                    </p>
+                  </div>
                 </div>
+                <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)}>
+                  <Edit2 className="h-3 w-3 mr-1" />
+                  Edit
+                </Button>
               </div>
             </CardContent>
           </Card>
         )}
+
+        {/* Workout Time & Calendar Section */}
+        <Card className="border-border animate-slide-up">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Clock className="h-5 w-5 text-muted-foreground" />
+                <div className="flex-1">
+                  <p className="font-medium">Workout Time & Calendar</p>
+                  {(profile as any)?.workout_time_preferences_json ? (
+                    <p className="text-sm text-muted-foreground">
+                      {formatTimeDisplay(((profile as any).workout_time_preferences_json as any)?.default_time || '06:00')}
+                      {(profile as any)?.calendar_sync_enabled && ' • Calendar sync on'}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Set your preferred workout time</p>
+                  )}
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setIsScheduleModalOpen(true)}>
+                <Edit2 className="h-3 w-3 mr-1" />
+                Edit
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Equipment Section */}
         <Card className="border-border animate-slide-up">
@@ -663,6 +718,39 @@ export default function Settings() {
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Schedule & Calendar Modal */}
+      <Dialog open={isScheduleModalOpen} onOpenChange={setIsScheduleModalOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Workout Time & Calendar</DialogTitle>
+            <DialogDescription>
+              Set your preferred workout time and sync workouts to your calendar.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <WorkoutTimeSettings
+              preferences={calendarSync.preferences}
+              calendarSyncEnabled={calendarSync.calendarSyncEnabled}
+              calendarProvider={calendarSync.calendarProvider}
+              onPreferencesChange={calendarSync.setPreferences}
+              onCalendarSyncChange={calendarSync.setCalendarSyncEnabled}
+              onCalendarProviderChange={calendarSync.setCalendarProvider}
+              onSave={async () => {
+                const success = await calendarSync.saveSettings();
+                if (success) {
+                  await refetch();
+                  setIsScheduleModalOpen(false);
+                }
+              }}
+              isSaving={calendarSync.isSaving}
+              currentPlanWorkouts={calendarSync.currentPlanWorkouts}
+              currentPlan={calendarSync.currentPlan}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </AppLayout>

@@ -271,6 +271,8 @@ export type Database = {
       }
       users_profile: {
         Row: {
+          calendar_provider: string | null
+          calendar_sync_enabled: boolean | null
           constraints_json: Json | null
           created_at: string | null
           current_plan_id: string | null
@@ -290,8 +292,11 @@ export type Database = {
           updated_at: string | null
           weight_kg: number | null
           workout_days: Json | null
+          workout_time_preferences_json: Json | null
         }
         Insert: {
+          calendar_provider?: string | null
+          calendar_sync_enabled?: boolean | null
           constraints_json?: Json | null
           created_at?: string | null
           current_plan_id?: string | null
@@ -311,8 +316,11 @@ export type Database = {
           updated_at?: string | null
           weight_kg?: number | null
           workout_days?: Json | null
+          workout_time_preferences_json?: Json | null
         }
         Update: {
+          calendar_provider?: string | null
+          calendar_sync_enabled?: boolean | null
           constraints_json?: Json | null
           created_at?: string | null
           current_plan_id?: string | null
@@ -332,6 +340,7 @@ export type Database = {
           updated_at?: string | null
           weight_kg?: number | null
           workout_days?: Json | null
+          workout_time_preferences_json?: Json | null
         }
         Relationships: [
           {
@@ -387,6 +396,7 @@ export type Database = {
       }
       workouts: {
         Row: {
+          calendar_event_id: string | null
           created_at: string | null
           id: string
           plan_id: string | null
@@ -396,6 +406,7 @@ export type Database = {
           workout_json: Json
         }
         Insert: {
+          calendar_event_id?: string | null
           created_at?: string | null
           id?: string
           plan_id?: string | null
@@ -405,6 +416,7 @@ export type Database = {
           workout_json: Json
         }
         Update: {
+          calendar_event_id?: string | null
           created_at?: string | null
           id?: string
           plan_id?: string | null
