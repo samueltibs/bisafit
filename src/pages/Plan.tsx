@@ -13,13 +13,14 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { ChevronLeft, ChevronRight, Dumbbell, Timer, Check, Sparkles, Calendar, Loader2, AlertTriangle, Bed, RefreshCw, Rocket } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Dumbbell, Timer, Check, Sparkles, Calendar, Loader2, AlertTriangle, Bed, RefreshCw, Rocket, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, addDays, startOfWeek, isToday } from 'date-fns';
 import { usePlan } from '@/hooks/usePlan';
 import { usePlanGeneration } from '@/hooks/usePlanGeneration';
 import { useProgressionEngine, type BlockFeedback } from '@/hooks/useProgressionEngine';
 import { BlockFeedbackDialog, NextBlockSuccessDialog } from '@/components/progression';
+import { BlockSelector } from '@/components/plan';
 import type { DisplayWorkout, WorkoutType } from '@/types/plan';
 
 const typeColors: Record<WorkoutType, string> = {
@@ -33,7 +34,22 @@ const typeColors: Record<WorkoutType, string> = {
 
 export default function Plan() {
   const navigate = useNavigate();
-  const { plan, planJson, loading, getWorkoutsForWeek, refetch, hasGenerationIssue, currentWeekIndex, getPlanWeekStart, schedulingDebug } = usePlan();
+  const { 
+    plan, 
+    planJson, 
+    loading, 
+    getWorkoutsForWeek, 
+    refetch, 
+    hasGenerationIssue, 
+    currentWeekIndex, 
+    getPlanWeekStart, 
+    schedulingDebug,
+    allPlans,
+    selectedPlanId,
+    setSelectedPlanId,
+    activePlanId,
+    isViewingActivePlan,
+  } = usePlan();
   const { generatePlan, isGenerating } = usePlanGeneration();
   const [weekOffset, setWeekOffset] = useState(0);
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
@@ -157,6 +173,8 @@ export default function Plan() {
   const handleViewNewPlan = async () => {
     setShowSuccessDialog(false);
     setWeekOffset(0);
+    // Switch to the newly created plan (which becomes active)
+    setSelectedPlanId(null); // Reset to trigger active plan selection
     await refetch();
   };
 
@@ -213,7 +231,8 @@ export default function Plan() {
   return (
     <AppLayout>
       <div className="container space-y-6 px-4 py-6">
-        {/* Progression CTAs - Always show manual override, highlight when eligible */}
+        {/* Progression CTAs - Only show for active plan */}
+        {isViewingActivePlan && (
         <Card className={cn(
           "animate-fade-in transition-all",
           eligibility?.isEligible 
@@ -307,6 +326,7 @@ export default function Plan() {
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Debug Banner (temporary) */}
         {schedulingDebug && (
@@ -358,25 +378,46 @@ export default function Plan() {
           </Card>
         )}
 
-        {/* Week Navigation */}
-        <div className="flex items-center justify-between animate-fade-in">
-          <Button variant="ghost" size="icon" onClick={goToPreviousWeek}>
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <div className="text-center">
-            <h2 className="text-lg font-semibold">
-              {format(currentWeekStart, 'MMM d')} - {format(addDays(currentWeekStart, 6), 'MMM d, yyyy')}
-            </h2>
-            {planJson && (
-              <p className="text-xs text-muted-foreground">
-                Week {viewingPlanWeek} of 4 • Block {planJson.block_number} • {workoutDaysCount} workouts
-                {isViewingCurrentWeek && <Badge variant="outline" className="ml-2 text-[10px]">Current</Badge>}
-              </p>
+        {/* Block Selector and Week Navigation */}
+        <div className="flex flex-col gap-4 animate-fade-in">
+          {/* Block Selector Row */}
+          <div className="flex items-center justify-between">
+            <BlockSelector
+              plans={allPlans}
+              selectedPlanId={selectedPlanId}
+              onSelectPlan={setSelectedPlanId}
+              disabled={isGenerating || isGeneratingNextBlock}
+            />
+            {!isViewingActivePlan && (
+              <Badge variant="outline" className="text-xs flex items-center gap-1">
+                <Lock className="h-3 w-3" />
+                Read-only
+              </Badge>
             )}
           </div>
-          <Button variant="ghost" size="icon" onClick={goToNextWeek}>
-            <ChevronRight className="h-5 w-5" />
-          </Button>
+
+          {/* Week Navigation */}
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" size="icon" onClick={goToPreviousWeek}>
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <div className="text-center">
+              <h2 className="text-lg font-semibold">
+                {format(currentWeekStart, 'MMM d')} - {format(addDays(currentWeekStart, 6), 'MMM d, yyyy')}
+              </h2>
+              {planJson && (
+                <p className="text-xs text-muted-foreground">
+                  Week {viewingPlanWeek} of 4 • {workoutDaysCount} workouts
+                  {isViewingCurrentWeek && isViewingActivePlan && (
+                    <Badge variant="outline" className="ml-2 text-[10px]">Current</Badge>
+                  )}
+                </p>
+              )}
+            </div>
+            <Button variant="ghost" size="icon" onClick={goToNextWeek}>
+              <ChevronRight className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Week Overview */}
@@ -423,21 +464,32 @@ export default function Plan() {
                   {planJson.progression_strategy}
                 </Badge>
               )}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleRegenerateClick}
-                disabled={isGenerating}
-              >
-                {isGenerating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <RefreshCw className="h-3 w-3 mr-1" />
-                    Regenerate
-                  </>
-                )}
-              </Button>
+              {isViewingActivePlan ? (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleRegenerateClick}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      Regenerate
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedPlanId(activePlanId)}
+                >
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  Go to Active Block
+                </Button>
+              )}
             </div>
           </div>
           
