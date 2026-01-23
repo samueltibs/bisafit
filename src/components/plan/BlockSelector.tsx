@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { PlanSummary, PlanStatus } from '@/hooks/usePlan';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 
 interface BlockSelectorProps {
   plans: PlanSummary[];
@@ -25,6 +25,27 @@ const statusLabels: Record<PlanStatus, { label: string; icon: React.ReactNode; v
   queued: { label: 'Queued', icon: <Clock className="h-3 w-3" />, variant: 'outline' },
   completed: { label: 'Completed', icon: <CheckCircle className="h-3 w-3" />, variant: 'secondary' },
 };
+
+/**
+ * Calculate block end date from start date (4 weeks = 27 days after start)
+ */
+function getBlockDateRange(startDateStr: string | null): { start: Date | null; end: Date | null; label: string } {
+  if (!startDateStr) {
+    return { start: null, end: null, label: '' };
+  }
+  
+  const start = new Date(startDateStr);
+  const end = addDays(start, 27); // 4 weeks minus 1 day
+  
+  const startLabel = format(start, 'MMM d');
+  const endLabel = format(end, 'MMM d, yyyy');
+  
+  return { 
+    start, 
+    end, 
+    label: `${startLabel}–${endLabel}` 
+  };
+}
 
 export function BlockSelector({
   plans,
@@ -54,6 +75,7 @@ export function BlockSelector({
 
   const selectedStatus = selectedPlan?.status || 'in_progress';
   const selectedStatusInfo = statusLabels[selectedStatus];
+  const selectedDateRange = getBlockDateRange(selectedPlan?.startDate || null);
 
   return (
     <DropdownMenu>
@@ -77,7 +99,7 @@ export function BlockSelector({
       </DropdownMenuTrigger>
       <DropdownMenuContent 
         align="start" 
-        className="w-72 bg-popover border border-border shadow-lg z-50"
+        className="w-80 bg-popover border border-border shadow-lg z-50"
       >
         <DropdownMenuLabel className="text-xs text-muted-foreground">
           Training Blocks
@@ -88,10 +110,9 @@ export function BlockSelector({
         <DropdownMenuSeparator />
         {plans.map((plan) => {
           const isSelected = plan.id === selectedPlanId;
-          const weekRange = `Weeks ${(plan.blockNumber - 1) * 4 + 1}–${plan.blockNumber * 4}`;
-          const dateLabel = plan.startDate 
-            ? format(new Date(plan.startDate), 'MMM d, yyyy')
-            : '';
+          // Always show Weeks 1-4 within each block (not global weeks)
+          const weekRange = 'Weeks 1–4';
+          const dateRange = getBlockDateRange(plan.startDate);
           const statusInfo = statusLabels[plan.status];
 
           return (
@@ -99,11 +120,11 @@ export function BlockSelector({
               key={plan.id}
               onClick={() => onSelectPlan(plan.id)}
               className={cn(
-                "flex items-center justify-between cursor-pointer",
+                "flex items-center justify-between cursor-pointer py-3",
                 isSelected && "bg-accent"
               )}
             >
-              <div className="flex flex-col">
+              <div className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">Block {plan.blockNumber}</span>
                   <Badge variant={statusInfo.variant} className="text-[10px] h-4 flex items-center gap-1">
@@ -112,7 +133,7 @@ export function BlockSelector({
                   </Badge>
                 </div>
                 <span className="text-xs text-muted-foreground">
-                  {weekRange} • {dateLabel}
+                  {weekRange} • {dateRange.label}
                 </span>
               </div>
               {isSelected && <Check className="h-4 w-4 text-primary" />}

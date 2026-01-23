@@ -38,6 +38,7 @@ interface SchedulingDebugInfo {
   profileWorkoutDays: string[];
   scheduledWorkoutDays: string[];
   hasMismatch: boolean;
+  mismatchDismissed: boolean;
 }
 
 export type PlanStatus = 'in_progress' | 'queued' | 'completed';
@@ -66,6 +67,7 @@ interface UsePlanResult {
   getPlanWeekStart: () => Date | null;
   hasGenerationIssue: boolean;
   schedulingDebug: SchedulingDebugInfo | null;
+  dismissMismatch: () => void;
   // Multi-plan support
   allPlans: PlanSummary[];
   selectedPlanId: string | null;
@@ -89,6 +91,9 @@ export function usePlan(): UsePlanResult {
   const [allPlans, setAllPlans] = useState<PlanSummary[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
+  
+  // Mismatch dismissal tracking (keyed by plan ID)
+  const [dismissedMismatches, setDismissedMismatches] = useState<Set<string>>(new Set());
 
   const fetchPlan = useCallback(async () => {
     if (!user) {
@@ -491,12 +496,23 @@ export function usePlan(): UsePlanResult {
       profileWorkoutDays.length !== scheduledWorkoutDays.length ||
       !profileWorkoutDays.every(day => scheduledWorkoutDays.includes(day));
     
+    // Check if user dismissed this mismatch
+    const mismatchDismissed = plan?.id ? dismissedMismatches.has(plan.id) : false;
+    
     return {
       profileWorkoutDays,
       scheduledWorkoutDays,
       hasMismatch,
+      mismatchDismissed,
     };
   })();
+
+  // Dismiss mismatch for current plan
+  const dismissMismatch = useCallback(() => {
+    if (plan?.id) {
+      setDismissedMismatches(prev => new Set([...prev, plan.id]));
+    }
+  }, [plan?.id]);
 
   const isViewingCurrentPlan = selectedPlanId === currentPlanId;
 
@@ -515,6 +531,7 @@ export function usePlan(): UsePlanResult {
     getPlanWeekStart,
     hasGenerationIssue,
     schedulingDebug,
+    dismissMismatch,
     // Multi-plan support
     allPlans,
     selectedPlanId,
