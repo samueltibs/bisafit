@@ -15,6 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useNutrition, type Meal, type DayPlan } from '@/hooks/useNutrition';
 import { FridgeScanFlow } from '@/components/nutrition/FridgeScanFlow';
+import { CuisineThemeSelector } from '@/components/nutrition/CuisineThemeSelector';
 import { useIngredientSession } from '@/hooks/useIngredientSession';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -50,6 +51,9 @@ function MealCard({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const Icon = mealIcons[meal.name] || UtensilsCrossed;
+  
+  // Type assertion for cuisine_style since it's a new field
+  const cuisineStyle = (meal as Meal & { cuisine_style?: string }).cuisine_style;
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -63,6 +67,11 @@ function MealCard({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-medium truncate">{meal.recipe_title}</p>
+                  {cuisineStyle && (
+                    <Badge variant="outline" className="text-xs shrink-0">
+                      {cuisineStyle}
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex items-center gap-3 text-sm text-muted-foreground">
                   <span>{meal.calories_est} kcal</span>
@@ -206,12 +215,14 @@ export default function Nutrition() {
   const [selectedDay, setSelectedDay] = useState(0);
   const [fridgeScanOpen, setFridgeScanOpen] = useState(false);
   const [generatingFromIngredients, setGeneratingFromIngredients] = useState(false);
+  const [weekCuisineTheme, setWeekCuisineTheme] = useState<string | null>(null);
   
   const { hasActiveSession, getIngredientNames, clearIngredients } = useIngredientSession();
   
   const targets = profile?.targets_json;
   const mealPlan = profile?.meal_plan_json;
   const isSimpleMode = profile?.nutrition_goal_style !== 'macros';
+  const savedCuisinePrefs = (profile?.cuisine_preferences_json || []) as string[];
 
   // Generate meal plan from saved ingredients
   const handleGeneratePlanFromIngredients = useCallback(async () => {
@@ -221,7 +232,7 @@ export default function Nutrition() {
     setGeneratingFromIngredients(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-meal-plan', {
-        body: { days: 7, ingredients: ingredientNames },
+        body: { days: 7, ingredients: ingredientNames, weekCuisineTheme },
       });
 
       if (error) throw error;
@@ -235,7 +246,24 @@ export default function Nutrition() {
     } finally {
       setGeneratingFromIngredients(false);
     }
-  }, [getIngredientNames, clearIngredients, refetch]);
+  }, [getIngredientNames, clearIngredients, refetch, weekCuisineTheme]);
+
+  // Handle generate meal plan with cuisine theme
+  const handleGenerateMealPlan = useCallback(async (days = 7) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-meal-plan', {
+        body: { days, weekCuisineTheme },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      await refetch();
+    } catch (err) {
+      console.error('Generate meal plan error:', err);
+      throw err;
+    }
+  }, [refetch, weekCuisineTheme]);
 
   if (loading) {
     return (
@@ -410,21 +438,29 @@ export default function Nutrition() {
         {/* Meal Plan Section */}
         {targets && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-lg font-semibold">7-Day Meal Plan</h2>
-              <Button 
-                onClick={() => generateMealPlan(7)} 
-                disabled={generatingMealPlan}
-                variant={mealPlan ? "outline" : "default"}
-                className="gap-2"
-              >
-                {generatingMealPlan ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-                {mealPlan ? 'Regenerate' : 'Generate Plan'}
-              </Button>
+              <div className="flex items-center gap-3 flex-wrap">
+                <CuisineThemeSelector
+                  selectedCuisine={weekCuisineTheme}
+                  onCuisineChange={setWeekCuisineTheme}
+                  savedPreferences={savedCuisinePrefs}
+                  compact
+                />
+                <Button 
+                  onClick={() => handleGenerateMealPlan(7)} 
+                  disabled={generatingMealPlan}
+                  variant={mealPlan ? "outline" : "default"}
+                  className="gap-2"
+                >
+                  {generatingMealPlan ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                  {mealPlan ? 'Regenerate' : 'Generate Plan'}
+                </Button>
+              </div>
             </div>
 
             {!mealPlan ? (
@@ -441,9 +477,14 @@ export default function Nutrition() {
                       Get a personalized 7-day meal plan with recipes and a grocery list.
                     </p>
                   </div>
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-3 max-w-sm mx-auto">
+                    <CuisineThemeSelector
+                      selectedCuisine={weekCuisineTheme}
+                      onCuisineChange={setWeekCuisineTheme}
+                      savedPreferences={savedCuisinePrefs}
+                    />
                     <Button 
-                      onClick={() => generateMealPlan(7)} 
+                      onClick={() => handleGenerateMealPlan(7)} 
                       disabled={generatingMealPlan}
                       className="gap-2"
                     >
