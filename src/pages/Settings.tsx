@@ -1,17 +1,12 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
-  User, 
   Bell, 
   Moon, 
   Shield, 
@@ -22,38 +17,14 @@ import {
   Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface Profile {
-  full_name: string | null;
-  height_cm: number | null;
-  weight_kg: number | null;
-  fitness_goal: string | null;
-}
+import { useState } from 'react';
 
 export default function Settings() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { profile, loading } = useUserProfile();
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user) return;
-      
-      const { data } = await supabase
-        .from('profiles')
-        .select('full_name, height_cm, weight_kg, fitness_goal')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (data) setProfile(data);
-      setLoading(false);
-    };
-
-    fetchProfile();
-  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -69,10 +40,10 @@ export default function Settings() {
   };
 
   const goalLabels: Record<string, string> = {
-    lose_weight: 'Lose Weight',
-    build_muscle: 'Build Muscle',
-    stay_fit: 'Stay Fit',
-    improve_health: 'Improve Health',
+    fat_loss: 'Fat Loss',
+    muscle_gain: 'Build Muscle',
+    endurance: 'Endurance',
+    maintenance: 'Maintenance',
   };
 
   if (loading) {
@@ -99,9 +70,9 @@ export default function Settings() {
             <div className="flex-1">
               <h2 className="text-xl font-bold">{profile?.full_name || 'BisaFit User'}</h2>
               <p className="text-sm text-muted-foreground">{user?.email}</p>
-              {profile?.fitness_goal && (
+              {profile?.goal_primary && (
                 <p className="mt-1 text-sm text-primary">
-                  Goal: {goalLabels[profile.fitness_goal] || profile.fitness_goal}
+                  Goal: {goalLabels[profile.goal_primary] || profile.goal_primary}
                 </p>
               )}
             </div>
@@ -125,7 +96,7 @@ export default function Settings() {
             {profile.weight_kg && (
               <Card className="border-border">
                 <CardContent className="p-4 text-center">
-                  <p className="text-2xl font-bold">{profile.weight_kg}</p>
+                  <p className="text-2xl font-bold">{Number(profile.weight_kg)}</p>
                   <p className="text-sm text-muted-foreground">Weight (kg)</p>
                 </CardContent>
               </Card>
@@ -140,12 +111,16 @@ export default function Settings() {
               <Crown className="h-6 w-6" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold">Free Plan</p>
-              <p className="text-sm opacity-90">Upgrade to unlock all features</p>
+              <p className="font-semibold">{profile?.is_pro ? 'Pro Plan' : 'Free Plan'}</p>
+              <p className="text-sm opacity-90">
+                {profile?.is_pro ? 'Full access to all features' : 'Upgrade to unlock all features'}
+              </p>
             </div>
-            <Button variant="secondary" size="sm">
-              Upgrade
-            </Button>
+            {!profile?.is_pro && (
+              <Button variant="secondary" size="sm">
+                Upgrade
+              </Button>
+            )}
           </CardContent>
         </Card>
 
