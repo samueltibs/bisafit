@@ -12,6 +12,7 @@ import {
   Coffee, UtensilsCrossed, Moon, Apple, AlertTriangle, Target,
   Camera, ShoppingBasket
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useNutrition, type Meal, type DayPlan, type NutritionTargets } from '@/hooks/useNutrition';
 import { FridgeScanFlow } from '@/components/nutrition/FridgeScanFlow';
@@ -306,16 +307,61 @@ export default function Nutrition() {
         {hasActiveSession && !fridgeScanOpen && (
           <Alert className="border-primary/50 bg-primary/5">
             <ShoppingBasket className="h-4 w-4 text-primary" />
-            <AlertDescription className="text-sm flex items-center justify-between">
-              <span>You have saved ingredients from your scan.</span>
-              <Button 
-                variant="link" 
-                size="sm" 
-                onClick={() => setFridgeScanOpen(true)}
-                className="p-0 h-auto text-primary"
-              >
-                Generate plan using these →
-              </Button>
+            <AlertDescription className="text-sm">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span>
+                  You have saved ingredients from your scan ({getIngredientNames().length} items).
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setFridgeScanOpen(true)}
+                    className="h-auto py-1 px-2 text-xs text-muted-foreground"
+                  >
+                    Edit ingredients
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    onClick={async () => {
+                      const ingredientNames = getIngredientNames();
+                      if (process.env.NODE_ENV === 'development') {
+                        console.log('[Nutrition] Banner CTA clicked, ingredients count:', ingredientNames.length);
+                      }
+                      if (ingredientNames.length < 2) {
+                        toast.error('Need at least 2 ingredients. Add more or scan again.');
+                        return;
+                      }
+                      try {
+                        await handleGeneratePlanFromIngredients();
+                        toast.success('Meal plan generated using what you already have!');
+                        // Scroll to meal plan section
+                        setTimeout(() => {
+                          document.getElementById('meal-plan-section')?.scrollIntoView({ behavior: 'smooth' });
+                        }, 500);
+                      } catch (err) {
+                        console.error('[Nutrition] Generate from ingredients error:', err);
+                        toast.error("Couldn't generate plan right now. Try again.");
+                      }
+                    }}
+                    disabled={generatingFromIngredients || getIngredientNames().length < 2}
+                    className="h-auto py-1 px-3 gap-2"
+                  >
+                    {generatingFromIngredients ? (
+                      <>
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-3 w-3" />
+                        Generate plan using these
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
             </AlertDescription>
           </Alert>
         )}
@@ -471,7 +517,7 @@ export default function Nutrition() {
 
         {/* Meal Plan Section */}
         {targets && (
-          <div className="space-y-4">
+          <div id="meal-plan-section" className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-lg font-semibold">7-Day Meal Plan</h2>
               <div className="flex items-center gap-3 flex-wrap">
