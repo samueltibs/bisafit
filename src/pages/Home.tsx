@@ -1,21 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Flame, Droplets, Footprints, Dumbbell, Apple, ChevronRight, Trophy } from 'lucide-react';
 
-interface Profile {
-  full_name: string | null;
-  fitness_goal: string | null;
-}
-
 export default function Home() {
-  const { user } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { profile, loading } = useUserProfile();
   const [greeting, setGreeting] = useState('');
 
   useEffect(() => {
@@ -24,22 +17,6 @@ export default function Home() {
     else if (hour < 18) setGreeting('Good afternoon');
     else setGreeting('Good evening');
   }, []);
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user) return;
-      
-      const { data } = await supabase
-        .from('profiles')
-        .select('full_name, fitness_goal')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (data) setProfile(data);
-    };
-
-    fetchProfile();
-  }, [user]);
 
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
 
@@ -90,8 +67,8 @@ export default function Home() {
           
           <Card className="border-border">
             <CardContent className="p-4 text-center">
-              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10">
-                <Droplets className="h-5 w-5 text-blue-500" />
+              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-accent">
+                <Droplets className="h-5 w-5 text-accent-foreground" />
               </div>
               <p className="text-lg font-bold">{todayStats.water.current}</p>
               <p className="text-xs text-muted-foreground">/ {todayStats.water.target} glasses</p>

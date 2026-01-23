@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,26 +15,26 @@ import { cn } from '@/lib/utils';
 const steps = [
   { id: 1, title: 'Personal Info', icon: User },
   { id: 2, title: 'Your Goals', icon: Target },
-  { id: 3, title: 'Activity Level', icon: Activity },
+  { id: 3, title: 'Experience', icon: Activity },
 ];
 
 const fitnessGoals = [
-  { value: 'lose_weight', label: 'Lose Weight', description: 'Burn fat and slim down' },
-  { value: 'build_muscle', label: 'Build Muscle', description: 'Gain strength and size' },
-  { value: 'stay_fit', label: 'Stay Fit', description: 'Maintain current fitness' },
-  { value: 'improve_health', label: 'Improve Health', description: 'Better overall wellness' },
+  { value: 'fat_loss', label: 'Fat Loss', description: 'Burn fat and slim down' },
+  { value: 'muscle_gain', label: 'Build Muscle', description: 'Gain strength and size' },
+  { value: 'endurance', label: 'Endurance', description: 'Improve stamina & cardio' },
+  { value: 'maintenance', label: 'Maintenance', description: 'Maintain current fitness' },
 ];
 
-const activityLevels = [
-  { value: 'sedentary', label: 'Sedentary', description: 'Little to no exercise' },
-  { value: 'light', label: 'Lightly Active', description: '1-3 days/week' },
-  { value: 'moderate', label: 'Moderately Active', description: '3-5 days/week' },
-  { value: 'very_active', label: 'Very Active', description: '6-7 days/week' },
+const experienceLevels = [
+  { value: 'beginner', label: 'Beginner', description: 'New to fitness or returning after a break' },
+  { value: 'intermediate', label: 'Intermediate', description: '1-3 years of consistent training' },
+  { value: 'advanced', label: 'Advanced', description: '3+ years of serious training' },
 ];
 
 export default function Onboarding() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { update } = useUserProfile();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -43,8 +43,10 @@ export default function Onboarding() {
     gender: '',
     heightCm: '',
     weightKg: '',
-    fitnessGoal: '',
-    activityLevel: '',
+    goalPrimary: '',
+    experienceLevel: '',
+    daysPerWeek: '4',
+    sessionMinutes: '45',
   });
 
   const progress = (currentStep / steps.length) * 100;
@@ -66,22 +68,19 @@ export default function Onboarding() {
     
     setIsLoading(true);
     
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        full_name: formData.fullName || null,
-        gender: formData.gender || null,
-        height_cm: formData.heightCm ? parseFloat(formData.heightCm) : null,
-        weight_kg: formData.weightKg ? parseFloat(formData.weightKg) : null,
-        fitness_goal: formData.fitnessGoal || null,
-        activity_level: formData.activityLevel || null,
-        onboarding_completed: true,
-      })
-      .eq('user_id', user.id);
+    const success = await update({
+      full_name: formData.fullName || null,
+      gender: formData.gender || null,
+      height_cm: formData.heightCm ? parseInt(formData.heightCm) : null,
+      weight_kg: formData.weightKg ? parseFloat(formData.weightKg) : null,
+      goal_primary: formData.goalPrimary || null,
+      experience_level: formData.experienceLevel || null,
+      days_per_week: parseInt(formData.daysPerWeek) || 4,
+      session_minutes: parseInt(formData.sessionMinutes) || 45,
+    });
     
-    if (error) {
+    if (!success) {
       toast.error('Failed to save profile');
-      console.error(error);
     } else {
       toast.success('Profile saved! Let\'s get started!');
       navigate('/home');
@@ -95,9 +94,9 @@ export default function Onboarding() {
       case 1:
         return formData.fullName.trim().length > 0;
       case 2:
-        return formData.fitnessGoal.length > 0;
+        return formData.goalPrimary.length > 0;
       case 3:
-        return formData.activityLevel.length > 0;
+        return formData.experienceLevel.length > 0;
       default:
         return true;
     }
@@ -132,7 +131,7 @@ export default function Onboarding() {
           <CardDescription>
             {currentStep === 1 && "Tell us a bit about yourself"}
             {currentStep === 2 && "What do you want to achieve?"}
-            {currentStep === 3 && "How active are you currently?"}
+            {currentStep === 3 && "What's your training experience?"}
           </CardDescription>
         </CardHeader>
 
@@ -192,8 +191,8 @@ export default function Onboarding() {
 
           {currentStep === 2 && (
             <RadioGroup
-              value={formData.fitnessGoal}
-              onValueChange={(value) => setFormData({ ...formData, fitnessGoal: value })}
+              value={formData.goalPrimary}
+              onValueChange={(value) => setFormData({ ...formData, goalPrimary: value })}
               className="space-y-3"
             >
               {fitnessGoals.map((goal) => (
@@ -201,11 +200,11 @@ export default function Onboarding() {
                   key={goal.value}
                   className={cn(
                     "flex cursor-pointer items-center space-x-3 rounded-lg border p-4 transition-all",
-                    formData.fitnessGoal === goal.value
+                    formData.goalPrimary === goal.value
                       ? "border-primary bg-accent"
                       : "border-border hover:border-primary/50"
                   )}
-                  onClick={() => setFormData({ ...formData, fitnessGoal: goal.value })}
+                  onClick={() => setFormData({ ...formData, goalPrimary: goal.value })}
                 >
                   <RadioGroupItem value={goal.value} id={goal.value} />
                   <div>
@@ -221,20 +220,20 @@ export default function Onboarding() {
 
           {currentStep === 3 && (
             <RadioGroup
-              value={formData.activityLevel}
-              onValueChange={(value) => setFormData({ ...formData, activityLevel: value })}
+              value={formData.experienceLevel}
+              onValueChange={(value) => setFormData({ ...formData, experienceLevel: value })}
               className="space-y-3"
             >
-              {activityLevels.map((level) => (
+              {experienceLevels.map((level) => (
                 <div
                   key={level.value}
                   className={cn(
                     "flex cursor-pointer items-center space-x-3 rounded-lg border p-4 transition-all",
-                    formData.activityLevel === level.value
+                    formData.experienceLevel === level.value
                       ? "border-primary bg-accent"
                       : "border-border hover:border-primary/50"
                   )}
-                  onClick={() => setFormData({ ...formData, activityLevel: level.value })}
+                  onClick={() => setFormData({ ...formData, experienceLevel: level.value })}
                 >
                   <RadioGroupItem value={level.value} id={level.value} />
                   <div>
