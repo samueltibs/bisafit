@@ -44,8 +44,7 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
       
       if (success) {
         toast({
-          title: "Welcome to BisaFit Premium! 🎉",
-          description: "Your 7-day free trial has started. Enjoy full access!",
+          title: "Trial started — welcome to BisaFit Premium 💪",
         });
         
         if (onClose) {
