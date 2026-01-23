@@ -442,6 +442,8 @@ export function useWorkoutPlayer(workoutId: string | undefined) {
   return {
     ...state,
     isLoading,
+    currentBlockIndex: state.currentBlockIndex,
+    currentItemIndex: state.currentItemIndex,
     getCurrentExercise,
     getCurrentBlock,
     getProgress,

@@ -10,24 +10,35 @@ interface ExerciseCardProps {
   currentSet: number;
   currentRound?: number;
   isActive?: boolean;
+  isPaused?: boolean;
+  bigMode?: boolean;
 }
 
-export function ExerciseCard({ item, block, currentSet, currentRound, isActive }: ExerciseCardProps) {
+export function ExerciseCard({ 
+  item, 
+  block, 
+  currentSet, 
+  currentRound, 
+  isActive, 
+  isPaused,
+  bigMode = false 
+}: ExerciseCardProps) {
   const isStrength = block.type === 'strength';
   const isConditioning = block.type === 'conditioning';
   const hasRounds = block.protocol && block.protocol.rounds > 1;
   const totalSets = item.sets || 1;
 
   const getBlockIcon = () => {
+    const iconClass = bigMode ? "h-6 w-6" : "h-4 w-4";
     switch (block.type) {
       case 'warmup':
-        return <Timer className="h-4 w-4" />;
+        return <Timer className={iconClass} />;
       case 'strength':
-        return <Dumbbell className="h-4 w-4" />;
+        return <Dumbbell className={iconClass} />;
       case 'conditioning':
-        return <Zap className="h-4 w-4" />;
+        return <Zap className={iconClass} />;
       case 'cooldown':
-        return <RotateCcw className="h-4 w-4" />;
+        return <RotateCcw className={iconClass} />;
     }
   };
 
@@ -44,10 +55,67 @@ export function ExerciseCard({ item, block, currentSet, currentRound, isActive }
     }
   };
 
+  // Big mode - minimal UI
+  if (bigMode) {
+    return (
+      <Card className={cn(
+        "transition-all border-4",
+        isActive && !isPaused && "gradient-primary text-primary-foreground border-primary",
+        isActive && isPaused && "bg-muted text-muted-foreground border-muted-foreground/50",
+        !isActive && "border-border"
+      )}>
+        <CardContent className="p-8 text-center">
+          {/* Exercise name - extra large */}
+          <h2 className="text-4xl font-bold mb-6">{item.name}</h2>
+
+          {/* Key metrics only */}
+          <div className="flex items-center justify-center gap-8 text-2xl">
+            {isStrength && item.sets && (
+              <div className="text-center">
+                <span className="font-bold text-4xl">{currentSet}</span>
+                <span className="opacity-70">/{totalSets}</span>
+                <span className="block text-sm opacity-60 mt-1">sets</span>
+              </div>
+            )}
+            {item.reps && (
+              <div className="text-center">
+                <span className="font-bold text-4xl">{item.reps}</span>
+                <span className="block text-sm opacity-60 mt-1">reps</span>
+              </div>
+            )}
+            {item.duration_sec && !isStrength && (
+              <div className="text-center">
+                <span className="font-bold text-4xl">{item.duration_sec}</span>
+                <span className="block text-sm opacity-60 mt-1">sec</span>
+              </div>
+            )}
+            {isConditioning && hasRounds && (
+              <div className="text-center">
+                <span className="font-bold text-4xl">{currentRound}</span>
+                <span className="opacity-70">/{block.protocol!.rounds}</span>
+                <span className="block text-sm opacity-60 mt-1">rounds</span>
+              </div>
+            )}
+          </div>
+
+          {/* Paused indicator */}
+          {isPaused && (
+            <div className="mt-6 text-xl font-semibold uppercase tracking-wider animate-pulse">
+              Paused
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Normal mode
   return (
     <Card className={cn(
       "transition-all border-2",
-      isActive ? "gradient-primary text-primary-foreground border-primary" : "border-border"
+      isActive && !isPaused && "gradient-primary text-primary-foreground border-primary",
+      isActive && isPaused && "bg-muted text-muted-foreground border-muted-foreground/50",
+      !isActive && "border-border"
     )}>
       <CardContent className="p-6 text-center">
         {/* Block badge */}
@@ -55,7 +123,8 @@ export function ExerciseCard({ item, block, currentSet, currentRound, isActive }
           variant={isActive ? "secondary" : "outline"}
           className={cn(
             "mb-4 gap-1.5",
-            isActive && "bg-primary-foreground/20 text-primary-foreground border-0"
+            isActive && !isPaused && "bg-primary-foreground/20 text-primary-foreground border-0",
+            isPaused && "bg-muted-foreground/20"
           )}
         >
           {getBlockIcon()}
@@ -121,6 +190,13 @@ export function ExerciseCard({ item, block, currentSet, currentRound, isActive }
           )}>
             {item.instructions}
           </p>
+        )}
+
+        {/* Paused indicator */}
+        {isPaused && (
+          <div className="mt-4 text-sm font-semibold uppercase tracking-wider animate-pulse">
+            Paused
+          </div>
         )}
       </CardContent>
     </Card>
