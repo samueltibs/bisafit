@@ -694,7 +694,6 @@ export default function Nutrition() {
                 <CuisineThemeSelector
                   selectedCuisine={weekCuisineTheme}
                   onCuisineChange={setWeekCuisineTheme}
-                  savedPreferences={savedCuisinePrefs}
                   compact
                 />
                 {mealPlan && (
@@ -739,7 +738,6 @@ export default function Nutrition() {
                     <CuisineThemeSelector
                       selectedCuisine={weekCuisineTheme}
                       onCuisineChange={setWeekCuisineTheme}
-                      savedPreferences={savedCuisinePrefs}
                     />
                     <Button 
                       onClick={() => handleGenerateMealPlan(7)} 
