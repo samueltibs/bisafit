@@ -63,6 +63,7 @@ interface UsePlanResult {
   plan: Plan | null;
   planJson: PlanJson | null;
   workouts: Workout[];
+  userProfile: UserProfile | null;
   loading: boolean;
   error: Error | null;
   refetch: () => Promise<void>;
@@ -584,6 +585,7 @@ export function usePlan(): UsePlanResult {
     plan,
     planJson,
     workouts,
+    userProfile,
     loading,
     error,
     refetch: fetchPlan,

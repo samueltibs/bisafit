@@ -759,14 +759,11 @@ BLOCK STRUCTURE:
 - Week 3: Peak phase, highest intensity
 - Week 4: Deload/testing, reduce volume for recovery
 
-COACH NOTES GUIDELINES:
-- Do NOT reference specific block numbers in coach_notes (e.g., "Block 5", "Training Block #3")
-- Instead, use context-aware phrases like:
-  - "Welcome back — here's the focus for this block"
-  - "In this block, we're building on your progress by..."
-  - "This training block is designed to..."
-  - "Based on your recent performance, this block will..."
-- Reference the user's actual progress and what they'll be working on, not ordinal numbers.`;
+COACH NOTES GUIDELINES (CRITICAL):
+- ALWAYS start coach_notes with: "Welcome back, {first_name}." (use user's actual first name)
+- Do NOT reference block numbers, block indices, or progression counts
+- Immediately follow the greeting with the training focus
+- Example: "Welcome back, John. This block focuses on building strength with progressive overload."`;
 }
 
 function buildProgressionPrompt(
@@ -805,7 +802,12 @@ ${injuries.map(i => `- ${i}`).join("\n")}`;
     .map(e => `- ${e.name}: performed ${e.frequency}x${e.avg_weight ? `, avg weight: ${e.avg_weight.toFixed(1)}kg` : ""}`)
     .join("\n");
 
+  const firstName = profile.full_name?.split(' ')[0] || 'there';
+
   return `Create a new training block based on previous performance.
+
+USER FIRST NAME: ${firstName}
+- CRITICAL: Start coach_notes with "Welcome back, ${firstName}."
 
 PREVIOUS BLOCK SUMMARY:
 - Progression strategy used: ${previousPlan.progression_strategy}

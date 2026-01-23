@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -22,6 +22,7 @@ import { useProgressionEngine, type BlockFeedback } from '@/hooks/useProgression
 import { BlockFeedbackDialog, NextBlockSuccessDialog } from '@/components/progression';
 import { BlockSelector, ScheduleMismatchBanner, ScheduleDebugBanner } from '@/components/plan';
 import type { DisplayWorkout, WorkoutType } from '@/types/plan';
+import { transformCoachNotes, getFirstName } from '@/lib/coachNotesUtils';
 
 const typeColors: Record<WorkoutType, string> = {
   strength: 'bg-primary/10 text-primary',
@@ -37,6 +38,7 @@ export default function Plan() {
   const { 
     plan, 
     planJson, 
+    userProfile,
     loading, 
     getWorkoutsForWeek, 
     refetch, 
@@ -55,6 +57,13 @@ export default function Plan() {
     repairPlanDates,
     reindexPlans,
   } = usePlan();
+
+  // Transform coach notes to use consistent greeting
+  const displayCoachNotes = useMemo(() => {
+    if (!planJson?.coach_notes) return null;
+    const firstName = getFirstName(userProfile?.full_name);
+    return transformCoachNotes(planJson.coach_notes, firstName);
+  }, [planJson?.coach_notes, userProfile?.full_name]);
   const { generatePlan, isGenerating } = usePlanGeneration();
   // For non-current plans, default to week 0 (Week 1) instead of using today's date
   const [weekOffset, setWeekOffset] = useState(0);
@@ -404,7 +413,7 @@ export default function Plan() {
         )}
 
         {/* Plan Header */}
-        {planJson?.coach_notes && (
+        {displayCoachNotes && (
           <Card className="border-primary/20 bg-primary/5 animate-fade-in">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
@@ -413,7 +422,7 @@ export default function Plan() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-primary">Coach Notes</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{planJson.coach_notes}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{displayCoachNotes}</p>
                 </div>
               </div>
             </CardContent>
