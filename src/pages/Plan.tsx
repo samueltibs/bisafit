@@ -53,6 +53,7 @@ export default function Plan() {
     startBlock,
     markBlockComplete,
     repairPlanDates,
+    reindexPlans,
   } = usePlan();
   const { generatePlan, isGenerating } = usePlanGeneration();
   // For non-current plans, default to week 0 (Week 1) instead of using today's date
@@ -92,23 +93,18 @@ export default function Plan() {
     }
   }, [plan, planJson, checkEligibility]);
 
-  // Auto-repair plan dates on initial load
+  // Auto-reindex plans on initial load to fix block numbers and dates
   useEffect(() => {
     if (!loading && allPlans.length > 0 && !hasRepairedDates) {
-      // Check if any plan has missing or suspicious start_date
-      const needsRepair = allPlans.some(p => !p.startDate);
-      if (needsRepair) {
-        repairPlanDates().then(count => {
-          if (count > 0) {
-            console.log(`Auto-repaired ${count} plan date(s)`);
-          }
-          setHasRepairedDates(true);
-        });
-      } else {
+      // Always run reindex to ensure block_number and start_date are correct
+      reindexPlans().then(result => {
+        if (result.updated > 0) {
+          console.log(`Reindexed ${result.updated} plan(s), currentPlanChanged=${result.currentPlanChanged}`);
+        }
         setHasRepairedDates(true);
-      }
+      });
     }
-  }, [loading, allPlans, hasRepairedDates, repairPlanDates]);
+  }, [loading, allPlans.length, hasRepairedDates, reindexPlans]);
 
   // Calculate week start based on plan start + current week offset
   // For non-current plans, start from Week 1 (offset 0)
