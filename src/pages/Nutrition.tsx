@@ -13,7 +13,7 @@ import {
   Camera, ShoppingBasket
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useNutrition, type Meal, type DayPlan } from '@/hooks/useNutrition';
+import { useNutrition, type Meal, type DayPlan, type NutritionTargets } from '@/hooks/useNutrition';
 import { FridgeScanFlow } from '@/components/nutrition/FridgeScanFlow';
 import { CuisineThemeSelector } from '@/components/nutrition/CuisineThemeSelector';
 import { useIngredientSession } from '@/hooks/useIngredientSession';
@@ -210,6 +210,7 @@ export default function Nutrition() {
     swapMeal,
     swappingMeal,
     refetch,
+    retryTargets,
   } = useNutrition();
 
   const [selectedDay, setSelectedDay] = useState(0);
@@ -219,10 +220,11 @@ export default function Nutrition() {
   
   const { hasActiveSession, getIngredientNames, clearIngredients } = useIngredientSession();
   
-  const targets = profile?.targets_json;
+  const targets = profile?.targets_json as NutritionTargets | null;
   const mealPlan = profile?.meal_plan_json;
   const isSimpleMode = profile?.nutrition_goal_style !== 'macros';
   const savedCuisinePrefs = (profile?.cuisine_preferences_json || []) as string[];
+  const isFallbackTargets = targets?.source === 'fallback';
 
   // Generate meal plan from saved ingredients
   const handleGeneratePlanFromIngredients = useCallback(async () => {
@@ -353,33 +355,65 @@ export default function Nutrition() {
           </Card>
         ) : (
           <>
+            {/* Fallback Warning */}
+            {isFallbackTargets && (
+              <Alert className="border-destructive/50 bg-destructive/10 animate-slide-up">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <AlertDescription className="text-sm flex items-center justify-between flex-wrap gap-2">
+                  <span>Using estimated targets. Personalized AI targets temporarily unavailable.</span>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={retryTargets}
+                    disabled={generatingTargets}
+                    className="gap-2 shrink-0"
+                  >
+                    {generatingTargets ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    Try again
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Calorie Target */}
-            <Card className="gradient-primary text-primary-foreground animate-slide-up">
+            <Card className={cn(
+              "animate-slide-up",
+              isFallbackTargets 
+                ? "bg-muted/50 border-dashed" 
+                : "gradient-primary text-primary-foreground"
+            )}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <p className="text-sm opacity-90">Daily Calorie Target</p>
+                    <p className={cn("text-sm", isFallbackTargets ? "text-muted-foreground" : "opacity-90")}>
+                      Daily Calorie Target {isFallbackTargets && <Badge variant="secondary" className="ml-2 text-xs">Estimated</Badge>}
+                    </p>
                     <div className="flex items-baseline gap-1">
                       <span className="text-3xl font-bold">
                         {targets.calories_target.low}–{targets.calories_target.high}
                       </span>
-                      <span className="text-lg opacity-80">kcal</span>
+                      <span className={cn("text-lg", isFallbackTargets ? "text-muted-foreground" : "opacity-80")}>kcal</span>
                     </div>
                   </div>
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-foreground/20">
-                    <Flame className="h-7 w-7" />
+                  <div className={cn(
+                    "flex h-14 w-14 items-center justify-center rounded-full",
+                    isFallbackTargets ? "bg-muted" : "bg-primary-foreground/20"
+                  )}>
+                    <Flame className={cn("h-7 w-7", isFallbackTargets && "text-muted-foreground")} />
                   </div>
                 </div>
-                <Button 
-                  variant="secondary" 
-                  size="sm" 
-                  className="gap-2"
-                  onClick={generateTargets}
-                  disabled={generatingTargets}
-                >
-                  {generatingTargets ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                  Recalculate
-                </Button>
+                {!isFallbackTargets && (
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    className="gap-2"
+                    onClick={generateTargets}
+                    disabled={generatingTargets}
+                  >
+                    {generatingTargets ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    Recalculate
+                  </Button>
+                )}
               </CardContent>
             </Card>
 

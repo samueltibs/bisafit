@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface NutritionTargets {
   calories_target: { low: number; high: number };
@@ -10,6 +11,7 @@ export interface NutritionTargets {
   fat_g_optional?: number | null;
   water_liters: number;
   notes: string;
+  source?: 'ai' | 'fallback';
 }
 
 export interface Meal {
@@ -62,13 +64,14 @@ interface UseNutritionResult {
   loading: boolean;
   error: Error | null;
   refetch: () => Promise<void>;
-  generateTargets: () => Promise<boolean>;
+  generateTargets: () => Promise<{ success: boolean; isFallback: boolean }>;
   generatingTargets: boolean;
   generateMealPlan: (days?: number) => Promise<boolean>;
   generatingMealPlan: boolean;
   swapMeal: (dayIndex: number, mealIndex: number, isSnack?: boolean) => Promise<boolean>;
   swappingMeal: boolean;
   updatePreferences: (prefs: Partial<NutritionProfile>) => Promise<boolean>;
+  retryTargets: () => Promise<{ success: boolean; isFallback: boolean }>;
 }
 
 export function useNutrition(): UseNutritionResult {
@@ -152,36 +155,176 @@ export function useNutrition(): UseNutritionResult {
     fetchProfile();
   }, [fetchProfile]);
 
-  const generateTargets = useCallback(async (): Promise<boolean> => {
+  // Compute fallback targets based on user profile
+  const computeFallbackTargets = useCallback(async (): Promise<NutritionTargets> => {
+    // Try to get user profile for weight and goal
+    const { data: userProfile } = await supabase
+      .from('users_profile')
+      .select('weight_kg, goal_primary')
+      .eq('id', user?.id)
+      .maybeSingle();
+
+    const weightKg = userProfile?.weight_kg || null;
+    const goalPrimary = userProfile?.goal_primary || 'maintenance';
+
+    // Protein: weight_kg * 1.8, or 140g default
+    const proteinG = weightKg ? Math.round(Number(weightKg) * 1.8) : 140;
+
+    // Calorie ranges based on goal
+    let caloriesLow: number;
+    let caloriesHigh: number;
+    
+    if (goalPrimary === 'fat_loss' || goalPrimary === 'lose_weight') {
+      caloriesLow = 2000;
+      caloriesHigh = 2300;
+    } else if (goalPrimary === 'muscle_gain' || goalPrimary === 'gain_weight' || goalPrimary === 'build_muscle') {
+      caloriesLow = 2600;
+      caloriesHigh = 2900;
+    } else {
+      // maintain / maintenance / default
+      caloriesLow = 2300;
+      caloriesHigh = 2600;
+    }
+
+    return {
+      calories_target: { low: caloriesLow, high: caloriesHigh },
+      protein_g: proteinG,
+      water_liters: 3.0,
+      notes: 'These are estimated targets. Tap "Try again" to generate personalized AI targets when available.',
+      source: 'fallback',
+    };
+  }, [user]);
+
+  // Save fallback targets to database
+  const saveFallbackTargets = useCallback(async (targets: NutritionTargets): Promise<boolean> => {
     if (!user) return false;
+
+    // First check if profile exists
+    const { data: existing } = await supabase
+      .from('nutrition_profiles')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    // Cast targets to Json type for Supabase - use explicit Json cast
+    const targetsJson = targets as unknown as Json;
+
+    if (existing) {
+      // Update existing
+      const { error } = await supabase
+        .from('nutrition_profiles')
+        .update({ targets_json: targetsJson })
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error saving fallback targets:', error);
+        return false;
+      }
+    } else {
+      // Insert new
+      const { error } = await supabase
+        .from('nutrition_profiles')
+        .insert([{ 
+          user_id: user.id, 
+          targets_json: targetsJson 
+        }]);
+
+      if (error) {
+        console.error('Error saving fallback targets:', error);
+        return false;
+      }
+    }
+
+    await fetchProfile();
+    return true;
+  }, [user, fetchProfile]);
+
+  const generateTargets = useCallback(async (): Promise<{ success: boolean; isFallback: boolean }> => {
+    if (!user) return { success: false, isFallback: false };
 
     try {
       setGeneratingTargets(true);
       
       const { data, error } = await supabase.functions.invoke('generate-nutrition-targets', {});
 
+      // Check for 5xx errors or deployment unavailability
       if (error) {
         console.error('Generate targets error:', error);
+        
+        // Check if it's a server error (5xx) or network/deployment issue
+        const isServerError = error.message?.includes('5') || 
+                              error.message?.toLowerCase().includes('unavailable') ||
+                              error.message?.toLowerCase().includes('internal') ||
+                              error.message?.toLowerCase().includes('failed to fetch');
+        
+        if (isServerError) {
+          // Use fallback
+          const fallbackTargets = await computeFallbackTargets();
+          const saved = await saveFallbackTargets(fallbackTargets);
+          
+          if (saved) {
+            toast('Nutrition targets are temporarily unavailable. Using estimated targets for now.', {
+              icon: '⚠️',
+              duration: 5000,
+            });
+            return { success: true, isFallback: true };
+          }
+        }
+        
         toast.error(error.message || 'Failed to generate targets');
-        return false;
+        return { success: false, isFallback: false };
       }
 
       if (data?.error) {
+        // Also check for error responses from the function itself
+        const fallbackTargets = await computeFallbackTargets();
+        const saved = await saveFallbackTargets(fallbackTargets);
+        
+        if (saved) {
+          toast('Nutrition targets are temporarily unavailable. Using estimated targets for now.', {
+            icon: '⚠️',
+            duration: 5000,
+          });
+          return { success: true, isFallback: true };
+        }
+        
         toast.error(data.error);
-        return false;
+        return { success: false, isFallback: false };
       }
 
       toast.success('Nutrition targets generated!');
       await fetchProfile();
-      return true;
+      return { success: true, isFallback: false };
     } catch (err) {
       console.error('Generate targets error:', err);
+      
+      // Network error or other failure - use fallback
+      try {
+        const fallbackTargets = await computeFallbackTargets();
+        const saved = await saveFallbackTargets(fallbackTargets);
+        
+        if (saved) {
+          toast('Nutrition targets are temporarily unavailable. Using estimated targets for now.', {
+            icon: '⚠️',
+            duration: 5000,
+          });
+          return { success: true, isFallback: true };
+        }
+      } catch (fallbackErr) {
+        console.error('Fallback computation error:', fallbackErr);
+      }
+      
       toast.error('Failed to generate nutrition targets');
-      return false;
+      return { success: false, isFallback: false };
     } finally {
       setGeneratingTargets(false);
     }
-  }, [user, fetchProfile]);
+  }, [user, fetchProfile, computeFallbackTargets, saveFallbackTargets]);
+
+  // Retry function - specifically tries AI again
+  const retryTargets = useCallback(async (): Promise<{ success: boolean; isFallback: boolean }> => {
+    return generateTargets();
+  }, [generateTargets]);
 
   const generateMealPlan = useCallback(async (days = 7): Promise<boolean> => {
     if (!user) return false;
@@ -282,5 +425,6 @@ export function useNutrition(): UseNutritionResult {
     swapMeal,
     swappingMeal,
     updatePreferences,
+    retryTargets,
   };
 }
