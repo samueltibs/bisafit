@@ -9,32 +9,38 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dumbbell, ChevronRight, ChevronLeft, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { OnboardingProgress } from '@/components/onboarding/OnboardingProgress';
+import { OnboardingProgress, StepAboutYou } from '@/components/onboarding';
 import { StepGoals } from '@/components/onboarding/StepGoals';
 import { StepSchedule } from '@/components/onboarding/StepSchedule';
 import { StepEquipment } from '@/components/onboarding/StepEquipment';
 import { StepHealth } from '@/components/onboarding/StepHealth';
 import { StepNutrition } from '@/components/onboarding/StepNutrition';
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 interface FormData {
-  // Step 1: Goals
+  // Step 1: About You
+  fullName: string;
+  gender: string;
+  heightCm: number | null;
+  weightKg: number | null;
+  unitPreference: string;
+  // Step 2: Goals
   goalPrimary: string;
   experienceLevel: string;
-  // Step 2: Schedule
+  // Step 3: Schedule
   daysPerWeek: number;
   sessionMinutes: number;
   restDay: string;
-  // Step 3: Equipment
+  // Step 4: Equipment
   equipment: string[];
-  // Step 4: Health
+  // Step 5: Health
   constraints: {
     injury_flags: string[];
     preferences: string[];
     notes: string;
   };
-  // Step 5: Nutrition
+  // Step 6: Nutrition
   nutritionPreferences: {
     goal_style: string;
     dietary: string[];
@@ -44,6 +50,11 @@ interface FormData {
 }
 
 const initialFormData: FormData = {
+  fullName: '',
+  gender: '',
+  heightCm: null,
+  weightKg: null,
+  unitPreference: 'metric',
   goalPrimary: '',
   experienceLevel: '',
   daysPerWeek: 4,
@@ -87,6 +98,11 @@ export default function Onboarding() {
 
       setFormData((prev) => ({
         ...prev,
+        fullName: profile.full_name || '',
+        gender: profile.gender || '',
+        heightCm: profile.height_cm || null,
+        weightKg: profile.weight_kg ? Number(profile.weight_kg) : null,
+        unitPreference: (profile as any).unit_preference || 'metric',
         goalPrimary: profile.goal_primary || '',
         experienceLevel: profile.experience_level || '',
         daysPerWeek: profile.days_per_week || 4,
@@ -130,14 +146,16 @@ export default function Onboarding() {
   const canProceed = (): boolean => {
     switch (currentStep) {
       case 1:
-        return formData.goalPrimary.length > 0 && formData.experienceLevel.length > 0;
+        return formData.fullName.trim().length > 0;
       case 2:
-        return formData.daysPerWeek >= 2 && formData.sessionMinutes >= 15;
+        return formData.goalPrimary.length > 0 && formData.experienceLevel.length > 0;
       case 3:
-        return formData.equipment.length > 0;
+        return formData.daysPerWeek >= 2 && formData.sessionMinutes >= 15;
       case 4:
-        return true; // Health constraints are optional
+        return formData.equipment.length > 0;
       case 5:
+        return true; // Health constraints are optional
+      case 6:
         return formData.nutritionPreferences.goal_style.length > 0;
       default:
         return true;
@@ -165,6 +183,11 @@ export default function Onboarding() {
     try {
       // Update user profile
       const profileSuccess = await update({
+        full_name: formData.fullName.trim(),
+        gender: formData.gender || null,
+        height_cm: formData.heightCm,
+        weight_kg: formData.weightKg,
+        unit_preference: formData.unitPreference,
         goal_primary: formData.goalPrimary,
         experience_level: formData.experienceLevel,
         days_per_week: formData.daysPerWeek,
@@ -172,7 +195,7 @@ export default function Onboarding() {
         rest_day: formData.restDay,
         equipment_json: formData.equipment,
         constraints_json: formData.constraints,
-      });
+      } as any);
 
       if (!profileSuccess) {
         throw new Error('Failed to save profile - update returned false');
@@ -236,6 +259,21 @@ export default function Onboarding() {
       <Card className="flex-1 overflow-hidden border-border">
         <CardContent className="p-4 h-full overflow-y-auto">
           {currentStep === 1 && (
+            <StepAboutYou
+              fullName={formData.fullName}
+              gender={formData.gender}
+              heightCm={formData.heightCm}
+              weightKg={formData.weightKg}
+              unitPreference={formData.unitPreference}
+              onFullNameChange={(v) => setFormData({ ...formData, fullName: v })}
+              onGenderChange={(v) => setFormData({ ...formData, gender: v })}
+              onHeightChange={(v) => setFormData({ ...formData, heightCm: v })}
+              onWeightChange={(v) => setFormData({ ...formData, weightKg: v })}
+              onUnitPreferenceChange={(v) => setFormData({ ...formData, unitPreference: v })}
+            />
+          )}
+
+          {currentStep === 2 && (
             <StepGoals
               goalPrimary={formData.goalPrimary}
               experienceLevel={formData.experienceLevel}
@@ -244,7 +282,7 @@ export default function Onboarding() {
             />
           )}
 
-          {currentStep === 2 && (
+          {currentStep === 3 && (
             <StepSchedule
               daysPerWeek={formData.daysPerWeek}
               sessionMinutes={formData.sessionMinutes}
@@ -255,21 +293,21 @@ export default function Onboarding() {
             />
           )}
 
-          {currentStep === 3 && (
+          {currentStep === 4 && (
             <StepEquipment
               equipment={formData.equipment}
               onEquipmentChange={(v) => setFormData({ ...formData, equipment: v })}
             />
           )}
 
-          {currentStep === 4 && (
+          {currentStep === 5 && (
             <StepHealth
               constraints={formData.constraints}
               onConstraintsChange={(v) => setFormData({ ...formData, constraints: v })}
             />
           )}
 
-          {currentStep === 5 && (
+          {currentStep === 6 && (
             <StepNutrition
               preferences={formData.nutritionPreferences}
               onPreferencesChange={(v) => setFormData({ ...formData, nutritionPreferences: v })}

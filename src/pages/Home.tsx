@@ -18,7 +18,8 @@ export default function Home() {
     else setGreeting('Good evening');
   }, []);
 
-  const firstName = profile?.full_name?.split(' ')[0] || 'there';
+  const firstName = profile?.full_name?.split(' ')[0] || '';
+  const displayName = firstName || 'there';
 
   // Mock data for today's summary
   const todayStats = {
@@ -33,7 +34,9 @@ export default function Home() {
         {/* Greeting Section */}
         <div className="animate-fade-in">
           <p className="text-muted-foreground">{greeting}</p>
-          <h1 className="text-2xl font-bold text-foreground">{firstName} 👋</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            Hi, {displayName} 👋
+          </h1>
         </div>
 
         {/* Daily Progress Card */}

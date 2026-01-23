@@ -251,6 +251,7 @@ export type Database = {
           is_pro: boolean | null
           rest_day: string | null
           session_minutes: number | null
+          unit_preference: string | null
           updated_at: string | null
           weight_kg: number | null
         }
@@ -268,6 +269,7 @@ export type Database = {
           is_pro?: boolean | null
           rest_day?: string | null
           session_minutes?: number | null
+          unit_preference?: string | null
           updated_at?: string | null
           weight_kg?: number | null
         }
@@ -285,6 +287,7 @@ export type Database = {
           is_pro?: boolean | null
           rest_day?: string | null
           session_minutes?: number | null
+          unit_preference?: string | null
           updated_at?: string | null
           weight_kg?: number | null
         }

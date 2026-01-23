@@ -1,12 +1,13 @@
 import { cn } from '@/lib/utils';
-import { Target, Calendar, Dumbbell, Heart, Utensils } from 'lucide-react';
+import { User, Target, Calendar, Dumbbell, Heart, Utensils } from 'lucide-react';
 
 const steps = [
-  { id: 1, title: 'Goals', icon: Target },
-  { id: 2, title: 'Schedule', icon: Calendar },
-  { id: 3, title: 'Equipment', icon: Dumbbell },
-  { id: 4, title: 'Health', icon: Heart },
-  { id: 5, title: 'Nutrition', icon: Utensils },
+  { id: 1, title: 'About You', icon: User },
+  { id: 2, title: 'Goals', icon: Target },
+  { id: 3, title: 'Schedule', icon: Calendar },
+  { id: 4, title: 'Equipment', icon: Dumbbell },
+  { id: 5, title: 'Health', icon: Heart },
+  { id: 6, title: 'Nutrition', icon: Utensils },
 ];
 
 interface OnboardingProgressProps {
@@ -21,18 +22,18 @@ export function OnboardingProgress({ currentStep }: OnboardingProgressProps) {
           <div key={step.id} className="flex items-center">
             <div
               className={cn(
-                'flex h-10 w-10 items-center justify-center rounded-full transition-all',
+                'flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-all',
                 currentStep >= step.id
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-muted text-muted-foreground'
               )}
             >
-              <step.icon className="h-5 w-5" />
+              <step.icon className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             {index < steps.length - 1 && (
               <div
                 className={cn(
-                  'h-0.5 w-8 sm:w-12 mx-1',
+                  'h-0.5 w-4 sm:w-8 mx-0.5 sm:mx-1',
                   currentStep > step.id ? 'bg-primary' : 'bg-muted'
                 )}
               />
