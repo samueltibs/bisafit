@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { 
   Camera, Upload, X, Loader2, ChevronDown, Plus, 
   Trash2, CheckCircle2, UtensilsCrossed, Clock, Sparkles,
-  ShoppingBasket, AlertTriangle, RefreshCw
+  ShoppingBasket, AlertTriangle, RefreshCw, Receipt
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,7 +42,8 @@ interface MealsResult {
   error?: string;
 }
 
-type FlowStep = 'upload' | 'review' | 'meals';
+type FlowStep = 'select-mode' | 'upload' | 'review' | 'meals';
+type ScanMode = 'fridge' | 'receipt';
 
 interface FridgeScanFlowProps {
   open: boolean;
@@ -51,22 +52,30 @@ interface FridgeScanFlowProps {
 }
 
 export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeScanFlowProps) {
-  const [step, setStep] = useState<FlowStep>('upload');
+  const [step, setStep] = useState<FlowStep>('select-mode');
+  const [scanMode, setScanMode] = useState<ScanMode>('fridge');
   const [images, setImages] = useState<string[]>([]);
   const [detecting, setDetecting] = useState(false);
   const [ingredients, setIngredients] = useState<DetectedIngredient[]>([]);
   const [detectionNotes, setDetectionNotes] = useState('');
+  const [ignoredItems, setIgnoredItems] = useState<string[]>([]);
+  const [lowConfidenceWarning, setLowConfidenceWarning] = useState(false);
   const [newIngredient, setNewIngredient] = useState('');
   const [generating, setGenerating] = useState(false);
   const [mealsResult, setMealsResult] = useState<MealsResult | null>(null);
   const [swappingIndex, setSwappingIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const maxImages = scanMode === 'receipt' ? 2 : 3;
+
   const resetFlow = () => {
-    setStep('upload');
+    setStep('select-mode');
+    setScanMode('fridge');
     setImages([]);
     setIngredients([]);
     setDetectionNotes('');
+    setIgnoredItems([]);
+    setLowConfidenceWarning(false);
     setNewIngredient('');
     setMealsResult(null);
     setDetecting(false);
@@ -83,7 +92,7 @@ export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeSc
     if (!files) return;
 
     const newImages: string[] = [];
-    for (let i = 0; i < Math.min(files.length, 3 - images.length); i++) {
+    for (let i = 0; i < Math.min(files.length, maxImages - images.length); i++) {
       const file = files[i];
       if (file.type.startsWith('image/')) {
         const base64 = await fileToBase64(file);
@@ -92,7 +101,7 @@ export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeSc
     }
 
     if (newImages.length > 0) {
-      setImages(prev => [...prev, ...newImages].slice(0, 3));
+      setImages(prev => [...prev, ...newImages].slice(0, maxImages));
     }
   };
 
@@ -117,7 +126,11 @@ export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeSc
 
     setDetecting(true);
     try {
-      const { data, error } = await supabase.functions.invoke('detect-ingredients', {
+      const functionName = scanMode === 'receipt' 
+        ? 'detect-ingredients-from-receipt' 
+        : 'detect-ingredients';
+
+      const { data, error } = await supabase.functions.invoke(functionName, {
         body: { images },
       });
 
@@ -135,10 +148,15 @@ export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeSc
 
       setIngredients(detected);
       setDetectionNotes(data.notes || '');
+      setIgnoredItems(data.ignored_items || []);
+      setLowConfidenceWarning(data.low_confidence_warning || false);
       setStep('review');
 
       if (detected.length === 0) {
-        toast.info('No ingredients detected. Try a clearer photo or add items manually.');
+        const msg = scanMode === 'receipt' 
+          ? 'No food items found on receipt. Try a clearer photo or add items manually.'
+          : 'No ingredients detected. Try a clearer photo or add items manually.';
+        toast.info(msg);
       }
     } catch (err) {
       console.error('Detection error:', err);
@@ -250,31 +268,82 @@ export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeSc
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ShoppingBasket className="h-5 w-5" />
-            {step === 'upload' && 'Scan Your Fridge'}
+            {scanMode === 'receipt' ? <Receipt className="h-5 w-5" /> : <ShoppingBasket className="h-5 w-5" />}
+            {step === 'select-mode' && 'Scan Ingredients'}
+            {step === 'upload' && (scanMode === 'receipt' ? 'Scan Receipt' : 'Scan Your Fridge')}
             {step === 'review' && 'Confirm Ingredients'}
             {step === 'meals' && 'Meal Suggestions'}
           </DialogTitle>
           <DialogDescription>
-            {step === 'upload' && 'Upload photos of your fridge or pantry to get meal ideas'}
+            {step === 'select-mode' && 'Choose how you want to add ingredients'}
+            {step === 'upload' && (scanMode === 'receipt' 
+              ? 'Upload photos of your grocery receipt to extract food items' 
+              : 'Upload photos of your fridge or pantry to get meal ideas')}
             {step === 'review' && 'Review and edit the detected ingredients'}
             {step === 'meals' && 'Meals generated using what you already have'}
           </DialogDescription>
         </DialogHeader>
 
+        {/* Mode Selection Step */}
+        {step === 'select-mode' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => { setScanMode('fridge'); setStep('upload'); }}
+                className="flex flex-col items-center gap-3 p-6 rounded-lg border-2 border-muted hover:border-primary/50 hover:bg-primary/5 transition-colors"
+              >
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Camera className="h-6 w-6 text-primary" />
+                </div>
+                <div className="text-center">
+                  <p className="font-medium text-sm">Scan Fridge</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Photo of fridge or pantry
+                  </p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => { setScanMode('receipt'); setStep('upload'); }}
+                className="flex flex-col items-center gap-3 p-6 rounded-lg border-2 border-muted hover:border-primary/50 hover:bg-primary/5 transition-colors"
+              >
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Receipt className="h-6 w-6 text-primary" />
+                </div>
+                <div className="text-center">
+                  <p className="font-medium text-sm">Scan Receipt</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Photo of grocery receipt
+                  </p>
+                </div>
+              </button>
+            </div>
+
+            <Button variant="outline" onClick={handleClose} className="w-full">
+              Cancel
+            </Button>
+          </div>
+        )}
+
         {/* Upload Step */}
         {step === 'upload' && (
           <div className="space-y-4">
             <Alert className="border-primary/50 bg-primary/5">
-              <Camera className="h-4 w-4 text-primary" />
+              {scanMode === 'receipt' ? (
+                <Receipt className="h-4 w-4 text-primary" />
+              ) : (
+                <Camera className="h-4 w-4 text-primary" />
+              )}
               <AlertDescription className="text-sm">
-                Take clear photos of your fridge shelves and pantry. Images are only used for ingredient detection and are not stored.
+                {scanMode === 'receipt' 
+                  ? 'Take clear photos of your grocery receipt. Only food items will be extracted – prices and non-food items are ignored.'
+                  : 'Take clear photos of your fridge shelves and pantry. Images are only used for ingredient detection and are not stored.'}
               </AlertDescription>
             </Alert>
 
             {/* Image Preview */}
             {images.length > 0 && (
-              <div className="grid grid-cols-3 gap-2">
+              <div className={cn("grid gap-2", scanMode === 'receipt' ? "grid-cols-2" : "grid-cols-3")}>
                 {images.map((img, i) => (
                   <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-muted">
                     <img src={img} alt={`Upload ${i + 1}`} className="w-full h-full object-cover" />
@@ -290,7 +359,7 @@ export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeSc
             )}
 
             {/* Upload Button */}
-            {images.length < 3 && (
+            {images.length < maxImages && (
               <div 
                 onClick={() => fileInputRef.current?.click()}
                 className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
@@ -299,9 +368,11 @@ export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeSc
                   <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
                     <Upload className="h-6 w-6 text-primary" />
                   </div>
-                  <p className="text-sm font-medium">Upload photos</p>
+                  <p className="text-sm font-medium">
+                    {scanMode === 'receipt' ? 'Upload receipt photos' : 'Upload photos'}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    {images.length}/3 photos • JPG, PNG
+                    {images.length}/{maxImages} photos • JPG, PNG
                   </p>
                 </div>
               </div>
@@ -317,8 +388,8 @@ export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeSc
             />
 
             <div className="flex gap-2">
-              <Button variant="outline" onClick={handleClose} className="flex-1">
-                Cancel
+              <Button variant="outline" onClick={() => { setImages([]); setStep('select-mode'); }} className="flex-1">
+                Back
               </Button>
               <Button 
                 onClick={detectIngredients} 
@@ -344,11 +415,40 @@ export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeSc
         {/* Review Step */}
         {step === 'review' && (
           <div className="space-y-4">
+            {lowConfidenceWarning && (
+              <Alert className="border-destructive/50 bg-destructive/10">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <AlertDescription className="text-sm">
+                  Some items had low confidence. Please review carefully and correct any errors.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {detectionNotes && (
               <Alert className="border-muted bg-muted/50">
                 <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                 <AlertDescription className="text-sm">{detectionNotes}</AlertDescription>
               </Alert>
+            )}
+
+            {ignoredItems.length > 0 && (
+              <Collapsible>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground">
+                    <span className="text-xs">{ignoredItems.length} non-food items ignored</span>
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {ignoredItems.map((item, i) => (
+                      <Badge key={i} variant="outline" className="text-xs text-muted-foreground">
+                        {item}
+                      </Badge>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             )}
 
             <div className="space-y-2 max-h-64 overflow-y-auto">
