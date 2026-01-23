@@ -145,7 +145,12 @@ export default function Plan() {
     const result = await generateNextBlock(feedback);
     if (result.success) {
       setShowFeedbackDialog(false);
-      setShowSuccessDialog(true);
+      if (result.existing) {
+        // Plan already exists, just refresh to show it
+        await refetch();
+      } else {
+        setShowSuccessDialog(true);
+      }
     }
   };
 

@@ -19,6 +19,7 @@ interface GenerateNextBlockResult {
   start_date?: string;
   message?: string;
   error?: string;
+  existing?: boolean; // True if plan for this date already exists
   analysis?: {
     adherence_rate: number;
     progression_applied: string;
@@ -187,6 +188,7 @@ export function useProgressionEngine({
         block_number: data.block_number,
         start_date: data.start_date,
         message: data.message,
+        existing: data.existing || false,
         analysis: data.analysis,
       };
 

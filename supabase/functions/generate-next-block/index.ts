@@ -310,7 +310,65 @@ serve(async (req) => {
     }
 
     const currentPlanJson = currentPlan.plan_json as PlanJson;
-    const currentBlockNumber = currentPlanJson.block_number || 1;
+    
+    // CRITICAL: Compute next block number from MAX of all plans, not just current
+    const { data: allPlans } = await supabase
+      .from("plans")
+      .select("plan_json")
+      .eq("user_id", userId);
+    
+    let maxBlockNumber = 0;
+    if (allPlans && allPlans.length > 0) {
+      for (const p of allPlans) {
+        const pJson = p.plan_json as PlanJson;
+        const blockNum = pJson?.block_number || 0;
+        if (blockNum > maxBlockNumber) {
+          maxBlockNumber = blockNum;
+        }
+      }
+    }
+    
+    const newBlockNumber = maxBlockNumber + 1;
+
+    // Calculate end date of current plan (4 weeks from start)
+    const currentStartDate = new Date(currentPlan.start_date);
+    const currentEndDate = new Date(currentStartDate);
+    currentEndDate.setDate(currentEndDate.getDate() + 27); // 4 weeks - 1 day
+    
+    const newStartDate = calculateNextBlockStartDate(
+      currentEndDate.toISOString().split("T")[0],
+      workoutDays
+    );
+    const newStartDateStr = newStartDate.toISOString().split("T")[0];
+
+    // SERVER-SIDE GUARD: Check if a plan with this start_date already exists
+    const { data: existingPlanForDate } = await supabase
+      .from("plans")
+      .select("id, plan_json")
+      .eq("user_id", userId)
+      .eq("start_date", newStartDateStr)
+      .limit(1)
+      .maybeSingle();
+
+    if (existingPlanForDate) {
+      const existingPlanJson = existingPlanForDate.plan_json as PlanJson;
+      console.log("Plan for this start date already exists, returning existing plan");
+      return new Response(JSON.stringify({
+        success: true,
+        plan_id: existingPlanForDate.id,
+        block_number: existingPlanJson.block_number,
+        start_date: newStartDateStr,
+        message: "A plan for this block already exists.",
+        existing: true,
+        analysis: {
+          adherence_rate: 0,
+          progression_applied: "none - existing plan",
+        },
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Get all workout IDs from the current plan
     const workoutIds: string[] = [];
@@ -334,10 +392,12 @@ serve(async (req) => {
     
     // Analyze performance
     const analysis = analyzePerformance(workoutSessions, plannedWorkouts);
+    const currentBlockNumber = currentPlanJson.block_number || 1;
 
     console.log("=== NEXT BLOCK GENERATION ===");
     console.log("User ID:", userId);
     console.log("Current block:", currentBlockNumber);
+    console.log("New block number:", newBlockNumber);
     console.log("Adherence rate:", analysis.adherence_rate);
     console.log("Progression recommendation:", analysis.progression_recommendation);
     console.log("User feedback:", userFeedback);
@@ -349,20 +409,6 @@ serve(async (req) => {
     } else if (userFeedback === "too_easy" && analysis.adherence_rate >= 0.7) {
       finalRecommendation = "increase";
     }
-
-    // Calculate new block number and start date
-    const newBlockNumber = currentBlockNumber + 1;
-    
-    // Calculate end date of current plan (4 weeks from start)
-    const currentStartDate = new Date(currentPlan.start_date);
-    const currentEndDate = new Date(currentStartDate);
-    currentEndDate.setDate(currentEndDate.getDate() + 27); // 4 weeks - 1 day
-    
-    const newStartDate = calculateNextBlockStartDate(
-      currentEndDate.toISOString().split("T")[0],
-      workoutDays
-    );
-    const newStartDateStr = newStartDate.toISOString().split("T")[0];
 
     // Build prompts for AI
     const systemPrompt = buildSystemPrompt();

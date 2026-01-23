@@ -254,19 +254,30 @@ serve(async (req) => {
     console.log("Session minutes:", userProfile.session_minutes);
     console.log("Equipment:", userProfile.equipment_json);
 
-    // Get existing plan to determine block number and handle deletion
+    // CRITICAL: Compute block number from MAX of all existing plans
     const { data: existingPlans } = await supabase
       .from("plans")
-      .select("id")
+      .select("id, plan_json")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
-    let blockNumber = 1;
+    let maxBlockNumber = 0;
+    if (existingPlans && existingPlans.length > 0) {
+      for (const p of existingPlans) {
+        const pJson = p.plan_json as PlanJson;
+        const blockNum = pJson?.block_number || 0;
+        if (blockNum > maxBlockNumber) {
+          maxBlockNumber = blockNum;
+        }
+      }
+    }
+    
+    // When regenerating, we replace the current plan but keep same block number
+    // For first plan, block_number = 1
+    const blockNumber = existingPlans && existingPlans.length > 0 ? maxBlockNumber : 1;
     let completedWorkoutsCount = 0;
 
     if (existingPlans && existingPlans.length > 0) {
-      blockNumber = existingPlans.length + 1;
-      
       // Count completed workouts for progression context
       const { count } = await supabase
         .from("workout_sessions")
@@ -285,14 +296,11 @@ serve(async (req) => {
         .delete()
         .eq("plan_id", mostRecentPlanId);
         
-      // Delete the old plan itself
+      // Delete the old plan itself (regeneration replaces it)
       await supabase
         .from("plans")
         .delete()
         .eq("id", mostRecentPlanId);
-        
-      // Adjust block number since we're replacing
-      blockNumber = existingPlans.length;
     }
 
     // Build the prompt for AI
