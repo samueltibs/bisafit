@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useIngredientSession, type SessionIngredient } from '@/hooks/useIngredientSession';
 
 interface DetectedIngredient {
   name: string;
@@ -48,10 +49,16 @@ type ScanMode = 'fridge' | 'receipt';
 interface FridgeScanFlowProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddToMealPlan?: (meal: GeneratedMeal) => void;
+  onGeneratePlanFromIngredients?: () => Promise<void>;
+  generatingPlan?: boolean;
 }
 
-export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeScanFlowProps) {
+export function FridgeScanFlow({ 
+  open, 
+  onOpenChange, 
+  onGeneratePlanFromIngredients,
+  generatingPlan = false,
+}: FridgeScanFlowProps) {
   const [step, setStep] = useState<FlowStep>('select-mode');
   const [scanMode, setScanMode] = useState<ScanMode>('fridge');
   const [images, setImages] = useState<string[]>([]);
@@ -65,6 +72,8 @@ export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeSc
   const [mealsResult, setMealsResult] = useState<MealsResult | null>(null);
   const [swappingIndex, setSwappingIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const { saveIngredients, clearIngredients } = useIngredientSession();
 
   const maxImages = scanMode === 'receipt' ? 2 : 3;
 
@@ -83,6 +92,15 @@ export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeSc
   };
 
   const handleClose = () => {
+    // Keep ingredients in session when closing from meals step
+    if (step === 'meals' || step === 'review') {
+      const selectedIngredients = ingredients
+        .filter(i => i.selected)
+        .map(i => ({ name: i.name, confidence: i.confidence }));
+      if (selectedIngredients.length > 0) {
+        saveIngredients(selectedIngredients);
+      }
+    }
     resetFlow();
     onOpenChange(false);
   };
@@ -191,13 +209,19 @@ export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeSc
     setNewIngredient('');
   };
 
-  const generateMeals = async () => {
+  const generateMealSuggestions = async () => {
     const selectedIngredients = ingredients.filter(i => i.selected).map(i => i.name);
     
     if (selectedIngredients.length < 2) {
       toast.error('Please select at least 2 ingredients');
       return;
     }
+
+    // Save to session before generating
+    saveIngredients(ingredients.filter(i => i.selected).map(i => ({ 
+      name: i.name, 
+      confidence: i.confidence 
+    })));
 
     setGenerating(true);
     try {
@@ -254,14 +278,24 @@ export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeSc
     }
   };
 
-  const handleAddToMealPlan = (meal: GeneratedMeal) => {
-    if (onAddToMealPlan) {
-      onAddToMealPlan(meal);
-      toast.success(`"${meal.recipe_title}" added to your meal plan!`);
-    } else {
-      toast.info('Feature coming soon!');
+  const handleGeneratePlanFromIngredients = async () => {
+    if (onGeneratePlanFromIngredients) {
+      // Save ingredients to session first
+      saveIngredients(ingredients.filter(i => i.selected).map(i => ({ 
+        name: i.name, 
+        confidence: i.confidence 
+      })));
+      
+      await onGeneratePlanFromIngredients();
+      
+      // Clear session on success
+      clearIngredients();
+      handleClose();
+      toast.success('Meal plan generated using what you already have!');
     }
   };
+
+  const selectedCount = ingredients.filter(i => i.selected).length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -280,7 +314,7 @@ export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeSc
               ? 'Upload photos of your grocery receipt to extract food items' 
               : 'Upload photos of your fridge or pantry to get meal ideas')}
             {step === 'review' && 'Review and edit the detected ingredients'}
-            {step === 'meals' && 'Meals generated using what you already have'}
+            {step === 'meals' && 'Choose how to use your ingredients'}
           </DialogDescription>
         </DialogHeader>
 
@@ -503,8 +537,8 @@ export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeSc
                 Back
               </Button>
               <Button 
-                onClick={generateMeals} 
-                disabled={ingredients.filter(i => i.selected).length < 2 || generating}
+                onClick={generateMealSuggestions} 
+                disabled={selectedCount < 2 || generating}
                 className="flex-1 gap-2"
               >
                 {generating ? (
@@ -515,7 +549,7 @@ export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeSc
                 ) : (
                   <>
                     <UtensilsCrossed className="h-4 w-4" />
-                    Generate Meals
+                    Get Suggestions
                   </>
                 )}
               </Button>
@@ -523,7 +557,7 @@ export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeSc
           </div>
         )}
 
-        {/* Meals Step */}
+        {/* Meals Step - Explicit Choice */}
         {step === 'meals' && mealsResult && (
           <div className="space-y-4">
             <Alert className="border-primary/50 bg-primary/10">
@@ -545,13 +579,12 @@ export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeSc
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
+              <div className="space-y-3 max-h-72 overflow-y-auto">
                 {mealsResult.meals.map((meal, i) => (
                   <MealSuggestionCard
                     key={i}
                     meal={meal}
                     onSwap={() => swapMeal(i)}
-                    onAddToPlan={() => handleAddToMealPlan(meal)}
                     swapping={swappingIndex === i}
                   />
                 ))}
@@ -576,13 +609,36 @@ export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeSc
               </Collapsible>
             )}
 
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep('review')} className="flex-1">
-                Edit Ingredients
-              </Button>
-              <Button onClick={handleClose} className="flex-1">
-                Done
-              </Button>
+            {/* Explicit action buttons */}
+            <div className="space-y-2 pt-2 border-t">
+              {onGeneratePlanFromIngredients && (
+                <Button 
+                  onClick={handleGeneratePlanFromIngredients}
+                  disabled={generatingPlan || selectedCount < 2}
+                  className="w-full gap-2"
+                >
+                  {generatingPlan ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Generating Plan...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      Generate Meal Plan Using These Ingredients
+                    </>
+                  )}
+                </Button>
+              )}
+              
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setStep('review')} className="flex-1">
+                  Edit Ingredients
+                </Button>
+                <Button variant="ghost" onClick={handleClose} className="flex-1">
+                  Close
+                </Button>
+              </div>
             </div>
           </div>
         )}
@@ -594,12 +650,20 @@ export function FridgeScanFlow({ open, onOpenChange, onAddToMealPlan }: FridgeSc
 function MealSuggestionCard({ 
   meal, 
   onSwap, 
-  onAddToPlan, 
   swapping 
 }: { 
-  meal: GeneratedMeal; 
+  meal: {
+    meal_name: string;
+    recipe_title: string;
+    uses_ingredients: string[];
+    missing_optional: string[];
+    ingredients_with_amounts: string[];
+    instructions: string;
+    protein_g_est: number;
+    calories_est: number;
+    prep_time_minutes: number;
+  }; 
   onSwap: () => void; 
-  onAddToPlan: () => void;
   swapping: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -690,15 +754,7 @@ function MealSuggestionCard({
                 ) : (
                   <RefreshCw className="h-3 w-3" />
                 )}
-                Swap
-              </Button>
-              <Button 
-                size="sm" 
-                onClick={(e) => { e.stopPropagation(); onAddToPlan(); }}
-                className="gap-1"
-              >
-                <Plus className="h-3 w-3" />
-                Add to Plan
+                Swap Recipe
               </Button>
             </div>
           </CollapsibleContent>
