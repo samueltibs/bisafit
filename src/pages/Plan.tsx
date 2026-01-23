@@ -300,14 +300,14 @@ export default function Plan() {
                         <p className="font-semibold text-primary">Ready for Your Next Block!</p>
                         <p className="text-sm text-muted-foreground">
                           {eligibility.adherenceRate >= 0.7 
-                            ? `Great work! You've completed ${Math.round(eligibility.adherenceRate * 100)}% of Block ${planJson?.block_number || 1}.`
-                            : `You're in Week 4 of Block ${planJson?.block_number || 1}. Time to plan ahead!`
+                            ? `Great work! You've completed ${Math.round(eligibility.adherenceRate * 100)}% of this training block.`
+                            : `You're in Week 4 of this training block. Time to plan ahead!`
                           }
                         </p>
                       </>
                     ) : (
                       <>
-                        <p className="font-semibold">Block {planJson?.block_number || 1} in Progress</p>
+                        <p className="font-semibold">Current Block in Progress</p>
                         <p className="text-sm text-muted-foreground">
                           Week {currentWeekIndex + 1} of 4 • {eligibility?.completedWorkouts || 0}/{eligibility?.plannedWorkouts || 0} workouts completed
                         </p>
