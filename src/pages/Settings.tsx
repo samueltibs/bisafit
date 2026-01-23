@@ -1,15 +1,22 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { 
   Bell, 
   Moon, 
@@ -20,41 +27,45 @@ import {
   Crown,
   Loader2,
   Edit2,
-  X,
-  Check
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Settings() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, signOut } = useAuth();
-  const { profile, loading, update } = useUserProfile();
+  const { profile, loading, update, refetch } = useUserProfile();
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   
-  // Profile editing state
-  const [isEditing, setIsEditing] = useState(false);
+  // Profile editing modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editForm, setEditForm] = useState({
     fullName: '',
-    gender: '',
-    heightCm: null as number | null,
-    weightKg: null as number | null,
-    unitPreference: 'metric',
+    heightCm: '' as string,
+    weightKg: '' as string,
   });
 
-  // Initialize edit form when profile loads
+  // Auto-open modal if ?edit=true in URL
   useEffect(() => {
-    if (profile) {
+    if (searchParams.get('edit') === 'true' && !loading) {
+      setIsEditModalOpen(true);
+      // Clear the query param
+      setSearchParams({});
+    }
+  }, [searchParams, loading, setSearchParams]);
+
+  // Initialize edit form when modal opens
+  useEffect(() => {
+    if (isEditModalOpen && profile) {
       setEditForm({
         fullName: profile.full_name || '',
-        gender: profile.gender || '',
-        heightCm: profile.height_cm || null,
-        weightKg: profile.weight_kg ? Number(profile.weight_kg) : null,
-        unitPreference: (profile as any).unit_preference || 'metric',
+        heightCm: profile.height_cm ? String(profile.height_cm) : '',
+        weightKg: profile.weight_kg ? String(Number(profile.weight_kg)) : '',
       });
     }
-  }, [profile]);
+  }, [isEditModalOpen, profile]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -62,20 +73,35 @@ export default function Settings() {
     navigate('/auth');
   };
 
+  const handleOpenEditModal = () => {
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+  };
+
   const handleSaveProfile = async () => {
+    if (!editForm.fullName.trim()) {
+      toast.error('Please enter your name');
+      return;
+    }
+
     setIsSaving(true);
     try {
+      const heightValue = editForm.heightCm ? parseInt(editForm.heightCm, 10) : null;
+      const weightValue = editForm.weightKg ? parseFloat(editForm.weightKg) : null;
+
       const success = await update({
-        full_name: editForm.fullName.trim() || null,
-        gender: editForm.gender || null,
-        height_cm: editForm.heightCm,
-        weight_kg: editForm.weightKg,
-        unit_preference: editForm.unitPreference,
-      } as any);
+        full_name: editForm.fullName.trim(),
+        height_cm: isNaN(heightValue as number) ? null : heightValue,
+        weight_kg: isNaN(weightValue as number) ? null : weightValue,
+      });
 
       if (success) {
-        toast.success('Profile updated successfully');
-        setIsEditing(false);
+        await refetch();
+        toast.success('Profile updated successfully!');
+        setIsEditModalOpen(false);
       } else {
         toast.error('Failed to update profile');
       }
@@ -87,23 +113,9 @@ export default function Settings() {
     }
   };
 
-  const handleCancelEdit = () => {
-    // Reset form to current profile values
-    if (profile) {
-      setEditForm({
-        fullName: profile.full_name || '',
-        gender: profile.gender || '',
-        heightCm: profile.height_cm || null,
-        weightKg: profile.weight_kg ? Number(profile.weight_kg) : null,
-        unitPreference: (profile as any).unit_preference || 'metric',
-      });
-    }
-    setIsEditing(false);
-  };
-
   const getInitials = () => {
     if (profile?.full_name) {
-      return profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase();
+      return profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     }
     return user?.email?.[0].toUpperCase() || 'U';
   };
@@ -113,50 +125,6 @@ export default function Settings() {
     muscle_gain: 'Build Muscle',
     endurance: 'Endurance',
     maintenance: 'Maintenance',
-  };
-
-  const genderLabels: Record<string, string> = {
-    male: 'Male',
-    female: 'Female',
-    other: 'Other',
-    prefer_not_to_say: 'Prefer not to say',
-  };
-
-  const isMetric = editForm.unitPreference === 'metric';
-
-  // Convert values for display in edit mode
-  const displayHeight = isMetric
-    ? editForm.heightCm
-    : editForm.heightCm
-    ? Math.round(editForm.heightCm / 2.54)
-    : null;
-
-  const displayWeight = isMetric
-    ? editForm.weightKg
-    : editForm.weightKg
-    ? Math.round(editForm.weightKg * 2.205)
-    : null;
-
-  const handleHeightChange = (value: string) => {
-    if (value === '') {
-      setEditForm({ ...editForm, heightCm: null });
-      return;
-    }
-    const num = parseFloat(value);
-    if (isNaN(num)) return;
-    const cmValue = isMetric ? num : num * 2.54;
-    setEditForm({ ...editForm, heightCm: Math.round(cmValue) });
-  };
-
-  const handleWeightChange = (value: string) => {
-    if (value === '') {
-      setEditForm({ ...editForm, weightKg: null });
-      return;
-    }
-    const num = parseFloat(value);
-    if (isNaN(num)) return;
-    const kgValue = isMetric ? num : num / 2.205;
-    setEditForm({ ...editForm, weightKg: Math.round(kgValue * 10) / 10 });
   };
 
   if (loading) {
@@ -181,7 +149,9 @@ export default function Settings() {
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <h2 className="text-xl font-bold">{profile?.full_name || 'BisaFit User'}</h2>
+              <h2 className="text-xl font-bold">
+                {profile?.full_name?.trim() || 'BisaFit User'}
+              </h2>
               <p className="text-sm text-muted-foreground">{user?.email}</p>
               {profile?.goal_primary && (
                 <p className="mt-1 text-sm text-primary">
@@ -189,132 +159,33 @@ export default function Settings() {
                 </p>
               )}
             </div>
-            {!isEditing && (
-              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-                <Edit2 className="h-4 w-4 mr-1" />
-                Edit
-              </Button>
-            )}
+            <Button variant="outline" size="sm" onClick={handleOpenEditModal}>
+              <Edit2 className="h-4 w-4 mr-1" />
+              Edit
+            </Button>
           </CardContent>
         </Card>
 
-        {/* Editable Profile Section */}
-        {isEditing ? (
-          <Card className="border-border animate-slide-up">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center justify-between">
-                Edit Profile
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={handleCancelEdit} disabled={isSaving}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" onClick={handleSaveProfile} disabled={isSaving}>
-                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Full Name */}
-              <div className="space-y-2">
-                <Label htmlFor="editFullName">Name</Label>
-                <Input
-                  id="editFullName"
-                  placeholder="Enter your name"
-                  value={editForm.fullName}
-                  onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
-                />
-              </div>
-
-              {/* Gender */}
-              <div className="space-y-2">
-                <Label>Gender</Label>
-                <RadioGroup
-                  value={editForm.gender}
-                  onValueChange={(v) => setEditForm({ ...editForm, gender: v })}
-                  className="grid grid-cols-2 gap-2"
-                >
-                  {Object.entries(genderLabels).map(([value, label]) => (
-                    <div key={value} className="flex items-center space-x-2">
-                      <RadioGroupItem value={value} id={`edit-gender-${value}`} />
-                      <Label htmlFor={`edit-gender-${value}`} className="cursor-pointer font-normal text-sm">
-                        {label}
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </div>
-
-              {/* Unit Preference */}
-              <div className="space-y-2">
-                <Label>Unit Preference</Label>
-                <RadioGroup
-                  value={editForm.unitPreference}
-                  onValueChange={(v) => setEditForm({ ...editForm, unitPreference: v })}
-                  className="flex gap-4"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="metric" id="edit-unit-metric" />
-                    <Label htmlFor="edit-unit-metric" className="cursor-pointer font-normal">
-                      Metric (kg, cm)
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="imperial" id="edit-unit-imperial" />
-                    <Label htmlFor="edit-unit-imperial" className="cursor-pointer font-normal">
-                      Imperial (lb, in)
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              {/* Height & Weight */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="editHeight">Height ({isMetric ? 'cm' : 'in'})</Label>
-                  <Input
-                    id="editHeight"
-                    type="number"
-                    placeholder={isMetric ? '170' : '67'}
-                    value={displayHeight ?? ''}
-                    onChange={(e) => handleHeightChange(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editWeight">Weight ({isMetric ? 'kg' : 'lb'})</Label>
-                  <Input
-                    id="editWeight"
-                    type="number"
-                    placeholder={isMetric ? '70' : '154'}
-                    value={displayWeight ?? ''}
-                    onChange={(e) => handleWeightChange(e.target.value)}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          /* Stats Summary (only when not editing) */
-          (profile?.height_cm || profile?.weight_kg) && (
-            <div className="grid grid-cols-2 gap-3 animate-slide-up">
-              {profile.height_cm && (
-                <Card className="border-border">
-                  <CardContent className="p-4 text-center">
-                    <p className="text-2xl font-bold">{profile.height_cm}</p>
-                    <p className="text-sm text-muted-foreground">Height (cm)</p>
-                  </CardContent>
-                </Card>
-              )}
-              {profile.weight_kg && (
-                <Card className="border-border">
-                  <CardContent className="p-4 text-center">
-                    <p className="text-2xl font-bold">{Number(profile.weight_kg)}</p>
-                    <p className="text-sm text-muted-foreground">Weight (kg)</p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )
+        {/* Stats Summary */}
+        {(profile?.height_cm || profile?.weight_kg) && (
+          <div className="grid grid-cols-2 gap-3 animate-slide-up">
+            {profile.height_cm && (
+              <Card className="border-border">
+                <CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold">{profile.height_cm}</p>
+                  <p className="text-sm text-muted-foreground">Height (cm)</p>
+                </CardContent>
+              </Card>
+            )}
+            {profile.weight_kg && (
+              <Card className="border-border">
+                <CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold">{Number(profile.weight_kg)}</p>
+                  <p className="text-sm text-muted-foreground">Weight (kg)</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
 
         {/* Subscription */}
@@ -402,6 +273,72 @@ export default function Settings() {
           BisaFit v1.0.0
         </p>
       </div>
+
+      {/* Edit Profile Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Profile</DialogTitle>
+            <DialogDescription>
+              Update your personal information
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName">
+                Full Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="fullName"
+                placeholder="Enter your full name"
+                value={editForm.fullName}
+                onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="heightCm">Height (cm)</Label>
+                <Input
+                  id="heightCm"
+                  type="number"
+                  placeholder="170"
+                  value={editForm.heightCm}
+                  onChange={(e) => setEditForm({ ...editForm, heightCm: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="weightKg">Weight (kg)</Label>
+                <Input
+                  id="weightKg"
+                  type="number"
+                  step="0.1"
+                  placeholder="70"
+                  value={editForm.weightKg}
+                  onChange={(e) => setEditForm({ ...editForm, weightKg: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={handleCloseEditModal} disabled={isSaving}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveProfile} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
