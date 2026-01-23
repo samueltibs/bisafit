@@ -1,58 +1,149 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { upsertNutritionProfile, getNutritionProfile } from '@/lib/database';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Dumbbell, User, Target, Activity, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Dumbbell, ChevronRight, ChevronLeft, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 
-const steps = [
-  { id: 1, title: 'Personal Info', icon: User },
-  { id: 2, title: 'Your Goals', icon: Target },
-  { id: 3, title: 'Experience', icon: Activity },
-];
+import { OnboardingProgress } from '@/components/onboarding/OnboardingProgress';
+import { StepGoals } from '@/components/onboarding/StepGoals';
+import { StepSchedule } from '@/components/onboarding/StepSchedule';
+import { StepEquipment } from '@/components/onboarding/StepEquipment';
+import { StepHealth } from '@/components/onboarding/StepHealth';
+import { StepNutrition } from '@/components/onboarding/StepNutrition';
 
-const fitnessGoals = [
-  { value: 'fat_loss', label: 'Fat Loss', description: 'Burn fat and slim down' },
-  { value: 'muscle_gain', label: 'Build Muscle', description: 'Gain strength and size' },
-  { value: 'endurance', label: 'Endurance', description: 'Improve stamina & cardio' },
-  { value: 'maintenance', label: 'Maintenance', description: 'Maintain current fitness' },
-];
+const TOTAL_STEPS = 5;
 
-const experienceLevels = [
-  { value: 'beginner', label: 'Beginner', description: 'New to fitness or returning after a break' },
-  { value: 'intermediate', label: 'Intermediate', description: '1-3 years of consistent training' },
-  { value: 'advanced', label: 'Advanced', description: '3+ years of serious training' },
-];
+interface FormData {
+  // Step 1: Goals
+  goalPrimary: string;
+  experienceLevel: string;
+  // Step 2: Schedule
+  daysPerWeek: number;
+  sessionMinutes: number;
+  restDay: string;
+  // Step 3: Equipment
+  equipment: string[];
+  // Step 4: Health
+  constraints: {
+    injury_flags: string[];
+    preferences: string[];
+    notes: string;
+  };
+  // Step 5: Nutrition
+  nutritionPreferences: {
+    goal_style: string;
+    dietary: string[];
+    allergies: string;
+    protein_emphasis: string;
+  };
+}
+
+const initialFormData: FormData = {
+  goalPrimary: '',
+  experienceLevel: '',
+  daysPerWeek: 4,
+  sessionMinutes: 45,
+  restDay: 'Tuesday',
+  equipment: ['bodyweight'],
+  constraints: {
+    injury_flags: [],
+    preferences: [],
+    notes: '',
+  },
+  nutritionPreferences: {
+    goal_style: 'simple',
+    dietary: [],
+    allergies: '',
+    protein_emphasis: 'medium',
+  },
+};
 
 export default function Onboarding() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { update } = useUserProfile();
+  const { profile, loading: profileLoading, update } = useUserProfile();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  
-  const [formData, setFormData] = useState({
-    fullName: '',
-    gender: '',
-    heightCm: '',
-    weightKg: '',
-    goalPrimary: '',
-    experienceLevel: '',
-    daysPerWeek: '4',
-    sessionMinutes: '45',
-  });
+  const [formData, setFormData] = useState<FormData>(initialFormData);
 
-  const progress = (currentStep / steps.length) * 100;
+  // Pre-fill form with existing profile data
+  useEffect(() => {
+    async function loadExistingData() {
+      if (!user || !profile) return;
+
+      // Pre-fill from existing profile
+      const equipmentJson = profile.equipment_json as string[] | null;
+      const constraintsJson = profile.constraints_json as {
+        injury_flags?: string[];
+        preferences?: string[];
+        notes?: string;
+      } | null;
+
+      setFormData((prev) => ({
+        ...prev,
+        goalPrimary: profile.goal_primary || '',
+        experienceLevel: profile.experience_level || '',
+        daysPerWeek: profile.days_per_week || 4,
+        sessionMinutes: profile.session_minutes || 45,
+        restDay: profile.rest_day || 'Tuesday',
+        equipment: equipmentJson || ['bodyweight'],
+        constraints: {
+          injury_flags: constraintsJson?.injury_flags || [],
+          preferences: constraintsJson?.preferences || [],
+          notes: constraintsJson?.notes || '',
+        },
+      }));
+
+      // Load nutrition profile
+      const nutritionProfile = await getNutritionProfile(user.id);
+      if (nutritionProfile) {
+        const dietaryJson = nutritionProfile.dietary_preferences_json as {
+          goal_style?: string;
+          dietary?: string[];
+          allergies?: string;
+          protein_emphasis?: string;
+        } | null;
+
+        if (dietaryJson) {
+          setFormData((prev) => ({
+            ...prev,
+            nutritionPreferences: {
+              goal_style: dietaryJson.goal_style || 'simple',
+              dietary: dietaryJson.dietary || [],
+              allergies: dietaryJson.allergies || '',
+              protein_emphasis: dietaryJson.protein_emphasis || 'medium',
+            },
+          }));
+        }
+      }
+    }
+
+    loadExistingData();
+  }, [user, profile]);
+
+  const canProceed = (): boolean => {
+    switch (currentStep) {
+      case 1:
+        return formData.goalPrimary.length > 0 && formData.experienceLevel.length > 0;
+      case 2:
+        return formData.daysPerWeek >= 2 && formData.sessionMinutes >= 15;
+      case 3:
+        return formData.equipment.length > 0;
+      case 4:
+        return true; // Health constraints are optional
+      case 5:
+        return formData.nutritionPreferences.goal_style.length > 0;
+      default:
+        return true;
+    }
+  };
 
   const handleNext = () => {
-    if (currentStep < steps.length) {
+    if (currentStep < TOTAL_STEPS) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -65,206 +156,140 @@ export default function Onboarding() {
 
   const handleComplete = async () => {
     if (!user) return;
-    
+
     setIsLoading(true);
-    
-    const success = await update({
-      full_name: formData.fullName || null,
-      gender: formData.gender || null,
-      height_cm: formData.heightCm ? parseInt(formData.heightCm) : null,
-      weight_kg: formData.weightKg ? parseFloat(formData.weightKg) : null,
-      goal_primary: formData.goalPrimary || null,
-      experience_level: formData.experienceLevel || null,
-      days_per_week: parseInt(formData.daysPerWeek) || 4,
-      session_minutes: parseInt(formData.sessionMinutes) || 45,
-    });
-    
-    if (!success) {
-      toast.error('Failed to save profile');
-    } else {
-      toast.success('Profile saved! Let\'s get started!');
-      navigate('/home');
+
+    try {
+      // Update user profile
+      const profileSuccess = await update({
+        goal_primary: formData.goalPrimary,
+        experience_level: formData.experienceLevel,
+        days_per_week: formData.daysPerWeek,
+        session_minutes: formData.sessionMinutes,
+        rest_day: formData.restDay,
+        equipment_json: formData.equipment,
+        constraints_json: formData.constraints,
+      });
+
+      if (!profileSuccess) {
+        throw new Error('Failed to save profile');
+      }
+
+      // Upsert nutrition profile
+      const nutritionSuccess = await upsertNutritionProfile({
+        user_id: user.id,
+        dietary_preferences_json: formData.nutritionPreferences,
+      });
+
+      if (!nutritionSuccess) {
+        throw new Error('Failed to save nutrition preferences');
+      }
+
+      toast.success('Profile saved successfully!');
+      navigate('/plan');
+    } catch (error) {
+      console.error('Onboarding error:', error);
+      toast.error('Failed to save your profile. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
-  const canProceed = () => {
-    switch (currentStep) {
-      case 1:
-        return formData.fullName.trim().length > 0;
-      case 2:
-        return formData.goalPrimary.length > 0;
-      case 3:
-        return formData.experienceLevel.length > 0;
-      default:
-        return true;
-    }
-  };
+  if (profileLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background p-4">
-      <div className="mb-6 flex items-center gap-2">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary">
+      {/* Header */}
+      <div className="mb-4 flex items-center gap-2">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
           <Dumbbell className="h-5 w-5 text-primary-foreground" />
         </div>
         <span className="text-xl font-bold">BisaFit</span>
       </div>
 
-      <div className="mb-6">
-        <div className="mb-2 flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Step {currentStep} of {steps.length}</span>
-          <span className="font-medium text-primary">{steps[currentStep - 1].title}</span>
-        </div>
-        <Progress value={progress} className="h-2" />
-      </div>
+      {/* Progress */}
+      <OnboardingProgress currentStep={currentStep} />
 
-      <Card className="flex-1 animate-fade-in border-border">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            {(() => {
-              const Icon = steps[currentStep - 1].icon;
-              return <Icon className="h-5 w-5 text-primary" />;
-            })()}
-            {steps[currentStep - 1].title}
-          </CardTitle>
-          <CardDescription>
-            {currentStep === 1 && "Tell us a bit about yourself"}
-            {currentStep === 2 && "What do you want to achieve?"}
-            {currentStep === 3 && "What's your training experience?"}
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent className="space-y-6">
+      {/* Content */}
+      <Card className="flex-1 overflow-hidden border-border">
+        <CardContent className="p-4 h-full overflow-y-auto">
           {currentStep === 1 && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  placeholder="Your name"
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Gender</Label>
-                <RadioGroup
-                  value={formData.gender}
-                  onValueChange={(value) => setFormData({ ...formData, gender: value })}
-                  className="flex gap-4"
-                >
-                  {['male', 'female', 'other'].map((g) => (
-                    <div key={g} className="flex items-center space-x-2">
-                      <RadioGroupItem value={g} id={g} />
-                      <Label htmlFor={g} className="capitalize">{g}</Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="height">Height (cm)</Label>
-                  <Input
-                    id="height"
-                    type="number"
-                    placeholder="170"
-                    value={formData.heightCm}
-                    onChange={(e) => setFormData({ ...formData, heightCm: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="weight">Weight (kg)</Label>
-                  <Input
-                    id="weight"
-                    type="number"
-                    placeholder="70"
-                    value={formData.weightKg}
-                    onChange={(e) => setFormData({ ...formData, weightKg: e.target.value })}
-                  />
-                </div>
-              </div>
-            </>
+            <StepGoals
+              goalPrimary={formData.goalPrimary}
+              experienceLevel={formData.experienceLevel}
+              onGoalChange={(v) => setFormData({ ...formData, goalPrimary: v })}
+              onExperienceChange={(v) => setFormData({ ...formData, experienceLevel: v })}
+            />
           )}
 
           {currentStep === 2 && (
-            <RadioGroup
-              value={formData.goalPrimary}
-              onValueChange={(value) => setFormData({ ...formData, goalPrimary: value })}
-              className="space-y-3"
-            >
-              {fitnessGoals.map((goal) => (
-                <div
-                  key={goal.value}
-                  className={cn(
-                    "flex cursor-pointer items-center space-x-3 rounded-lg border p-4 transition-all",
-                    formData.goalPrimary === goal.value
-                      ? "border-primary bg-accent"
-                      : "border-border hover:border-primary/50"
-                  )}
-                  onClick={() => setFormData({ ...formData, goalPrimary: goal.value })}
-                >
-                  <RadioGroupItem value={goal.value} id={goal.value} />
-                  <div>
-                    <Label htmlFor={goal.value} className="cursor-pointer font-medium">
-                      {goal.label}
-                    </Label>
-                    <p className="text-sm text-muted-foreground">{goal.description}</p>
-                  </div>
-                </div>
-              ))}
-            </RadioGroup>
+            <StepSchedule
+              daysPerWeek={formData.daysPerWeek}
+              sessionMinutes={formData.sessionMinutes}
+              restDay={formData.restDay}
+              onDaysChange={(v) => setFormData({ ...formData, daysPerWeek: v })}
+              onSessionChange={(v) => setFormData({ ...formData, sessionMinutes: v })}
+              onRestDayChange={(v) => setFormData({ ...formData, restDay: v })}
+            />
           )}
 
           {currentStep === 3 && (
-            <RadioGroup
-              value={formData.experienceLevel}
-              onValueChange={(value) => setFormData({ ...formData, experienceLevel: value })}
-              className="space-y-3"
-            >
-              {experienceLevels.map((level) => (
-                <div
-                  key={level.value}
-                  className={cn(
-                    "flex cursor-pointer items-center space-x-3 rounded-lg border p-4 transition-all",
-                    formData.experienceLevel === level.value
-                      ? "border-primary bg-accent"
-                      : "border-border hover:border-primary/50"
-                  )}
-                  onClick={() => setFormData({ ...formData, experienceLevel: level.value })}
-                >
-                  <RadioGroupItem value={level.value} id={level.value} />
-                  <div>
-                    <Label htmlFor={level.value} className="cursor-pointer font-medium">
-                      {level.label}
-                    </Label>
-                    <p className="text-sm text-muted-foreground">{level.description}</p>
-                  </div>
-                </div>
-              ))}
-            </RadioGroup>
+            <StepEquipment
+              equipment={formData.equipment}
+              onEquipmentChange={(v) => setFormData({ ...formData, equipment: v })}
+            />
+          )}
+
+          {currentStep === 4 && (
+            <StepHealth
+              constraints={formData.constraints}
+              onConstraintsChange={(v) => setFormData({ ...formData, constraints: v })}
+            />
+          )}
+
+          {currentStep === 5 && (
+            <StepNutrition
+              preferences={formData.nutritionPreferences}
+              onPreferencesChange={(v) => setFormData({ ...formData, nutritionPreferences: v })}
+            />
           )}
         </CardContent>
       </Card>
 
-      <div className="mt-6 flex gap-3">
+      {/* Navigation */}
+      <div className="mt-4 flex gap-3">
         {currentStep > 1 && (
           <Button variant="outline" onClick={handleBack} className="flex-1">
             <ChevronLeft className="mr-1 h-4 w-4" />
             Back
           </Button>
         )}
-        
-        {currentStep < steps.length ? (
+
+        {currentStep < TOTAL_STEPS ? (
           <Button onClick={handleNext} disabled={!canProceed()} className="flex-1">
             Next
             <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
         ) : (
-          <Button onClick={handleComplete} disabled={!canProceed() || isLoading} className="flex-1">
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Get Started'}
+          <Button
+            onClick={handleComplete}
+            disabled={!canProceed() || isLoading}
+            className="flex-1 gap-2"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4" />
+                Generate My Plan
+              </>
+            )}
           </Button>
         )}
       </div>
