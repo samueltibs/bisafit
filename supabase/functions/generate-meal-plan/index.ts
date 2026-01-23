@@ -13,6 +13,7 @@ interface Meal {
   instructions: string;
   protein_g_est: number;
   calories_est: number;
+  cuisine_style?: string;
 }
 
 interface DayPlan {
@@ -49,7 +50,7 @@ serve(async (req) => {
       });
     }
 
-    const { days = 7 } = await req.json().catch(() => ({ days: 7 }));
+    const { days = 7, ingredients, weekCuisineTheme } = await req.json().catch(() => ({ days: 7, ingredients: null, weekCuisineTheme: null }));
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -100,17 +101,38 @@ serve(async (req) => {
     const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     const requestedDays = dayNames.slice(0, Math.min(days, 7));
 
+    // Determine active cuisine theme
+    const activeCuisine = weekCuisineTheme || (cuisinePreferences.length > 0 ? cuisinePreferences[0] : null);
+    
+    const cuisineInstructions = activeCuisine
+      ? `CUISINE THEME: "${activeCuisine}"
+- Prefer recipes aligned with ${activeCuisine} cuisine
+- If perfect alignment is not possible, generate "${activeCuisine}-inspired" or "${activeCuisine}-style" meals
+- Add "cuisine_style" field to each meal (e.g., "Indian", "Indian-inspired", or null if no theme)
+- NEVER fail generation due to cuisine mismatch - always provide meals
+- Dietary restrictions and nutrition targets take priority over cuisine theme`
+      : `CUISINE: No specific theme. Use variety based on user's general cuisine preferences: ${JSON.stringify(cuisinePreferences)}`;
+
+    const ingredientInstructions = ingredients && Array.isArray(ingredients) && ingredients.length > 0
+      ? `PRIORITY INGREDIENTS: Use these ingredients first: ${ingredients.join(", ")}
+- Build meals primarily around these available ingredients
+- Allow up to 3 common staples if needed (oil, spices, etc.)`
+      : "";
+
     const systemPrompt = `You are a nutrition expert creating meal plans. Generate practical, delicious meals that meet nutritional targets.
 
 CRITICAL RULES:
-1. STRICTLY respect dietary restrictions (allergies, vegetarian, vegan, halal, etc.)
+1. STRICTLY respect dietary restrictions (allergies, vegetarian, vegan, halal, etc.) - NEVER violate these
 2. Match the calorie and protein targets
 3. Keep recipes simple and practical
 4. Consider budget level for ingredient choices
 5. Return ONLY valid JSON, no markdown
+6. Cuisine preferences are FLEXIBLE - never fail due to cuisine mismatch
+
+${cuisineInstructions}
 
 MEAL STRUCTURE:
-- Each meal needs: name, recipe_title, ingredients (array), instructions (brief), protein_g_est, calories_est
+- Each meal needs: name, recipe_title, ingredients (array), instructions (brief), protein_g_est, calories_est, cuisine_style (optional)
 - Distribute calories across meals appropriately
 - Include variety across the week`;
 
@@ -122,10 +144,11 @@ TARGETS:
 
 PREFERENCES:
 - Dietary Restrictions: ${JSON.stringify(dietaryPreferences)}
-- Cuisine Preferences: ${JSON.stringify(cuisinePreferences)}
 - Meals Per Day: ${mealsPerDay}
 - Snacks Per Day: ${snacksPerDay}
 - Budget Level: ${budgetLevel}
+
+${ingredientInstructions}
 
 DAYS TO PLAN: ${requestedDays.join(", ")}
 
@@ -135,10 +158,10 @@ Return ONLY this JSON structure:
     {
       "day": "Monday",
       "meals": [
-        { "name": "Breakfast", "recipe_title": "...", "ingredients": ["..."], "instructions": "...", "protein_g_est": 35, "calories_est": 550 }
+        { "name": "Breakfast", "recipe_title": "...", "ingredients": ["..."], "instructions": "...", "protein_g_est": 35, "calories_est": 550, "cuisine_style": "Indian-inspired" }
       ],
       "snacks": [
-        { "name": "Snack 1", "recipe_title": "...", "ingredients": ["..."], "instructions": "...", "protein_g_est": 10, "calories_est": 150 }
+        { "name": "Snack 1", "recipe_title": "...", "ingredients": ["..."], "instructions": "...", "protein_g_est": 10, "calories_est": 150, "cuisine_style": null }
       ]
     }
   ],

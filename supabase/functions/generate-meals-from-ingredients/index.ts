@@ -81,6 +81,15 @@ serve(async (req) => {
       });
     }
 
+    const cuisineInstructions = cuisinePrefs.length > 0
+      ? `CUISINE PREFERENCES: ${cuisinePrefs.join(", ")}
+- Prefer recipes aligned with these cuisines when possible
+- If perfect alignment is not possible, create "{Cuisine}-inspired" or "{Cuisine}-style" dishes
+- Add "cuisine_style" field to each meal (e.g., "Thai", "Mexican-inspired", or null)
+- NEVER fail generation due to cuisine mismatch - always provide meals
+- Dietary restrictions take priority over cuisine preferences`
+      : "";
+
     const systemPrompt = `You are a nutrition-focused chef AI that creates healthy, practical meals from available ingredients.
 
 Your task is to generate meal suggestions using the provided ingredients. Prioritize using the available ingredients, but you may suggest up to 3 common staples if needed (oil, salt, pepper, garlic, onion, basic spices).
@@ -94,7 +103,7 @@ User's Goal: ${userProfile?.goal_primary || "general health"}
 
 ${restrictions.length > 0 ? `STRICT Dietary Restrictions (MUST follow): ${restrictions.join(", ")}` : "No specific dietary restrictions."}
 
-${cuisinePrefs.length > 0 ? `Preferred cuisines: ${cuisinePrefs.join(", ")}` : ""}
+${cuisineInstructions}
 
 Guidelines:
 - Create practical, quick meals (under 30 minutes prep when possible)
@@ -102,6 +111,7 @@ Guidelines:
 - Be realistic about portion sizes and calorie estimates
 - If there aren't enough ingredients for complete meals, suggest simple combinations
 - Do NOT suggest meals that violate dietary restrictions
+- Cuisine preferences are flexible - never fail due to cuisine mismatch
 
 You MUST respond with ONLY valid JSON in this exact format:
 {
@@ -115,7 +125,8 @@ You MUST respond with ONLY valid JSON in this exact format:
       "instructions": "Step by step cooking instructions...",
       "protein_g_est": 45,
       "calories_est": 550,
-      "prep_time_minutes": 20
+      "prep_time_minutes": 20,
+      "cuisine_style": "Mediterranean-inspired"
     }
   ],
   "leftover_tips": ["Store cooked chicken for up to 3 days", "Spinach can be added to eggs tomorrow"],
