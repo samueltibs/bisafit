@@ -29,6 +29,16 @@ import {
   Edit2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  getDefaultUnitPreference,
+  lbToKg,
+  kgToLb,
+  ftInToCm,
+  cmToFtIn,
+  formatHeight,
+  formatWeight,
+  type UnitPreference,
+} from '@/lib/unitConversions';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -43,15 +53,20 @@ export default function Settings() {
   const [isSaving, setIsSaving] = useState(false);
   const [editForm, setEditForm] = useState({
     fullName: '',
-    heightCm: '' as string,
-    weightKg: '' as string,
+    unitPreference: 'metric' as UnitPreference,
+    // Imperial height fields
+    heightFeet: '',
+    heightInches: '',
+    // Metric height field
+    heightCm: '',
+    // Weight fields (display in selected unit)
+    weight: '',
   });
 
   // Auto-open modal if ?edit=true in URL
   useEffect(() => {
     if (searchParams.get('edit') === 'true' && !loading) {
       setIsEditModalOpen(true);
-      // Clear the query param
       setSearchParams({});
     }
   }, [searchParams, loading, setSearchParams]);
@@ -59,13 +74,90 @@ export default function Settings() {
   // Initialize edit form when modal opens
   useEffect(() => {
     if (isEditModalOpen && profile) {
+      // Determine unit preference: use saved, or infer from locale
+      const savedUnit = profile.unit_preference as UnitPreference | null;
+      const unitPref = savedUnit || getDefaultUnitPreference();
+      
+      // Convert stored values to display values
+      let heightFeet = '';
+      let heightInches = '';
+      let heightCm = '';
+      let weight = '';
+
+      if (profile.height_cm) {
+        if (unitPref === 'imperial') {
+          const { feet, inches } = cmToFtIn(profile.height_cm);
+          heightFeet = String(feet);
+          heightInches = String(inches);
+        } else {
+          heightCm = String(profile.height_cm);
+        }
+      }
+
+      if (profile.weight_kg) {
+        if (unitPref === 'imperial') {
+          weight = String(kgToLb(Number(profile.weight_kg)));
+        } else {
+          weight = String(Number(profile.weight_kg));
+        }
+      }
+
       setEditForm({
         fullName: profile.full_name || '',
-        heightCm: profile.height_cm ? String(profile.height_cm) : '',
-        weightKg: profile.weight_kg ? String(Number(profile.weight_kg)) : '',
+        unitPreference: unitPref,
+        heightFeet,
+        heightInches,
+        heightCm,
+        weight,
       });
     }
   }, [isEditModalOpen, profile]);
+
+  // Handle unit toggle - convert values when switching units
+  const handleUnitChange = (checked: boolean) => {
+    const newUnit: UnitPreference = checked ? 'metric' : 'imperial';
+    const oldUnit = editForm.unitPreference;
+
+    if (newUnit === oldUnit) return;
+
+    let newForm = { ...editForm, unitPreference: newUnit };
+
+    // Convert height
+    if (oldUnit === 'imperial' && newUnit === 'metric') {
+      // Imperial -> Metric
+      const feet = parseInt(editForm.heightFeet) || 0;
+      const inches = parseInt(editForm.heightInches) || 0;
+      if (feet > 0 || inches > 0) {
+        newForm.heightCm = String(ftInToCm(feet, inches));
+      }
+      // Convert weight lb -> kg
+      if (editForm.weight) {
+        const lb = parseFloat(editForm.weight);
+        if (!isNaN(lb)) {
+          newForm.weight = String(lbToKg(lb));
+        }
+      }
+    } else if (oldUnit === 'metric' && newUnit === 'imperial') {
+      // Metric -> Imperial
+      if (editForm.heightCm) {
+        const cm = parseInt(editForm.heightCm);
+        if (!isNaN(cm)) {
+          const { feet, inches } = cmToFtIn(cm);
+          newForm.heightFeet = String(feet);
+          newForm.heightInches = String(inches);
+        }
+      }
+      // Convert weight kg -> lb
+      if (editForm.weight) {
+        const kg = parseFloat(editForm.weight);
+        if (!isNaN(kg)) {
+          newForm.weight = String(kgToLb(kg));
+        }
+      }
+    }
+
+    setEditForm(newForm);
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -89,13 +181,38 @@ export default function Settings() {
 
     setIsSaving(true);
     try {
-      const heightValue = editForm.heightCm ? parseInt(editForm.heightCm, 10) : null;
-      const weightValue = editForm.weightKg ? parseFloat(editForm.weightKg) : null;
+      // Convert to storage units (cm, kg)
+      let heightCm: number | null = null;
+      let weightKg: number | null = null;
+
+      if (editForm.unitPreference === 'imperial') {
+        const feet = parseInt(editForm.heightFeet) || 0;
+        const inches = parseInt(editForm.heightInches) || 0;
+        if (feet > 0 || inches > 0) {
+          heightCm = ftInToCm(feet, inches);
+        }
+        if (editForm.weight) {
+          const lb = parseFloat(editForm.weight);
+          if (!isNaN(lb)) {
+            weightKg = lbToKg(lb);
+          }
+        }
+      } else {
+        if (editForm.heightCm) {
+          heightCm = parseInt(editForm.heightCm);
+          if (isNaN(heightCm)) heightCm = null;
+        }
+        if (editForm.weight) {
+          weightKg = parseFloat(editForm.weight);
+          if (isNaN(weightKg)) weightKg = null;
+        }
+      }
 
       const success = await update({
         full_name: editForm.fullName.trim(),
-        height_cm: isNaN(heightValue as number) ? null : heightValue,
-        weight_kg: isNaN(weightValue as number) ? null : weightValue,
+        height_cm: heightCm,
+        weight_kg: weightKg,
+        unit_preference: editForm.unitPreference,
       });
 
       if (success) {
@@ -126,6 +243,9 @@ export default function Settings() {
     endurance: 'Endurance',
     maintenance: 'Maintenance',
   };
+
+  // Get effective unit preference for display
+  const displayUnit: UnitPreference = (profile?.unit_preference as UnitPreference) || getDefaultUnitPreference();
 
   if (loading) {
     return (
@@ -172,16 +292,22 @@ export default function Settings() {
             {profile.height_cm && (
               <Card className="border-border">
                 <CardContent className="p-4 text-center">
-                  <p className="text-2xl font-bold">{profile.height_cm}</p>
-                  <p className="text-sm text-muted-foreground">Height (cm)</p>
+                  <p className="text-2xl font-bold">{formatHeight(profile.height_cm, displayUnit).replace(/ cm| lb/, '')}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Height {displayUnit === 'metric' ? '(cm)' : '(ft/in)'}
+                  </p>
                 </CardContent>
               </Card>
             )}
             {profile.weight_kg && (
               <Card className="border-border">
                 <CardContent className="p-4 text-center">
-                  <p className="text-2xl font-bold">{Number(profile.weight_kg)}</p>
-                  <p className="text-sm text-muted-foreground">Weight (kg)</p>
+                  <p className="text-2xl font-bold">
+                    {displayUnit === 'metric' ? Number(profile.weight_kg) : kgToLb(Number(profile.weight_kg))}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Weight ({displayUnit === 'metric' ? 'kg' : 'lb'})
+                  </p>
                 </CardContent>
               </Card>
             )}
@@ -296,29 +422,70 @@ export default function Settings() {
                 onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
               />
             </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="heightCm">Height (cm)</Label>
+
+            {/* Unit Toggle */}
+            <div className="flex items-center justify-between py-2">
+              <Label>Units</Label>
+              <div className="flex items-center gap-2">
+                <span className={`text-sm ${editForm.unitPreference === 'imperial' ? 'font-medium' : 'text-muted-foreground'}`}>
+                  Imperial
+                </span>
+                <Switch
+                  checked={editForm.unitPreference === 'metric'}
+                  onCheckedChange={handleUnitChange}
+                />
+                <span className={`text-sm ${editForm.unitPreference === 'metric' ? 'font-medium' : 'text-muted-foreground'}`}>
+                  Metric
+                </span>
+              </div>
+            </div>
+
+            {/* Height Input */}
+            <div className="space-y-2">
+              <Label>Height {editForm.unitPreference === 'metric' ? '(cm)' : '(ft/in)'}</Label>
+              {editForm.unitPreference === 'metric' ? (
                 <Input
-                  id="heightCm"
                   type="number"
                   placeholder="170"
                   value={editForm.heightCm}
                   onChange={(e) => setEditForm({ ...editForm, heightCm: e.target.value })}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="weightKg">Weight (kg)</Label>
-                <Input
-                  id="weightKg"
-                  type="number"
-                  step="0.1"
-                  placeholder="70"
-                  value={editForm.weightKg}
-                  onChange={(e) => setEditForm({ ...editForm, weightKg: e.target.value })}
-                />
-              </div>
+              ) : (
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Input
+                      type="number"
+                      placeholder="5"
+                      value={editForm.heightFeet}
+                      onChange={(e) => setEditForm({ ...editForm, heightFeet: e.target.value })}
+                    />
+                    <span className="text-xs text-muted-foreground mt-1 block">feet</span>
+                  </div>
+                  <div className="flex-1">
+                    <Input
+                      type="number"
+                      placeholder="7"
+                      min="0"
+                      max="11"
+                      value={editForm.heightInches}
+                      onChange={(e) => setEditForm({ ...editForm, heightInches: e.target.value })}
+                    />
+                    <span className="text-xs text-muted-foreground mt-1 block">inches</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Weight Input */}
+            <div className="space-y-2">
+              <Label>Weight ({editForm.unitPreference === 'metric' ? 'kg' : 'lb'})</Label>
+              <Input
+                type="number"
+                step="0.1"
+                placeholder={editForm.unitPreference === 'metric' ? '70' : '154'}
+                value={editForm.weight}
+                onChange={(e) => setEditForm({ ...editForm, weight: e.target.value })}
+              />
             </div>
           </div>
 
