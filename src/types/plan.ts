@@ -28,11 +28,17 @@ export interface WorkoutJson {
   blocks: WorkoutBlock[];
 }
 
+// Day type for plan_json - explicit workout or rest
+export type PlanDayType = "workout" | "rest";
+
 export interface PlanDay {
   day_name: string;
-  focus: string;
-  workout_id: string;
-  is_rest: boolean;
+  type: PlanDayType;
+  // For workout days
+  focus?: string;
+  workout_id?: string;
+  // For rest days
+  label?: string;
 }
 
 export interface PlanWeek {
@@ -48,6 +54,30 @@ export interface PlanJson {
   coach_notes: string;
 }
 
+// Helper to normalize legacy plan days (backward compatibility)
+export function normalizePlanDay(day: Partial<PlanDay> & { is_rest?: boolean }): PlanDay {
+  // If type already exists, use it
+  if (day.type) {
+    return day as PlanDay;
+  }
+  
+  // Infer type from legacy format
+  if (day.is_rest || !day.workout_id) {
+    return {
+      day_name: day.day_name || '',
+      type: 'rest',
+      label: day.focus || 'Rest Day',
+    };
+  }
+  
+  return {
+    day_name: day.day_name || '',
+    type: 'workout',
+    focus: day.focus || 'Workout',
+    workout_id: day.workout_id,
+  };
+}
+
 // Display helpers
 export type WorkoutType = "strength" | "cardio" | "recovery" | "core" | "rest" | "conditioning";
 
@@ -60,6 +90,7 @@ export interface DisplayWorkout {
   type: WorkoutType;
   completed: boolean;
   workoutJson?: WorkoutJson;
+  isRest: boolean;
 }
 
 export function inferWorkoutType(focus: string): WorkoutType {

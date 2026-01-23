@@ -51,11 +51,13 @@ interface WorkoutJson {
   blocks: WorkoutBlock[];
 }
 
+// Updated PlanDay with explicit type
 interface PlanDay {
   day_name: string;
-  focus: string;
-  workout_id: string;
-  is_rest: boolean;
+  type: "workout" | "rest";
+  focus?: string;
+  workout_id?: string;
+  label?: string;
 }
 
 interface PlanWeek {
@@ -70,6 +72,8 @@ interface PlanJson {
   progression_notes: string;
   coach_notes: string;
 }
+
+const ALL_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -147,18 +151,25 @@ serve(async (req) => {
       completedWorkoutsCount = count || 0;
     }
 
-    // Build the prompt for AI
-    const systemPrompt = buildSystemPrompt();
-    const userPrompt = buildUserPrompt(userProfile, completedWorkoutsCount, blockNumber);
+    // Determine workout days and rest days based on user preferences
+    const daysPerWeek = userProfile.days_per_week || 4;
+    const preferredRestDay = userProfile.rest_day || "Sunday";
+    const { workoutDays, restDays } = selectWorkoutDays(daysPerWeek, preferredRestDay);
 
     console.log("Generating plan for user:", userId);
     console.log("User profile summary:", {
       goal: userProfile.goal_primary,
       experience: userProfile.experience_level,
-      days: userProfile.days_per_week,
+      days: daysPerWeek,
       minutes: userProfile.session_minutes,
       equipment: userProfile.equipment_json,
+      workoutDays,
+      restDays,
     });
+
+    // Build the prompt for AI
+    const systemPrompt = buildSystemPrompt();
+    const userPrompt = buildUserPrompt(userProfile, completedWorkoutsCount, blockNumber, workoutDays);
 
     // Call Lovable AI
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -178,7 +189,7 @@ serve(async (req) => {
             type: "function",
             function: {
               name: "create_training_plan",
-              description: "Create a complete 4-week progressive training plan with all workouts",
+              description: "Create a complete 4-week progressive training plan with workouts for specified days only",
               parameters: {
                 type: "object",
                 properties: {
@@ -194,13 +205,13 @@ serve(async (req) => {
                   },
                   workouts: {
                     type: "array",
+                    description: "Array of workouts for the specified workout days only. Do NOT include rest days.",
                     items: {
                       type: "object",
                       properties: {
                         week_number: { type: "number" },
                         day_name: { type: "string" },
                         focus: { type: "string" },
-                        is_rest: { type: "boolean" },
                         workout: {
                           type: "object",
                           properties: {
@@ -244,7 +255,7 @@ serve(async (req) => {
                           required: ["title", "total_estimated_minutes", "blocks"],
                         },
                       },
-                      required: ["week_number", "day_name", "focus", "is_rest"],
+                      required: ["week_number", "day_name", "focus", "workout"],
                     },
                   },
                 },
@@ -321,8 +332,7 @@ serve(async (req) => {
       throw new Error("Failed to create plan record");
     }
 
-    // Group workouts by week
-    const weekMap = new Map<number, PlanDay[]>();
+    // Prepare workout inserts
     const workoutInserts: Array<{
       user_id: string;
       plan_id: string;
@@ -332,20 +342,6 @@ serve(async (req) => {
     }> = [];
 
     for (const genWorkout of generatedWorkouts) {
-      if (genWorkout.is_rest) {
-        // Add rest day to week map
-        if (!weekMap.has(genWorkout.week_number)) {
-          weekMap.set(genWorkout.week_number, []);
-        }
-        weekMap.get(genWorkout.week_number)!.push({
-          day_name: genWorkout.day_name,
-          focus: "Rest Day",
-          workout_id: "",
-          is_rest: true,
-        });
-        continue;
-      }
-
       // Calculate scheduled date
       const dayIndex = getDayIndex(genWorkout.day_name);
       const weekOffset = (genWorkout.week_number - 1) * 7;
@@ -380,44 +376,50 @@ serve(async (req) => {
       throw new Error("Failed to create workout records");
     }
 
-    // Build final plan_json with workout IDs
+    // Build workout ID map by scheduled date
     const workoutIdMap = new Map<string, string>();
     for (const workout of insertedWorkouts || []) {
-      const key = `${workout.scheduled_date}`;
-      workoutIdMap.set(key, workout.id);
+      workoutIdMap.set(workout.scheduled_date, workout.id);
     }
 
-    // Rebuild weeks structure with workout IDs
-    for (const genWorkout of generatedWorkouts) {
-      if (!weekMap.has(genWorkout.week_number)) {
-        weekMap.set(genWorkout.week_number, []);
-      }
-
-      if (!genWorkout.is_rest) {
-        const dayIndex = getDayIndex(genWorkout.day_name);
-        const weekOffset = (genWorkout.week_number - 1) * 7;
+    // Build final weeks structure with explicit type field
+    const finalWeeks: PlanWeek[] = [];
+    for (let weekNum = 1; weekNum <= 4; weekNum++) {
+      const weekDays: PlanDay[] = [];
+      
+      for (const dayName of ALL_DAYS) {
+        const dayIndex = getDayIndex(dayName);
+        const weekOffset = (weekNum - 1) * 7;
         const scheduledDate = new Date(startDate);
         scheduledDate.setDate(startDate.getDate() + weekOffset + dayIndex);
         const scheduledDateStr = scheduledDate.toISOString().split("T")[0];
 
-        weekMap.get(genWorkout.week_number)!.push({
-          day_name: genWorkout.day_name,
-          focus: genWorkout.focus,
-          workout_id: workoutIdMap.get(scheduledDateStr) || "",
-          is_rest: false,
-        });
+        if (workoutDays.includes(dayName)) {
+          // This is a workout day
+          const genWorkout = generatedWorkouts.find(
+            (w: { week_number: number; day_name: string }) => w.week_number === weekNum && w.day_name === dayName
+          );
+          const workoutId = workoutIdMap.get(scheduledDateStr) || "";
+          
+          weekDays.push({
+            day_name: dayName,
+            type: "workout",
+            focus: genWorkout?.focus || "Training",
+            workout_id: workoutId,
+          });
+        } else {
+          // This is a rest day
+          weekDays.push({
+            day_name: dayName,
+            type: "rest",
+            label: "Rest Day",
+          });
+        }
       }
-    }
-
-    // Create final weeks array sorted
-    const finalWeeks: PlanWeek[] = [];
-    for (let i = 1; i <= 4; i++) {
-      const days = weekMap.get(i) || [];
-      // Sort days by day of week
-      days.sort((a, b) => getDayIndex(a.day_name) - getDayIndex(b.day_name));
+      
       finalWeeks.push({
-        week_number: i,
-        days,
+        week_number: weekNum,
+        days: weekDays,
       });
     }
 
@@ -471,6 +473,63 @@ function getDayIndex(dayName: string): number {
   return days[dayName] ?? 0;
 }
 
+/**
+ * Select workout days based on days_per_week and preferred rest day
+ * Distributes workout days evenly across the week
+ */
+function selectWorkoutDays(daysPerWeek: number, preferredRestDay: string): { workoutDays: string[]; restDays: string[] } {
+  const restDays: string[] = [];
+  const workoutDays: string[] = [];
+
+  // Always include preferred rest day as rest
+  restDays.push(preferredRestDay);
+
+  // Optimal day distributions for different training frequencies
+  const dayDistributions: Record<number, string[]> = {
+    2: ["Monday", "Thursday"],
+    3: ["Monday", "Wednesday", "Friday"],
+    4: ["Monday", "Tuesday", "Thursday", "Friday"],
+    5: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+    6: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    7: ALL_DAYS,
+  };
+
+  // Get base distribution and filter out preferred rest day
+  const baseDistribution = dayDistributions[daysPerWeek] || dayDistributions[4];
+  
+  for (const day of baseDistribution) {
+    if (day !== preferredRestDay) {
+      workoutDays.push(day);
+    }
+  }
+
+  // If we filtered out the rest day and need more workout days, add alternates
+  if (workoutDays.length < daysPerWeek) {
+    const alternatives = ALL_DAYS.filter(d => !workoutDays.includes(d) && d !== preferredRestDay);
+    for (const alt of alternatives) {
+      if (workoutDays.length >= daysPerWeek) break;
+      workoutDays.push(alt);
+    }
+  }
+
+  // Limit to exact days per week
+  while (workoutDays.length > daysPerWeek) {
+    workoutDays.pop();
+  }
+
+  // Rest days are all days not in workout days
+  for (const day of ALL_DAYS) {
+    if (!workoutDays.includes(day) && !restDays.includes(day)) {
+      restDays.push(day);
+    }
+  }
+
+  // Sort workout days by day order
+  workoutDays.sort((a, b) => getDayIndex(a) - getDayIndex(b));
+
+  return { workoutDays, restDays };
+}
+
 function buildSystemPrompt(): string {
   return `You are an expert fitness coach AI that creates personalized, progressive 4-week training programs.
 
@@ -487,6 +546,7 @@ CRITICAL RULES:
 6. For intermediate/advanced: Can include more complex movements if equipment supports it.
 7. Each workout must have: warmup (5-10 min), main work, cooldown (3-5 min).
 8. Avoid identical workouts on consecutive weeks - show clear progression.
+9. ONLY generate workouts for the specified workout days. Do NOT include rest days in the output.
 
 EQUIPMENT MAPPING:
 - "bodyweight": All bodyweight exercises
@@ -509,7 +569,8 @@ GOAL MAPPING:
 function buildUserPrompt(
   profile: UserProfile,
   completedWorkouts: number,
-  blockNumber: number
+  blockNumber: number,
+  workoutDays: string[]
 ): string {
   const equipment = profile.equipment_json || ["bodyweight"];
   const constraints = profile.constraints_json || {};
@@ -537,11 +598,13 @@ USER PROFILE:
 - Name: ${profile.full_name || "User"}
 - Primary Goal: ${profile.goal_primary || "maintenance"}
 - Experience Level: ${profile.experience_level || "beginner"}
-- Training Days Per Week: ${profile.days_per_week || 4}
+- Training Days Per Week: ${workoutDays.length}
 - Session Duration: ${profile.session_minutes || 45} minutes (±5 min acceptable)
-- Preferred Rest Day: ${profile.rest_day || "Sunday"}
 - Height: ${profile.height_cm ? `${profile.height_cm} cm` : "Not specified"}
 - Weight: ${profile.weight_kg ? `${profile.weight_kg} kg` : "Not specified"}
+
+WORKOUT DAYS (only create workouts for these days):
+${workoutDays.map((d) => `- ${d}`).join("\n")}
 
 AVAILABLE EQUIPMENT:
 ${equipment.map((e) => `- ${e}`).join("\n")}
@@ -555,8 +618,8 @@ CONTEXT:
 ${completedWorkouts > 0 ? "- Build on their previous progress with appropriate progression" : "- First time user - start conservatively"}
 
 REQUIRED OUTPUT:
-Generate exactly ${profile.days_per_week || 4} training days per week across 4 weeks.
-Include rest days on ${profile.rest_day || "Sunday"} and distribute other rest days appropriately.
+Generate exactly ${workoutDays.length} workouts per week across all 4 weeks (${workoutDays.length * 4} total workouts).
+Each workout must be assigned to one of the specified workout days.
 Each workout should have warmup, main training blocks (strength/conditioning), and cooldown.
 
 Make the plan specific, actionable, and encouraging. Include clear instructions for each exercise.`;
