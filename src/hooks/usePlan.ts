@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import type { Plan, Workout } from '@/types/database';
-import type { PlanJson, WorkoutJson, DisplayWorkout, inferWorkoutType } from '@/types/plan';
-import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
+import type { PlanJson, WorkoutJson, DisplayWorkout, PlanDay, normalizePlanDay } from '@/types/plan';
+import { format, addDays } from 'date-fns';
 
 interface UsePlanResult {
   plan: Plan | null;
@@ -13,7 +13,9 @@ interface UsePlanResult {
   error: Error | null;
   refetch: () => Promise<void>;
   getWorkoutsForWeek: (weekStart: Date) => DisplayWorkout[];
+  getTodayWorkout: () => DisplayWorkout | null;
   currentWeekNumber: number;
+  hasGenerationIssue: boolean;
 }
 
 export function usePlan(): UsePlanResult {
@@ -91,6 +93,18 @@ export function usePlan(): UsePlanResult {
     return Math.max(1, Math.min(4, weekNum));
   })();
 
+  // Check if any week has 0 workout days (generation issue)
+  const hasGenerationIssue = (() => {
+    if (!planJson?.weeks) return false;
+    return planJson.weeks.some(week => {
+      const workoutDays = week.days.filter(d => {
+        const normalized = normalizePlanDayCompat(d);
+        return normalized.type === 'workout';
+      });
+      return workoutDays.length === 0;
+    });
+  })();
+
   const getWorkoutsForWeek = useCallback((weekStart: Date): DisplayWorkout[] => {
     const weekDays: DisplayWorkout[] = [];
     const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -103,6 +117,10 @@ export function usePlan(): UsePlanResult {
       // Find workout for this date
       const workout = workouts.find(w => w.scheduled_date === dateStr);
       
+      // Find plan day info for this day (checking current week context)
+      const planDay = findPlanDayForDate(planJson, dayDate, plan?.start_date);
+      const normalizedPlanDay = planDay ? normalizePlanDayCompat(planDay) : null;
+      
       if (workout) {
         const workoutJson = workout.workout_json as unknown as WorkoutJson;
         weekDays.push({
@@ -114,15 +132,22 @@ export function usePlan(): UsePlanResult {
           type: inferWorkoutTypeFromJson(workoutJson),
           completed: false, // Will be updated with session data
           workoutJson,
+          isRest: false,
+        });
+      } else if (normalizedPlanDay?.type === 'rest') {
+        // Explicit rest day from plan
+        weekDays.push({
+          id: `rest-${dateStr}`,
+          day: dayName,
+          dayDate,
+          workout: normalizedPlanDay.label || 'Rest Day',
+          duration: 0,
+          type: 'rest',
+          completed: false,
+          isRest: true,
         });
       } else {
-        // Check if this is a planned rest day from plan_json
-        const isRestDay = planJson?.weeks?.some(week => 
-          week.days.some(day => 
-            day.day_name === dayName && day.is_rest
-          )
-        );
-
+        // Day not in plan range or missing workout - treat as rest
         weekDays.push({
           id: `rest-${dateStr}`,
           day: dayName,
@@ -130,13 +155,60 @@ export function usePlan(): UsePlanResult {
           workout: 'Rest Day',
           duration: 0,
           type: 'rest',
-          completed: isRestDay || false,
+          completed: false,
+          isRest: true,
         });
       }
     }
 
     return weekDays;
-  }, [workouts, planJson]);
+  }, [workouts, planJson, plan?.start_date]);
+
+  const getTodayWorkout = useCallback((): DisplayWorkout | null => {
+    if (!plan?.start_date) return null;
+    
+    const today = new Date();
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const todayName = dayNames[today.getDay()];
+    
+    // Check if there's a workout scheduled for today
+    const workout = workouts.find(w => w.scheduled_date === todayStr);
+    
+    if (workout) {
+      const workoutJson = workout.workout_json as unknown as WorkoutJson;
+      return {
+        id: workout.id,
+        day: todayName,
+        dayDate: today,
+        workout: workout.title || workoutJson?.title || 'Workout',
+        duration: workoutJson?.total_estimated_minutes || 0,
+        type: inferWorkoutTypeFromJson(workoutJson),
+        completed: false,
+        workoutJson,
+        isRest: false,
+      };
+    }
+    
+    // Check plan day for today
+    const planDay = findPlanDayForDate(planJson, today, plan.start_date);
+    const normalizedPlanDay = planDay ? normalizePlanDayCompat(planDay) : null;
+    
+    if (normalizedPlanDay?.type === 'rest') {
+      return {
+        id: `rest-${todayStr}`,
+        day: todayName,
+        dayDate: today,
+        workout: normalizedPlanDay.label || 'Rest Day',
+        duration: 0,
+        type: 'rest',
+        completed: false,
+        isRest: true,
+      };
+    }
+    
+    return null;
+  }, [workouts, planJson, plan?.start_date]);
 
   return {
     plan,
@@ -146,7 +218,62 @@ export function usePlan(): UsePlanResult {
     error,
     refetch: fetchPlan,
     getWorkoutsForWeek,
+    getTodayWorkout,
     currentWeekNumber,
+    hasGenerationIssue,
+  };
+}
+
+/**
+ * Find the plan day entry for a given date
+ */
+function findPlanDayForDate(
+  planJson: PlanJson | null,
+  date: Date,
+  planStartDateStr: string | null | undefined
+): PlanDay | null {
+  if (!planJson?.weeks || !planStartDateStr) return null;
+  
+  const planStartDate = new Date(planStartDateStr);
+  const diffTime = date.getTime() - planStartDate.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 0 || diffDays >= 28) return null; // Outside 4-week plan
+  
+  const weekNumber = Math.floor(diffDays / 7) + 1;
+  const dayOfWeek = diffDays % 7;
+  const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const targetDayName = dayNames[dayOfWeek];
+  
+  const week = planJson.weeks.find(w => w.week_number === weekNumber);
+  if (!week) return null;
+  
+  return week.days.find(d => d.day_name === targetDayName) || null;
+}
+
+/**
+ * Normalize plan day for backward compatibility with legacy format
+ */
+function normalizePlanDayCompat(day: Partial<PlanDay> & { is_rest?: boolean; workout_id?: string }): PlanDay {
+  // If type already exists, use it
+  if (day.type) {
+    return day as PlanDay;
+  }
+  
+  // Infer type from legacy format
+  if (day.is_rest || (!day.workout_id && day.focus?.toLowerCase().includes('rest'))) {
+    return {
+      day_name: day.day_name || '',
+      type: 'rest',
+      label: day.focus || 'Rest Day',
+    };
+  }
+  
+  return {
+    day_name: day.day_name || '',
+    type: 'workout',
+    focus: day.focus || 'Workout',
+    workout_id: day.workout_id,
   };
 }
 

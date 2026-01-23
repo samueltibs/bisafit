@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { usePlan } from '@/hooks/usePlan';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Flame, Droplets, Footprints, Dumbbell, Apple, ChevronRight, Trophy, User } from 'lucide-react';
+import { Flame, Droplets, Footprints, Dumbbell, Apple, ChevronRight, Trophy, User, Bed } from 'lucide-react';
 
 export default function Home() {
   const navigate = useNavigate();
   const { profile, loading, refetch } = useUserProfile();
+  const { getTodayWorkout, plan } = usePlan();
   const [greeting, setGreeting] = useState('');
 
   useEffect(() => {
@@ -30,6 +32,9 @@ export default function Home() {
 
   const fullName = profile?.full_name?.trim() || '';
   const hasName = fullName.length > 0;
+
+  // Get today's workout from plan
+  const todayWorkout = getTodayWorkout();
 
   // Mock data for today's summary
   const todayStats = {
@@ -124,22 +129,77 @@ export default function Home() {
         <div className="space-y-3 animate-slide-up">
           <h2 className="text-lg font-semibold">Quick Actions</h2>
           
-          <Link to="/workout/today">
-            <Card className="cursor-pointer border-border transition-all hover:border-primary/50 hover:shadow-md">
+          {/* Today's Workout - Dynamic based on plan */}
+          {todayWorkout ? (
+            todayWorkout.isRest ? (
+              <Card className="border-border/50 bg-muted/30">
+                <CardContent className="flex items-center justify-between p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
+                      <Bed className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-muted-foreground">Rest Day</p>
+                      <p className="text-sm text-muted-foreground">Recovery & light mobility</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Link to={`/workout/${todayWorkout.id}`}>
+                <Card className="cursor-pointer border-border transition-all hover:border-primary/50 hover:shadow-md">
+                  <CardContent className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                        <Dumbbell className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium">Today's Workout</p>
+                        <p className="text-sm text-muted-foreground">
+                          {todayWorkout.workout} • {todayWorkout.duration} min
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  </CardContent>
+                </Card>
+              </Link>
+            )
+          ) : plan ? (
+            <Card className="border-border/50 bg-muted/30">
               <CardContent className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                    <Dumbbell className="h-6 w-6 text-primary" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
+                    <Dumbbell className="h-6 w-6 text-muted-foreground" />
                   </div>
                   <div>
-                    <p className="font-medium">Today's Workout</p>
-                    <p className="text-sm text-muted-foreground">Full Body Strength • 45 min</p>
+                    <p className="font-medium text-muted-foreground">No workout scheduled</p>
+                    <p className="text-sm text-muted-foreground">Check your plan for upcoming workouts</p>
                   </div>
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                <Link to="/plan">
+                  <Button variant="ghost" size="sm">View Plan</Button>
+                </Link>
               </CardContent>
             </Card>
-          </Link>
+          ) : (
+            <Link to="/plan">
+              <Card className="cursor-pointer border-border transition-all hover:border-primary/50 hover:shadow-md">
+                <CardContent className="flex items-center justify-between p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                      <Dumbbell className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Get Your Training Plan</p>
+                      <p className="text-sm text-muted-foreground">Generate a personalized 4-week plan</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            </Link>
+          )}
           
           <Link to="/nutrition">
             <Card className="cursor-pointer border-border transition-all hover:border-primary/50 hover:shadow-md">

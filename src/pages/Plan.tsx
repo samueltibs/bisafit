@@ -4,10 +4,10 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ChevronLeft, ChevronRight, Dumbbell, Timer, Check, Sparkles, Calendar, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ChevronLeft, ChevronRight, Dumbbell, Timer, Check, Sparkles, Calendar, Loader2, AlertTriangle, Bed } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, addDays, startOfWeek, isToday, isBefore } from 'date-fns';
+import { format, addDays, startOfWeek, isToday } from 'date-fns';
 import { usePlan } from '@/hooks/usePlan';
 import { usePlanGeneration } from '@/hooks/usePlanGeneration';
 import type { DisplayWorkout, WorkoutType } from '@/types/plan';
@@ -23,7 +23,7 @@ const typeColors: Record<WorkoutType, string> = {
 
 export default function Plan() {
   const navigate = useNavigate();
-  const { plan, planJson, loading, error, getWorkoutsForWeek, refetch } = usePlan();
+  const { plan, planJson, loading, getWorkoutsForWeek, refetch, hasGenerationIssue } = usePlan();
   const { generatePlan, isGenerating } = usePlanGeneration();
   const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
 
@@ -46,6 +46,9 @@ export default function Plan() {
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
   const displayWorkouts = plan ? getWorkoutsForWeek(currentWeekStart) : [];
+
+  // Count actual workout days in current week
+  const workoutDaysCount = displayWorkouts.filter(w => !w.isRest).length;
 
   const handleGeneratePlan = async () => {
     const result = await generatePlan();
@@ -107,6 +110,19 @@ export default function Plan() {
   return (
     <AppLayout>
       <div className="container space-y-6 px-4 py-6">
+        {/* Generation Issue Warning */}
+        {hasGenerationIssue && (
+          <Alert variant="destructive" className="animate-fade-in">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>Plan generation issue: no workouts scheduled. Please regenerate.</span>
+              <Button size="sm" variant="outline" onClick={handleGeneratePlan} disabled={isGenerating}>
+                {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Regenerate'}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Plan Header */}
         {planJson?.coach_notes && (
           <Card className="border-primary/20 bg-primary/5 animate-fade-in">
@@ -135,7 +151,7 @@ export default function Plan() {
             </h2>
             {planJson && (
               <p className="text-xs text-muted-foreground">
-                Block {planJson.block_number} • {planJson.progression_strategy} progression
+                Block {planJson.block_number} • {workoutDaysCount} workouts this week
               </p>
             )}
           </div>
@@ -148,7 +164,7 @@ export default function Plan() {
         <div className="flex justify-between gap-1 animate-slide-up">
           {weekDays.map((day, i) => {
             const workout = displayWorkouts[i];
-            const hasWorkout = workout && workout.type !== 'rest';
+            const hasWorkout = workout && !workout.isRest;
             return (
               <div
                 key={i}
@@ -166,11 +182,13 @@ export default function Plan() {
                 >
                   {format(day, 'd')}
                 </span>
-                {hasWorkout && (
+                {hasWorkout ? (
                   <div className={cn(
                     "h-1.5 w-1.5 rounded-full",
-                    workout.completed ? "bg-primary" : "bg-muted-foreground/30"
+                    workout.completed ? "bg-primary" : "bg-primary/50"
                   )} />
+                ) : (
+                  <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/20" />
                 )}
               </div>
             );
@@ -188,54 +206,8 @@ export default function Plan() {
             )}
           </div>
           
-          {displayWorkouts.map((workout, index) => (
-            <Link
-              key={workout.id}
-              to={workout.type !== 'rest' ? `/workout/${workout.id}` : '#'}
-              className={workout.type === 'rest' ? 'pointer-events-none' : ''}
-            >
-              <Card
-                className={cn(
-                  "border-border transition-all",
-                  workout.type !== 'rest' && "cursor-pointer hover:border-primary/50 hover:shadow-md",
-                  workout.completed && "opacity-75"
-                )}
-              >
-                <CardContent className="flex items-center gap-4 p-4">
-                  <div
-                    className={cn(
-                      "flex h-12 w-12 items-center justify-center rounded-xl",
-                      typeColors[workout.type]
-                    )}
-                  >
-                    {workout.completed ? (
-                      <Check className="h-6 w-6" />
-                    ) : (
-                      <Dumbbell className="h-6 w-6" />
-                    )}
-                  </div>
-                  
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className={cn("font-medium", workout.completed && "line-through")}>
-                        {workout.workout}
-                      </p>
-                      {isToday(workout.dayDate) && (
-                        <Badge variant="secondary" className="text-xs">Today</Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground">{workout.day}</p>
-                  </div>
-                  
-                  {workout.type !== 'rest' && workout.duration > 0 && (
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <Timer className="h-4 w-4" />
-                      <span>{workout.duration}m</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </Link>
+          {displayWorkouts.map((workout) => (
+            <WorkoutDayCard key={workout.id} workout={workout} />
           ))}
 
           {displayWorkouts.length === 0 && (
@@ -260,5 +232,77 @@ export default function Plan() {
         )}
       </div>
     </AppLayout>
+  );
+}
+
+interface WorkoutDayCardProps {
+  workout: DisplayWorkout;
+}
+
+function WorkoutDayCard({ workout }: WorkoutDayCardProps) {
+  if (workout.isRest) {
+    return (
+      <Card className="border-border/50 bg-muted/30">
+        <CardContent className="flex items-center gap-4 p-4">
+          <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl", typeColors.rest)}>
+            <Bed className="h-6 w-6" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <p className="font-medium text-muted-foreground">Rest Day</p>
+              {isToday(workout.dayDate) && (
+                <Badge variant="secondary" className="text-xs">Today</Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">{workout.day} • Recovery & Mobility</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Link to={`/workout/${workout.id}`}>
+      <Card
+        className={cn(
+          "border-border transition-all cursor-pointer hover:border-primary/50 hover:shadow-md",
+          workout.completed && "opacity-75"
+        )}
+      >
+        <CardContent className="flex items-center gap-4 p-4">
+          <div
+            className={cn(
+              "flex h-12 w-12 items-center justify-center rounded-xl",
+              typeColors[workout.type]
+            )}
+          >
+            {workout.completed ? (
+              <Check className="h-6 w-6" />
+            ) : (
+              <Dumbbell className="h-6 w-6" />
+            )}
+          </div>
+          
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <p className={cn("font-medium", workout.completed && "line-through")}>
+                {workout.workout}
+              </p>
+              {isToday(workout.dayDate) && (
+                <Badge variant="secondary" className="text-xs">Today</Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">{workout.day}</p>
+          </div>
+          
+          {workout.duration > 0 && (
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <Timer className="h-4 w-4" />
+              <span>{workout.duration}m</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
