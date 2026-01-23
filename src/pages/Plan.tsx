@@ -52,11 +52,14 @@ export default function Plan() {
 
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [showEarlyProgressConfirm, setShowEarlyProgressConfirm] = useState(false);
   const [eligibility, setEligibility] = useState<{
     isEligible: boolean;
     adherenceRate: number;
     completedWorkouts: number;
     plannedWorkouts: number;
+    isWeek4: boolean;
+    hasAnyWorkouts: boolean;
   } | null>(null);
 
   // Check eligibility when plan loads
@@ -121,6 +124,20 @@ export default function Plan() {
 
   // Handle next block generation
   const handleBuildNextBlock = () => {
+    setShowFeedbackDialog(true);
+  };
+
+  // Handle manual override - check if user has completed any workouts first
+  const handleManualOverride = () => {
+    if (!eligibility?.hasAnyWorkouts) {
+      setShowEarlyProgressConfirm(true);
+    } else {
+      setShowFeedbackDialog(true);
+    }
+  };
+
+  const handleConfirmEarlyProgress = () => {
+    setShowEarlyProgressConfirm(false);
     setShowFeedbackDialog(true);
   };
 
@@ -191,46 +208,100 @@ export default function Plan() {
   return (
     <AppLayout>
       <div className="container space-y-6 px-4 py-6">
-        {/* Next Block CTA - Show when eligible */}
-        {eligibility?.isEligible && (
-          <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10 animate-fade-in">
-            <CardContent className="p-4">
+        {/* Progression CTAs - Always show manual override, highlight when eligible */}
+        <Card className={cn(
+          "animate-fade-in transition-all",
+          eligibility?.isEligible 
+            ? "border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10" 
+            : "border-border/50"
+        )}>
+          <CardContent className="p-4">
+            <div className="flex flex-col gap-4">
+              {/* Main CTA Row */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20">
-                    <Rocket className="h-5 w-5 text-primary" />
+                  <div className={cn(
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
+                    eligibility?.isEligible ? "bg-primary/20" : "bg-muted"
+                  )}>
+                    <Rocket className={cn(
+                      "h-5 w-5",
+                      eligibility?.isEligible ? "text-primary" : "text-muted-foreground"
+                    )} />
                   </div>
                   <div>
-                    <p className="font-semibold text-primary">Ready for Your Next Block!</p>
-                    <p className="text-sm text-muted-foreground">
-                      {eligibility.adherenceRate >= 0.7 
-                        ? `Great work! You've completed ${Math.round(eligibility.adherenceRate * 100)}% of Block ${planJson?.block_number || 1}.`
-                        : `You're in Week 4 of Block ${planJson?.block_number || 1}. Time to plan ahead!`
-                      }
-                    </p>
+                    {eligibility?.isEligible ? (
+                      <>
+                        <p className="font-semibold text-primary">Ready for Your Next Block!</p>
+                        <p className="text-sm text-muted-foreground">
+                          {eligibility.adherenceRate >= 0.7 
+                            ? `Great work! You've completed ${Math.round(eligibility.adherenceRate * 100)}% of Block ${planJson?.block_number || 1}.`
+                            : `You're in Week 4 of Block ${planJson?.block_number || 1}. Time to plan ahead!`
+                          }
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-semibold">Block {planJson?.block_number || 1} in Progress</p>
+                        <p className="text-sm text-muted-foreground">
+                          Week {currentWeekIndex + 1} of 4 • {eligibility?.completedWorkouts || 0}/{eligibility?.plannedWorkouts || 0} workouts completed
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
-                <Button 
-                  onClick={handleBuildNextBlock}
-                  disabled={isGeneratingNextBlock}
-                  className="shrink-0"
-                >
-                  {isGeneratingNextBlock ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Building...
-                    </>
+                
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  {eligibility?.isEligible ? (
+                    <Button 
+                      onClick={handleBuildNextBlock}
+                      disabled={isGeneratingNextBlock}
+                      className="shrink-0"
+                    >
+                      {isGeneratingNextBlock ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Analyzing your workouts...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Build My Next Block
+                        </>
+                      )}
+                    </Button>
                   ) : (
-                    <>
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Build My Next Block
-                    </>
+                    <Button 
+                      variant="outline"
+                      onClick={handleManualOverride}
+                      disabled={isGeneratingNextBlock}
+                      className="shrink-0"
+                    >
+                      {isGeneratingNextBlock ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Analyzing your workouts...
+                        </>
+                      ) : (
+                        <>
+                          <Rocket className="mr-2 h-4 w-4" />
+                          Build Next Block Now
+                        </>
+                      )}
+                    </Button>
                   )}
-                </Button>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
+              
+              {/* Helper text for manual override */}
+              {!eligibility?.isEligible && (
+                <p className="text-xs text-muted-foreground pl-13">
+                  You don't have to wait 4 weeks if you're ready to progress.
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Debug Banner (temporary) */}
         {schedulingDebug && (
@@ -417,6 +488,32 @@ export default function Plan() {
                   Regenerate Plan
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Early Progress Confirmation Dialog */}
+      <Dialog open={showEarlyProgressConfirm} onOpenChange={setShowEarlyProgressConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Progress Early?
+            </DialogTitle>
+            <DialogDescription>
+              You haven't completed many workouts yet. The progression engine works best with workout data to analyze your performance.
+              <span className="block mt-2 font-medium text-foreground">
+                Do you want to build your next block anyway?
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowEarlyProgressConfirm(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmEarlyProgress}>
+              Continue Anyway
             </Button>
           </DialogFooter>
         </DialogContent>
