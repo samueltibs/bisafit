@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,10 @@ import { cn } from '@/lib/utils';
 import { useNutrition, type Meal, type DayPlan, type NutritionTargets } from '@/hooks/useNutrition';
 import { FridgeScanFlow } from '@/components/nutrition/FridgeScanFlow';
 import { CuisineThemeSelector } from '@/components/nutrition/CuisineThemeSelector';
+import { IngredientModeModal } from '@/components/nutrition/IngredientModeModal';
+import { PlanTypeSwitcher } from '@/components/nutrition/PlanTypeSwitcher';
+import { PlanModeBadge } from '@/components/nutrition/PlanModeBadge';
+import { OptionalAdditionsList } from '@/components/nutrition/OptionalAdditionsList';
 import { useIngredientSession, type IngredientMode } from '@/hooks/useIngredientSession';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -218,14 +222,45 @@ export default function Nutrition() {
   const [fridgeScanOpen, setFridgeScanOpen] = useState(false);
   const [generatingFromIngredients, setGeneratingFromIngredients] = useState(false);
   const [weekCuisineTheme, setWeekCuisineTheme] = useState<string | null>(null);
+  const [modeModalOpen, setModeModalOpen] = useState(false);
+  const [pendingGeneration, setPendingGeneration] = useState(false);
   
-  const { hasActiveSession, getIngredientNames, clearIngredients, mode } = useIngredientSession();
+  const { 
+    hasActiveSession, 
+    getIngredientNames, 
+    clearIngredients, 
+    mode, 
+    status,
+    updateMode,
+    updateStatus,
+  } = useIngredientSession();
   
   const targets = profile?.targets_json as NutritionTargets | null;
   const mealPlan = profile?.meal_plan_json;
   const isSimpleMode = profile?.nutrition_goal_style !== 'macros';
   const savedCuisinePrefs = (profile?.cuisine_preferences_json || []) as string[];
   const isFallbackTargets = targets?.source === 'fallback';
+  
+  // Get last plan mode from profile (with type assertion)
+  const lastPlanMode = ((profile as unknown as Record<string, unknown> | null)?.last_plan_mode as 'generic' | 'ingredients') || 'generic';
+  
+  // Get optional additions from meal plan (if any)
+  const optionalAdditions = (mealPlan as unknown as Record<string, unknown> | null)?.optional_additions as string[] | undefined;
+
+  // Update last_plan_mode in the database
+  const updateLastPlanMode = useCallback(async (mode: 'generic' | 'ingredients') => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      await supabase
+        .from('nutrition_profiles')
+        .update({ last_plan_mode: mode })
+        .eq('user_id', user.id);
+    } catch (err) {
+      console.error('Failed to update last_plan_mode:', err);
+    }
+  }, []);
 
   // Generate meal plan from saved ingredients
   const handleGeneratePlanFromIngredients = useCallback(async (overrideMode?: IngredientMode) => {
@@ -243,6 +278,8 @@ export default function Nutrition() {
     }
 
     setGeneratingFromIngredients(true);
+    updateStatus('generating');
+    
     try {
       const { data, error } = await supabase.functions.invoke('generate-meal-plan', {
         body: { 
@@ -256,17 +293,59 @@ export default function Nutrition() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      clearIngredients();
+      // Update last plan mode to ingredients
+      await updateLastPlanMode('ingredients');
+      
+      // Mark session as used but keep ingredients for regeneration
+      updateStatus('used');
+      
       await refetch();
+      
+      toast.success(
+        activeMode === 'strict_only' 
+          ? 'Meal plan generated using only what you have!' 
+          : 'Meal plan generated using your ingredients!'
+      );
+      
+      // Scroll to meal plan section
+      setTimeout(() => {
+        document.getElementById('meal-plan-section')?.scrollIntoView({ behavior: 'smooth' });
+      }, 500);
     } catch (err) {
       console.error('Generate from ingredients error:', err);
-      throw err;
+      // Restore status to ready on failure
+      updateStatus('ready');
+      toast.error("Couldn't generate plan right now. Try again.");
     } finally {
       setGeneratingFromIngredients(false);
     }
-  }, [getIngredientNames, clearIngredients, refetch, weekCuisineTheme, mode]);
+  }, [getIngredientNames, refetch, weekCuisineTheme, mode, updateLastPlanMode, updateStatus]);
 
-  // Handle generate meal plan with cuisine theme
+  // Handle the mode selection modal confirm
+  const handleModeConfirm = useCallback(async (selectedMode: IngredientMode) => {
+    updateMode(selectedMode);
+    await handleGeneratePlanFromIngredients(selectedMode);
+  }, [handleGeneratePlanFromIngredients, updateMode]);
+
+  // Handle the "Generate plan using these" button click
+  const handleIngredientPlanClick = useCallback(async () => {
+    const ingredientNames = getIngredientNames();
+    
+    if (ingredientNames.length < 2) {
+      toast.error('Need at least 2 ingredients. Add more or scan again.');
+      return;
+    }
+
+    // If first time using ingredients or switching from generic, show mode selection
+    if (lastPlanMode !== 'ingredients') {
+      setModeModalOpen(true);
+    } else {
+      // Reuse previous mode automatically
+      await handleGeneratePlanFromIngredients();
+    }
+  }, [getIngredientNames, lastPlanMode, handleGeneratePlanFromIngredients]);
+
+  // Handle generate generic meal plan
   const handleGenerateMealPlan = useCallback(async (days = 7) => {
     try {
       const { data, error } = await supabase.functions.invoke('generate-meal-plan', {
@@ -276,12 +355,46 @@ export default function Nutrition() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
+      // Update last plan mode to generic
+      await updateLastPlanMode('generic');
+      
       await refetch();
+      toast.success('Meal plan generated!');
     } catch (err) {
       console.error('Generate meal plan error:', err);
-      throw err;
+      toast.error("Couldn't generate plan right now. Try again.");
     }
-  }, [refetch, weekCuisineTheme]);
+  }, [refetch, weekCuisineTheme, updateLastPlanMode]);
+
+  // Handle regenerate based on last plan mode
+  const handleRegenerate = useCallback(async () => {
+    if (lastPlanMode === 'ingredients' && (hasActiveSession || status === 'used')) {
+      // Regenerate ingredient-based plan with saved mode
+      const ingredientNames = getIngredientNames();
+      if (ingredientNames.length >= 2) {
+        await handleGeneratePlanFromIngredients();
+      } else {
+        // Fall back to generic if no ingredients available
+        await handleGenerateMealPlan(7);
+      }
+    } else {
+      // Regenerate generic plan
+      await handleGenerateMealPlan(7);
+    }
+  }, [lastPlanMode, hasActiveSession, status, getIngredientNames, handleGeneratePlanFromIngredients, handleGenerateMealPlan]);
+
+  // Handle switching plan types
+  const handleSwitchToGeneric = useCallback(async () => {
+    await handleGenerateMealPlan(7);
+  }, [handleGenerateMealPlan]);
+
+  const handleSwitchToIngredients = useCallback(() => {
+    if (!hasActiveSession) {
+      setFridgeScanOpen(true);
+    } else {
+      handleIngredientPlanClick();
+    }
+  }, [hasActiveSession, handleIngredientPlanClick]);
 
   if (loading) {
     return (
@@ -318,8 +431,15 @@ export default function Nutrition() {
           generatingPlan={generatingFromIngredients}
         />
         
+        {/* Ingredient Mode Selection Modal */}
+        <IngredientModeModal
+          open={modeModalOpen}
+          onOpenChange={setModeModalOpen}
+          onConfirm={handleModeConfirm}
+        />
+        
         {/* Active ingredient session hint */}
-        {hasActiveSession && !fridgeScanOpen && (
+        {hasActiveSession && !fridgeScanOpen && status !== 'used' && (
           <Alert className={cn(
             "border-primary/50",
             mode === 'strict_only' ? "bg-amber-500/10" : "bg-primary/5"
@@ -336,19 +456,21 @@ export default function Nutrition() {
                     <span>
                       {getIngredientNames().length} saved ingredients
                     </span>
-                    <Badge variant="outline" className="text-xs">
-                      {mode === 'strict_only' ? (
-                        <>
-                          <Lock className="h-2.5 w-2.5 mr-1" />
-                          Strict
-                        </>
-                      ) : (
-                        <>
-                          <Shuffle className="h-2.5 w-2.5 mr-1" />
-                          Flexible
-                        </>
-                      )}
-                    </Badge>
+                    {lastPlanMode === 'ingredients' && (
+                      <Badge variant="outline" className="text-xs">
+                        {mode === 'strict_only' ? (
+                          <>
+                            <Lock className="h-2.5 w-2.5 mr-1" />
+                            Strict
+                          </>
+                        ) : (
+                          <>
+                            <Shuffle className="h-2.5 w-2.5 mr-1" />
+                            Flexible
+                          </>
+                        )}
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Button 
@@ -362,31 +484,7 @@ export default function Nutrition() {
                     <Button 
                       variant="default" 
                       size="sm" 
-                      onClick={async () => {
-                        const ingredientNames = getIngredientNames();
-                        if (process.env.NODE_ENV === 'development') {
-                          console.log('[Nutrition] Banner CTA clicked, ingredients count:', ingredientNames.length, 'mode:', mode);
-                        }
-                        if (ingredientNames.length < 2) {
-                          toast.error('Need at least 2 ingredients. Add more or scan again.');
-                          return;
-                        }
-                        try {
-                          await handleGeneratePlanFromIngredients();
-                          toast.success(
-                            mode === 'strict_only' 
-                              ? 'Meal plan generated using only what you have!' 
-                              : 'Meal plan generated using your ingredients!'
-                          );
-                          // Scroll to meal plan section
-                          setTimeout(() => {
-                            document.getElementById('meal-plan-section')?.scrollIntoView({ behavior: 'smooth' });
-                          }, 500);
-                        } catch (err) {
-                          console.error('[Nutrition] Generate from ingredients error:', err);
-                          toast.error("Couldn't generate plan right now. Try again.");
-                        }
-                      }}
+                      onClick={handleIngredientPlanClick}
                       disabled={generatingFromIngredients || getIngredientNames().length < 2}
                       className="h-auto py-1 px-3 gap-2"
                     >
@@ -405,9 +503,11 @@ export default function Nutrition() {
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {mode === 'strict_only' 
-                    ? "Uses only scanned ingredients — no additions." 
-                    : "Uses scanned ingredients + common staples if needed."}
+                  {lastPlanMode === 'ingredients' 
+                    ? (mode === 'strict_only' 
+                        ? "Will use only scanned ingredients — no additions." 
+                        : "Will use scanned ingredients + common staples if needed.")
+                    : "Choose how strictly to use your ingredients when generating."}
                 </p>
               </div>
             </AlertDescription>
@@ -567,21 +667,37 @@ export default function Nutrition() {
         {targets && (
           <div id="meal-plan-section" className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="text-lg font-semibold">7-Day Meal Plan</h2>
-              <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-lg font-semibold">7-Day Meal Plan</h2>
+                {mealPlan && (
+                  <PlanModeBadge 
+                    planMode={lastPlanMode} 
+                    ingredientMode={mode}
+                  />
+                )}
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
                 <CuisineThemeSelector
                   selectedCuisine={weekCuisineTheme}
                   onCuisineChange={setWeekCuisineTheme}
                   savedPreferences={savedCuisinePrefs}
                   compact
                 />
+                {mealPlan && (
+                  <PlanTypeSwitcher
+                    currentMode={lastPlanMode}
+                    hasIngredients={hasActiveSession || status === 'used'}
+                    onSwitchToGeneric={handleSwitchToGeneric}
+                    onSwitchToIngredients={handleSwitchToIngredients}
+                  />
+                )}
                 <Button 
-                  onClick={() => handleGenerateMealPlan(7)} 
-                  disabled={generatingMealPlan}
+                  onClick={mealPlan ? handleRegenerate : () => handleGenerateMealPlan(7)} 
+                  disabled={generatingMealPlan || generatingFromIngredients}
                   variant={mealPlan ? "outline" : "default"}
                   className="gap-2"
                 >
-                  {generatingMealPlan ? (
+                  {(generatingMealPlan || generatingFromIngredients) ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <Sparkles className="h-4 w-4" />
@@ -649,6 +765,11 @@ export default function Nutrition() {
                 </TabsList>
 
                 <TabsContent value="meals" className="space-y-4 mt-4">
+                  {/* Optional additions for flexible mode */}
+                  {lastPlanMode === 'ingredients' && mode === 'flexible_prefer' && optionalAdditions && optionalAdditions.length > 0 && (
+                    <OptionalAdditionsList additions={optionalAdditions} />
+                  )}
+                  
                   {/* Day selector */}
                   <div className="flex gap-2 overflow-x-auto pb-2">
                     {mealPlan.days.map((day, i) => (

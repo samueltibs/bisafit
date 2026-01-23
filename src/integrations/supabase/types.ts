@@ -93,6 +93,7 @@ export type Database = {
           cuisine_preferences_json: Json | null
           dietary_preferences_json: Json | null
           fat_g: number | null
+          last_plan_mode: string | null
           meal_plan_json: Json | null
           meals_per_day: number | null
           nutrition_goal_style: string | null
@@ -110,6 +111,7 @@ export type Database = {
           cuisine_preferences_json?: Json | null
           dietary_preferences_json?: Json | null
           fat_g?: number | null
+          last_plan_mode?: string | null
           meal_plan_json?: Json | null
           meals_per_day?: number | null
           nutrition_goal_style?: string | null
@@ -127,6 +129,7 @@ export type Database = {
           cuisine_preferences_json?: Json | null
           dietary_preferences_json?: Json | null
           fat_g?: number | null
+          last_plan_mode?: string | null
           meal_plan_json?: Json | null
           meals_per_day?: number | null
           nutrition_goal_style?: string | null
