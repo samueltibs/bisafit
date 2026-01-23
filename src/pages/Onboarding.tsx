@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { usePlanGeneration } from '@/hooks/usePlanGeneration';
 import { upsertNutritionProfile, getNutritionProfile } from '@/lib/database';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -78,6 +79,7 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile, loading: profileLoading, update, error: profileError } = useUserProfile();
+  const { generatePlan, isGenerating } = usePlanGeneration();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -211,13 +213,22 @@ export default function Onboarding() {
         throw new Error('Failed to save nutrition preferences');
       }
 
-      toast.success('Profile saved successfully!');
-      navigate('/plan');
+      toast.success('Profile saved! Generating your plan...');
+
+      // Generate the AI plan
+      const result = await generatePlan();
+
+      if (result.success) {
+        toast.success(result.message || 'Your plan is ready!');
+        navigate('/plan');
+      } else {
+        throw new Error(result.error || 'Failed to generate plan');
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       console.error('Onboarding error:', error);
       setSaveError(errorMessage);
-      toast.error('Failed to save your profile. Please try again.');
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -333,11 +344,14 @@ export default function Onboarding() {
         ) : (
           <Button
             onClick={handleComplete}
-            disabled={!canProceed() || isLoading}
+            disabled={!canProceed() || isLoading || isGenerating}
             className="flex-1 gap-2"
           >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+            {isLoading || isGenerating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {isGenerating ? 'Creating Your Plan...' : 'Saving...'}
+              </>
             ) : (
               <>
                 <Sparkles className="h-4 w-4" />
