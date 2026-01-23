@@ -14,7 +14,10 @@ interface UsePlanResult {
   refetch: () => Promise<void>;
   getWorkoutsForWeek: (weekStart: Date) => DisplayWorkout[];
   getTodayWorkout: () => DisplayWorkout | null;
+  getNextUpcomingWorkout: () => DisplayWorkout | null;
   currentWeekNumber: number;
+  currentWeekIndex: number;
+  getPlanWeekStart: () => Date | null;
   hasGenerationIssue: boolean;
 }
 
@@ -82,16 +85,21 @@ export function usePlan(): UsePlanResult {
 
   const planJson = plan?.plan_json as unknown as PlanJson | null;
 
-  // Calculate current week number based on plan start date
-  const currentWeekNumber = (() => {
-    if (!plan?.start_date) return 1;
+  // Calculate current week number based on plan start date (0-indexed internally, 1-indexed for display)
+  const getCurrentWeekIndex = (): number => {
+    if (!plan?.start_date) return 0;
     const startDate = new Date(plan.start_date);
+    startDate.setHours(0, 0, 0, 0);
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const diffTime = today.getTime() - startDate.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    const weekNum = Math.floor(diffDays / 7) + 1;
-    return Math.max(1, Math.min(4, weekNum));
-  })();
+    const weekIndex = Math.floor(diffDays / 7);
+    return Math.max(0, Math.min(3, weekIndex)); // Clamp between 0-3
+  };
+
+  const currentWeekIndex = getCurrentWeekIndex();
+  const currentWeekNumber = currentWeekIndex + 1;
 
   // Check if any week has 0 workout days (generation issue)
   const hasGenerationIssue = (() => {
@@ -210,6 +218,51 @@ export function usePlan(): UsePlanResult {
     return null;
   }, [workouts, planJson, plan?.start_date]);
 
+  // Get next upcoming workout within 7 days
+  const getNextUpcomingWorkout = useCallback((): DisplayWorkout | null => {
+    const today = new Date();
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    
+    for (let i = 1; i <= 7; i++) {
+      const checkDate = new Date(today);
+      checkDate.setDate(today.getDate() + i);
+      const dateStr = format(checkDate, 'yyyy-MM-dd');
+      const dayName = dayNames[checkDate.getDay()];
+      
+      const workout = workouts.find(w => w.scheduled_date === dateStr);
+      
+      if (workout) {
+        const workoutJson = workout.workout_json as unknown as WorkoutJson;
+        return {
+          id: workout.id,
+          day: dayName,
+          dayDate: checkDate,
+          workout: workout.title || workoutJson?.title || 'Workout',
+          duration: workoutJson?.total_estimated_minutes || 0,
+          type: inferWorkoutTypeFromJson(workoutJson),
+          completed: false,
+          workoutJson,
+          isRest: false,
+        };
+      }
+    }
+    
+    return null;
+  }, [workouts]);
+
+  // Get the start date for a specific plan week (0-indexed)
+  const getPlanWeekStart = useCallback((): Date | null => {
+    if (!plan?.start_date) return null;
+    const startDate = new Date(plan.start_date);
+    startDate.setHours(0, 0, 0, 0);
+    // Find the Monday of the week containing the start date
+    const dayOfWeek = startDate.getDay();
+    const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const weekStart = new Date(startDate);
+    weekStart.setDate(startDate.getDate() + daysToMonday);
+    return weekStart;
+  }, [plan?.start_date]);
+
   return {
     plan,
     planJson,
@@ -219,7 +272,10 @@ export function usePlan(): UsePlanResult {
     refetch: fetchPlan,
     getWorkoutsForWeek,
     getTodayWorkout,
+    getNextUpcomingWorkout,
     currentWeekNumber,
+    currentWeekIndex,
+    getPlanWeekStart,
     hasGenerationIssue,
   };
 }

@@ -27,6 +27,7 @@ import {
   Crown,
   Loader2,
   Edit2,
+  Calendar,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -39,6 +40,7 @@ import {
   formatWeight,
   type UnitPreference,
 } from '@/lib/unitConversions';
+import { WorkoutDaysSelector } from '@/components/settings/WorkoutDaysSelector';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -61,6 +63,8 @@ export default function Settings() {
     heightCm: '',
     // Weight fields (display in selected unit)
     weight: '',
+    // Workout days
+    workoutDays: ['Monday', 'Wednesday', 'Thursday', 'Friday'] as string[],
   });
 
   // Auto-open modal if ?edit=true in URL
@@ -102,6 +106,9 @@ export default function Settings() {
         }
       }
 
+      // Load workout days
+      const workoutDays = (profile as any).workout_days || ['Monday', 'Wednesday', 'Thursday', 'Friday'];
+
       setEditForm({
         fullName: profile.full_name || '',
         unitPreference: unitPref,
@@ -109,6 +116,7 @@ export default function Settings() {
         heightInches,
         heightCm,
         weight,
+        workoutDays,
       });
     }
   }, [isEditModalOpen, profile]);
@@ -213,7 +221,9 @@ export default function Settings() {
         height_cm: heightCm,
         weight_kg: weightKg,
         unit_preference: editForm.unitPreference,
-      });
+        workout_days: editForm.workoutDays,
+        days_per_week: editForm.workoutDays.length,
+      } as any);
 
       if (success) {
         await refetch();
@@ -312,6 +322,23 @@ export default function Settings() {
               </Card>
             )}
           </div>
+        )}
+
+        {/* Workout Schedule Summary */}
+        {(profile as any)?.workout_days && (
+          <Card className="border-border animate-slide-up">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <Calendar className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">Workout Schedule</p>
+                  <p className="text-sm text-muted-foreground">
+                    {((profile as any).workout_days as string[]).join(', ')} ({((profile as any).workout_days as string[]).length} days/week)
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Subscription */}
@@ -487,6 +514,12 @@ export default function Settings() {
                 onChange={(e) => setEditForm({ ...editForm, weight: e.target.value })}
               />
             </div>
+
+            {/* Workout Days */}
+            <WorkoutDaysSelector
+              workoutDays={editForm.workoutDays}
+              onWorkoutDaysChange={(days) => setEditForm({ ...editForm, workoutDays: days })}
+            />
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">

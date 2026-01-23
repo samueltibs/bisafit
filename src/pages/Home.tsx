@@ -11,7 +11,7 @@ import { Flame, Droplets, Footprints, Dumbbell, Apple, ChevronRight, Trophy, Use
 export default function Home() {
   const navigate = useNavigate();
   const { profile, loading, refetch } = useUserProfile();
-  const { getTodayWorkout, plan } = usePlan();
+  const { getTodayWorkout, getNextUpcomingWorkout, plan } = usePlan();
   const [greeting, setGreeting] = useState('');
 
   useEffect(() => {
@@ -35,6 +35,7 @@ export default function Home() {
 
   // Get today's workout from plan
   const todayWorkout = getTodayWorkout();
+  const nextUpcomingWorkout = getNextUpcomingWorkout();
 
   // Mock data for today's summary
   const todayStats = {
@@ -166,22 +167,43 @@ export default function Home() {
               </Link>
             )
           ) : plan ? (
-            <Card className="border-border/50 bg-muted/30">
-              <CardContent className="flex items-center justify-between p-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
-                    <Dumbbell className="h-6 w-6 text-muted-foreground" />
+            nextUpcomingWorkout ? (
+              <Link to={`/workout/${nextUpcomingWorkout.id}`}>
+                <Card className="cursor-pointer border-border transition-all hover:border-primary/50 hover:shadow-md">
+                  <CardContent className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                        <Dumbbell className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium">Next Workout: {nextUpcomingWorkout.day}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {nextUpcomingWorkout.workout} • {nextUpcomingWorkout.duration} min
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  </CardContent>
+                </Card>
+              </Link>
+            ) : (
+              <Card className="border-border/50 bg-muted/30">
+                <CardContent className="flex items-center justify-between p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
+                      <Dumbbell className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-muted-foreground">No upcoming workouts</p>
+                      <p className="text-sm text-muted-foreground">Check your plan for schedule</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-muted-foreground">No workout scheduled</p>
-                    <p className="text-sm text-muted-foreground">Check your plan for upcoming workouts</p>
-                  </div>
-                </div>
-                <Link to="/plan">
-                  <Button variant="ghost" size="sm">View Plan</Button>
-                </Link>
-              </CardContent>
-            </Card>
+                  <Link to="/plan">
+                    <Button variant="ghost" size="sm">View Plan</Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )
           ) : (
             <Link to="/plan">
               <Card className="cursor-pointer border-border transition-all hover:border-primary/50 hover:shadow-md">

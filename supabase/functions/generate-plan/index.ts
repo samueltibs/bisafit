@@ -14,6 +14,7 @@ interface UserProfile {
   days_per_week: number | null;
   session_minutes: number | null;
   rest_day: string | null;
+  workout_days: string[] | null;
   constraints_json: {
     injury_flags?: string[];
     preferences?: string[];
@@ -152,20 +153,17 @@ serve(async (req) => {
       completedWorkoutsCount = count || 0;
     }
 
-    // Determine workout days and rest days based on user preferences
-    const daysPerWeek = userProfile.days_per_week || 4;
-    const preferredRestDay = userProfile.rest_day || "Sunday";
-    const { workoutDays, restDays } = selectWorkoutDays(daysPerWeek, preferredRestDay);
+    // Determine workout days - use workout_days if available, otherwise fallback
+    const workoutDays = getWorkoutDays(userProfile);
 
     console.log("Generating plan for user:", userId);
     console.log("User profile summary:", {
       goal: userProfile.goal_primary,
       experience: userProfile.experience_level,
-      days: daysPerWeek,
+      days: workoutDays.length,
       minutes: userProfile.session_minutes,
       equipment: userProfile.equipment_json,
       workoutDays,
-      restDays,
     });
 
     // Build the prompt for AI
@@ -299,12 +297,8 @@ serve(async (req) => {
     const generatedData = JSON.parse(toolCall.function.arguments);
     const { plan: planMeta, workouts: generatedWorkouts } = generatedData;
 
-    // Calculate start date (next Monday)
-    const today = new Date();
-    const dayOfWeek = today.getDay();
-    const daysUntilMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7 || 7;
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() + daysUntilMonday);
+    // Calculate start date - find next occurrence of earliest workout day (could be today)
+    const startDate = calculatePlanStartDate(workoutDays);
     const startDateStr = startDate.toISOString().split("T")[0];
 
     // Create plan record first
@@ -475,15 +469,17 @@ function getDayIndex(dayName: string): number {
 }
 
 /**
- * Select workout days based on days_per_week and preferred rest day
- * Distributes workout days evenly across the week
+ * Get workout days from profile - uses workout_days if available, otherwise builds from legacy fields
  */
-function selectWorkoutDays(daysPerWeek: number, preferredRestDay: string): { workoutDays: string[]; restDays: string[] } {
-  const restDays: string[] = [];
-  const workoutDays: string[] = [];
+function getWorkoutDays(profile: UserProfile): string[] {
+  // If workout_days is set, use it directly
+  if (profile.workout_days && Array.isArray(profile.workout_days) && profile.workout_days.length > 0) {
+    return profile.workout_days.sort((a, b) => getDayIndex(a) - getDayIndex(b));
+  }
 
-  // Always include preferred rest day as rest
-  restDays.push(preferredRestDay);
+  // Fallback: build from days_per_week and rest_day
+  const daysPerWeek = profile.days_per_week || 4;
+  const preferredRestDay = profile.rest_day || "Sunday";
 
   // Optimal day distributions for different training frequencies
   const dayDistributions: Record<number, string[]> = {
@@ -495,9 +491,9 @@ function selectWorkoutDays(daysPerWeek: number, preferredRestDay: string): { wor
     7: ALL_DAYS,
   };
 
-  // Get base distribution and filter out preferred rest day
   const baseDistribution = dayDistributions[daysPerWeek] || dayDistributions[4];
-  
+  const workoutDays: string[] = [];
+
   for (const day of baseDistribution) {
     if (day !== preferredRestDay) {
       workoutDays.push(day);
@@ -518,17 +514,48 @@ function selectWorkoutDays(daysPerWeek: number, preferredRestDay: string): { wor
     workoutDays.pop();
   }
 
-  // Rest days are all days not in workout days
-  for (const day of ALL_DAYS) {
-    if (!workoutDays.includes(day) && !restDays.includes(day)) {
-      restDays.push(day);
+  return workoutDays.sort((a, b) => getDayIndex(a) - getDayIndex(b));
+}
+
+/**
+ * Calculate plan start date - finds the next occurrence of the earliest workout day
+ * If today is a workout day, start from today
+ */
+function calculatePlanStartDate(workoutDays: string[]): Date {
+  const today = new Date();
+  const todayDayIndex = (today.getDay() + 6) % 7; // Convert Sunday=0 to Monday=0 format
+  
+  // Find the index of today in the ALL_DAYS array format
+  const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  const todayName = dayNames[todayDayIndex];
+  
+  // If today is a workout day, start from today
+  if (workoutDays.includes(todayName)) {
+    // Set to start of day
+    today.setHours(0, 0, 0, 0);
+    return today;
+  }
+  
+  // Find the next workout day
+  for (let i = 1; i <= 7; i++) {
+    const checkDate = new Date(today);
+    checkDate.setDate(today.getDate() + i);
+    const checkDayIndex = (checkDate.getDay() + 6) % 7;
+    const checkDayName = dayNames[checkDayIndex];
+    
+    if (workoutDays.includes(checkDayName)) {
+      checkDate.setHours(0, 0, 0, 0);
+      return checkDate;
     }
   }
-
-  // Sort workout days by day order
-  workoutDays.sort((a, b) => getDayIndex(a) - getDayIndex(b));
-
-  return { workoutDays, restDays };
+  
+  // Fallback to next Monday if no workout days found (shouldn't happen)
+  const dayOfWeek = today.getDay();
+  const daysUntilMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7 || 7;
+  const startDate = new Date(today);
+  startDate.setDate(today.getDate() + daysUntilMonday);
+  startDate.setHours(0, 0, 0, 0);
+  return startDate;
 }
 
 function buildSystemPrompt(): string {
