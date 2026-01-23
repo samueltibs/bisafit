@@ -40,6 +40,14 @@ interface SchedulingDebugInfo {
   hasMismatch: boolean;
 }
 
+export interface PlanSummary {
+  id: string;
+  blockNumber: number;
+  startDate: string;
+  createdAt: string;
+  isActive: boolean;
+}
+
 interface UsePlanResult {
   plan: Plan | null;
   planJson: PlanJson | null;
@@ -55,6 +63,12 @@ interface UsePlanResult {
   getPlanWeekStart: () => Date | null;
   hasGenerationIssue: boolean;
   schedulingDebug: SchedulingDebugInfo | null;
+  // Multi-plan support
+  allPlans: PlanSummary[];
+  selectedPlanId: string | null;
+  setSelectedPlanId: (id: string | null) => void;
+  activePlanId: string | null;
+  isViewingActivePlan: boolean;
 }
 
 export function usePlan(): UsePlanResult {
@@ -64,12 +78,19 @@ export function usePlan(): UsePlanResult {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  
+  // Multi-plan state
+  const [allPlans, setAllPlans] = useState<PlanSummary[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+  const [activePlanId, setActivePlanId] = useState<string | null>(null);
 
   const fetchPlan = useCallback(async () => {
     if (!user) {
       setPlan(null);
       setWorkouts([]);
       setUserProfile(null);
+      setAllPlans([]);
+      setActivePlanId(null);
       setLoading(false);
       return;
     }
@@ -87,31 +108,80 @@ export function usePlan(): UsePlanResult {
       
       setUserProfile(profileData);
 
-      // Fetch latest plan
-      const { data: planData, error: planError } = await supabase
+      // Fetch ALL plans for this user
+      const { data: allPlansData, error: allPlansError } = await supabase
         .from('plans')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order('created_at', { ascending: false });
 
-      if (planError) throw planError;
+      if (allPlansError) throw allPlansError;
 
-      if (!planData) {
+      if (!allPlansData || allPlansData.length === 0) {
+        setPlan(null);
+        setWorkouts([]);
+        setAllPlans([]);
+        setActivePlanId(null);
+        setLoading(false);
+        return;
+      }
+
+      // Build plan summaries and find active plan (highest block_number)
+      const planSummaries: PlanSummary[] = [];
+      let maxBlockNumber = 0;
+      let activePlan: Plan | null = null;
+
+      for (const p of allPlansData) {
+        const pJson = p.plan_json as unknown as PlanJson;
+        const blockNumber = pJson?.block_number || 1;
+        
+        planSummaries.push({
+          id: p.id,
+          blockNumber,
+          startDate: p.start_date || '',
+          createdAt: p.created_at || '',
+          isActive: false, // Will update after finding max
+        });
+
+        if (blockNumber > maxBlockNumber) {
+          maxBlockNumber = blockNumber;
+          activePlan = p;
+        }
+      }
+
+      // Mark active plan
+      const activeId = activePlan?.id || allPlansData[0]?.id;
+      for (const summary of planSummaries) {
+        summary.isActive = summary.id === activeId;
+      }
+
+      // Sort by block number descending
+      planSummaries.sort((a, b) => b.blockNumber - a.blockNumber);
+
+      setAllPlans(planSummaries);
+      setActivePlanId(activeId);
+
+      // Use selected plan or default to active
+      const targetPlanId = selectedPlanId || activeId;
+      const targetPlan = allPlansData.find(p => p.id === targetPlanId) || activePlan;
+
+      if (!targetPlan) {
         setPlan(null);
         setWorkouts([]);
         setLoading(false);
         return;
       }
 
-      setPlan(planData);
+      setPlan(targetPlan);
+      if (!selectedPlanId) {
+        setSelectedPlanId(activeId);
+      }
 
       // Fetch all workouts for this plan
       const { data: workoutsData, error: workoutsError } = await supabase
         .from('workouts')
         .select('*')
-        .eq('plan_id', planData.id)
+        .eq('plan_id', targetPlan.id)
         .order('scheduled_date', { ascending: true });
 
       if (workoutsError) throw workoutsError;
@@ -124,7 +194,7 @@ export function usePlan(): UsePlanResult {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, selectedPlanId]);
 
   useEffect(() => {
     fetchPlan();
@@ -339,6 +409,8 @@ export function usePlan(): UsePlanResult {
     };
   })();
 
+  const isViewingActivePlan = selectedPlanId === activePlanId;
+
   return {
     plan,
     planJson,
@@ -354,6 +426,12 @@ export function usePlan(): UsePlanResult {
     getPlanWeekStart,
     hasGenerationIssue,
     schedulingDebug,
+    // Multi-plan support
+    allPlans,
+    selectedPlanId,
+    setSelectedPlanId,
+    activePlanId,
+    isViewingActivePlan,
   };
 }
 
