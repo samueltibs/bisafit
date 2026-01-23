@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
-import type { PlanSummary, PlanStatus } from '@/hooks/usePlan';
+import type { PlanSummary } from '@/hooks/usePlan';
 import { 
   computeBlockEndDate, 
   formatBlockDateRange,
@@ -28,54 +28,59 @@ interface BlockSelectorProps {
 }
 
 /**
- * Get the status badge info. "Current" is ONLY for current_plan_id match.
+ * Get the status badge info for display
  */
-function getStatusInfo(plan: PlanSummary, currentPlanId: string | null): { 
+function getStatusBadge(
+  plan: PlanSummary, 
+  currentPlanId: string | null,
+  nextBlockId: string | null
+): { 
   label: string; 
   icon: React.ReactNode; 
   variant: 'default' | 'secondary' | 'outline';
-  isCurrent: boolean;
+  priority: 'current' | 'next' | 'archived';
 } {
-  // ONLY the plan matching current_plan_id shows "Current"
+  // Current block (matching current_plan_id)
   if (plan.id === currentPlanId) {
     return { 
       label: 'Current', 
       icon: <Play className="h-3 w-3" />, 
       variant: 'default',
-      isCurrent: true,
+      priority: 'current',
     };
   }
   
-  // Other plans show their status
-  if (plan.status === 'queued') {
+  // Next block (newest queued plan)
+  if (plan.id === nextBlockId) {
     return { 
-      label: 'Queued', 
+      label: 'Next', 
       icon: <Clock className="h-3 w-3" />, 
       variant: 'outline',
-      isCurrent: false,
+      priority: 'next',
     };
   }
   
+  // Archived: completed or older
   if (plan.status === 'completed') {
     return { 
-      label: 'Completed', 
+      label: 'Archived', 
       icon: <CheckCircle className="h-3 w-3" />, 
       variant: 'secondary',
-      isCurrent: false,
+      priority: 'archived',
     };
   }
   
-  // in_progress but not current
+  // Other in_progress plans (not current) are also archived
   return { 
-    label: 'In Progress', 
-    icon: <Play className="h-3 w-3" />, 
-    variant: 'outline',
-    isCurrent: false,
+    label: 'Archived', 
+    icon: <Archive className="h-3 w-3" />, 
+    variant: 'secondary',
+    priority: 'archived',
   };
 }
 
 /**
- * Calculate block end date from start date using blockEngine constants
+ * Calculate block date range from start date
  */
 function getBlockDateRange(startDateStr: string | null | undefined): { 
   start: Date | null; 
@@ -100,7 +105,7 @@ function getBlockDateRange(startDateStr: string | null | undefined): {
 }
 
 /**
- * Get block label - use block_number from plans table or plan_json
+ * Get block label from block_number
  */
 function getBlockLabel(plan: PlanSummary): string {
   if (plan.blockNumber && plan.blockNumber > 0) {
@@ -110,52 +115,61 @@ function getBlockLabel(plan: PlanSummary): string {
 }
 
 /**
- * Separate plans into primary (newest per block_number), archived duplicates, and needs regeneration
+ * Categorize plans into: current, next, and archived
+ * - Current: matches current_plan_id
+ * - Next: newest plan with status='queued'
+ * - Archived: all others (completed, older in_progress, duplicates, needs_regen)
  */
-function separatePlans(plans: PlanSummary[]): {
-  primaryPlans: PlanSummary[];
-  archivedDuplicates: PlanSummary[];
+function categorizePlans(
+  plans: PlanSummary[], 
+  currentPlanId: string | null
+): {
+  currentBlock: PlanSummary | null;
+  nextBlock: PlanSummary | null;
+  archivedBlocks: PlanSummary[];
   needsRegeneration: PlanSummary[];
 } {
-  const blockMap = new Map<number, PlanSummary[]>();
+  let currentBlock: PlanSummary | null = null;
+  let nextBlock: PlanSummary | null = null;
+  const archivedBlocks: PlanSummary[] = [];
   const needsRegeneration: PlanSummary[] = [];
   
-  // First pass: separate plans that need regeneration (no workouts)
+  // Find current block first
+  currentBlock = plans.find(p => p.id === currentPlanId) || null;
+  
+  // Find next block: newest queued plan (highest block_number with status='queued')
+  const queuedPlans = plans
+    .filter(p => p.status === 'queued' && p.id !== currentPlanId && !p.needsRegeneration && p.workoutCount > 0)
+    .sort((a, b) => b.blockNumber - a.blockNumber);
+  
+  if (queuedPlans.length > 0) {
+    nextBlock = queuedPlans[0];
+  }
+  
+  // Categorize remaining plans
   for (const plan of plans) {
+    // Skip current and next
+    if (plan.id === currentBlock?.id || plan.id === nextBlock?.id) {
+      continue;
+    }
+    
+    // Needs regeneration (no workouts)
     if (plan.needsRegeneration || plan.workoutCount === 0) {
       needsRegeneration.push(plan);
-    } else {
-      const blockNum = plan.blockNumber || 0;
-      const existing = blockMap.get(blockNum) || [];
-      existing.push(plan);
-      blockMap.set(blockNum, existing);
+      continue;
     }
-  }
-  
-  const primaryPlans: PlanSummary[] = [];
-  const archivedDuplicates: PlanSummary[] = [];
-  
-  // For each block number, take the newest as primary, rest as archived
-  for (const [, plansForBlock] of blockMap) {
-    // Sort by createdAt descending (newest first)
-    plansForBlock.sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
     
-    if (plansForBlock.length > 0) {
-      primaryPlans.push(plansForBlock[0]);
-      archivedDuplicates.push(...plansForBlock.slice(1));
-    }
+    // Everything else is archived
+    archivedBlocks.push(plan);
   }
   
-  // Sort primary plans by block number descending (newest first)
-  primaryPlans.sort((a, b) => b.blockNumber - a.blockNumber);
-  archivedDuplicates.sort((a, b) => b.blockNumber - a.blockNumber);
+  // Sort archived by block_number descending (newest first)
+  archivedBlocks.sort((a, b) => b.blockNumber - a.blockNumber);
   needsRegeneration.sort((a, b) => 
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
   
-  return { primaryPlans, archivedDuplicates, needsRegeneration };
+  return { currentBlock, nextBlock, archivedBlocks, needsRegeneration };
 }
 
 export function BlockSelector({
@@ -167,17 +181,25 @@ export function BlockSelector({
 }: BlockSelectorProps) {
   const [showArchived, setShowArchived] = useState(false);
   const [showNeedsRegen, setShowNeedsRegen] = useState(false);
+  
   const selectedPlan = plans.find(p => p.id === selectedPlanId);
-  const { primaryPlans, archivedDuplicates, needsRegeneration } = separatePlans(plans);
+  const { currentBlock, nextBlock, archivedBlocks, needsRegeneration } = categorizePlans(plans, currentPlanId);
+  
+  // Visible plans = current + next only
+  const visiblePlans: PlanSummary[] = [];
+  if (currentBlock) visiblePlans.push(currentBlock);
+  if (nextBlock) visiblePlans.push(nextBlock);
+  
+  const totalArchivedCount = archivedBlocks.length + needsRegeneration.length;
 
+  // Single plan or no plans - show simple label
   if (plans.length <= 1) {
-    // Single plan - show simple label
-    const statusInfo = selectedPlan ? getStatusInfo(selectedPlan, currentPlanId) : null;
+    const statusInfo = selectedPlan ? getStatusBadge(selectedPlan, currentPlanId, nextBlock?.id || null) : null;
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <History className="h-4 w-4" />
         <span>{selectedPlan ? getBlockLabel(selectedPlan) : 'Block 1'}</span>
-        {statusInfo?.isCurrent && (
+        {statusInfo?.priority === 'current' && (
           <Badge variant={statusInfo.variant} className="text-[10px] flex items-center gap-1">
             {statusInfo.icon}
             {statusInfo.label}
@@ -187,7 +209,7 @@ export function BlockSelector({
     );
   }
 
-  const selectedStatusInfo = selectedPlan ? getStatusInfo(selectedPlan, currentPlanId) : null;
+  const selectedStatusInfo = selectedPlan ? getStatusBadge(selectedPlan, currentPlanId, nextBlock?.id || null) : null;
 
   return (
     <DropdownMenu>
@@ -200,7 +222,7 @@ export function BlockSelector({
         >
           <History className="h-4 w-4" />
           <span>{selectedPlan ? getBlockLabel(selectedPlan) : 'Block 1'}</span>
-          {selectedStatusInfo?.isCurrent && (
+          {selectedStatusInfo && selectedStatusInfo.priority !== 'archived' && (
             <Badge variant={selectedStatusInfo.variant} className="text-[10px] flex items-center gap-1">
               {selectedStatusInfo.icon}
               {selectedStatusInfo.label}
@@ -216,16 +238,16 @@ export function BlockSelector({
         <DropdownMenuLabel className="text-xs text-muted-foreground">
           Training Blocks
         </DropdownMenuLabel>
-        <div className="px-2 pb-2 text-[10px] text-muted-foreground">
-          Current block drives Today's Workout on Home
+        <div className="px-2 pb-2 text-[10px] text-muted-foreground leading-tight">
+          Only your current and next block are shown. Older blocks are archived.
         </div>
         <DropdownMenuSeparator />
         
-        {/* Primary plans (newest per block number) */}
-        {primaryPlans.map((plan) => {
+        {/* Current and Next blocks */}
+        {visiblePlans.map((plan) => {
           const isSelected = plan.id === selectedPlanId;
           const dateRange = getBlockDateRange(plan.startDate);
-          const statusInfo = getStatusInfo(plan, currentPlanId);
+          const statusInfo = getStatusBadge(plan, currentPlanId, nextBlock?.id || null);
 
           return (
             <DropdownMenuItem
@@ -259,59 +281,16 @@ export function BlockSelector({
             </DropdownMenuItem>
           );
         })}
-        
-        {/* Needs Regeneration section */}
-        {needsRegeneration.length > 0 && (
-          <>
-            <DropdownMenuSeparator />
-            <Collapsible open={showNeedsRegen} onOpenChange={setShowNeedsRegen}>
-              <CollapsibleTrigger asChild>
-                <div className="flex items-center justify-between px-2 py-2 text-xs text-muted-foreground cursor-pointer hover:bg-accent rounded">
-                  <div className="flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3 text-destructive" />
-                    <span className="text-destructive">Needs regeneration ({needsRegeneration.length})</span>
-                  </div>
-                  <ChevronDown className={cn(
-                    "h-3 w-3 transition-transform",
-                    showNeedsRegen && "rotate-180"
-                  )} />
-                </div>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                {needsRegeneration.map((plan) => {
-                  const isSelected = plan.id === selectedPlanId;
 
-                  return (
-                    <DropdownMenuItem
-                      key={plan.id}
-                      onClick={() => onSelectPlan(plan.id)}
-                      className={cn(
-                        "flex items-center justify-between cursor-pointer py-2 pl-6 opacity-60",
-                        isSelected && "bg-accent opacity-100"
-                      )}
-                    >
-                      <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">{getBlockLabel(plan)}</span>
-                          <Badge variant="destructive" className="text-[10px] h-4">
-                            No workouts
-                          </Badge>
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          Created {format(new Date(plan.createdAt), 'MMM d, yyyy')}
-                        </span>
-                      </div>
-                      {isSelected && <Check className="h-4 w-4 text-primary" />}
-                    </DropdownMenuItem>
-                  );
-                })}
-              </CollapsibleContent>
-            </Collapsible>
-          </>
+        {/* No visible plans edge case */}
+        {visiblePlans.length === 0 && (
+          <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+            No active blocks. Check archived blocks below.
+          </div>
         )}
-
-        {/* Archived duplicates section */}
-        {archivedDuplicates.length > 0 && (
+        
+        {/* Archived blocks section (collapsed by default) */}
+        {totalArchivedCount > 0 && (
           <>
             <DropdownMenuSeparator />
             <Collapsible open={showArchived} onOpenChange={setShowArchived}>
@@ -319,7 +298,7 @@ export function BlockSelector({
                 <div className="flex items-center justify-between px-2 py-2 text-xs text-muted-foreground cursor-pointer hover:bg-accent rounded">
                   <div className="flex items-center gap-1">
                     <Archive className="h-3 w-3" />
-                    <span>Archived duplicates ({archivedDuplicates.length})</span>
+                    <span>Archived blocks ({totalArchivedCount})</span>
                   </div>
                   <ChevronDown className={cn(
                     "h-3 w-3 transition-transform",
@@ -328,7 +307,8 @@ export function BlockSelector({
                 </div>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                {archivedDuplicates.map((plan) => {
+                {/* Regular archived blocks */}
+                {archivedBlocks.map((plan) => {
                   const isSelected = plan.id === selectedPlanId;
                   const dateRange = getBlockDateRange(plan.startDate);
 
@@ -337,13 +317,16 @@ export function BlockSelector({
                       key={plan.id}
                       onClick={() => onSelectPlan(plan.id)}
                       className={cn(
-                        "flex items-center justify-between cursor-pointer py-2 pl-6 opacity-60",
+                        "flex items-center justify-between cursor-pointer py-2 pl-6 opacity-70",
                         isSelected && "bg-accent opacity-100"
                       )}
                     >
                       <div className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm">Archived ({getBlockLabel(plan)})</span>
+                          <span className="text-sm">{getBlockLabel(plan)} (Archived)</span>
+                          {plan.status === 'completed' && (
+                            <CheckCircle className="h-3 w-3 text-muted-foreground" />
+                          )}
                         </div>
                         <span className="text-xs text-muted-foreground">
                           {dateRange.hasDates ? dateRange.label : 'No dates'}
@@ -353,6 +336,43 @@ export function BlockSelector({
                     </DropdownMenuItem>
                   );
                 })}
+
+                {/* Needs regeneration plans */}
+                {needsRegeneration.length > 0 && (
+                  <>
+                    <div className="px-2 py-1 text-[10px] text-destructive flex items-center gap-1 ml-4">
+                      <AlertCircle className="h-3 w-3" />
+                      Needs regeneration
+                    </div>
+                    {needsRegeneration.map((plan) => {
+                      const isSelected = plan.id === selectedPlanId;
+
+                      return (
+                        <DropdownMenuItem
+                          key={plan.id}
+                          onClick={() => onSelectPlan(plan.id)}
+                          className={cn(
+                            "flex items-center justify-between cursor-pointer py-2 pl-6 opacity-50",
+                            isSelected && "bg-accent opacity-100"
+                          )}
+                        >
+                          <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">{getBlockLabel(plan)}</span>
+                              <Badge variant="destructive" className="text-[10px] h-4">
+                                No workouts
+                              </Badge>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              Created {format(new Date(plan.createdAt), 'MMM d, yyyy')}
+                            </span>
+                          </div>
+                          {isSelected && <Check className="h-4 w-4 text-primary" />}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </>
+                )}
               </CollapsibleContent>
             </Collapsible>
           </>
