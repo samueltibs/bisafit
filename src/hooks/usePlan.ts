@@ -1,9 +1,44 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import type { Plan, Workout } from '@/types/database';
-import type { PlanJson, WorkoutJson, DisplayWorkout, PlanDay, normalizePlanDay } from '@/types/plan';
+import type { Plan, Workout, UserProfile } from '@/types/database';
+import type { PlanJson, WorkoutJson, DisplayWorkout, PlanDay } from '@/types/plan';
 import { format, addDays } from 'date-fns';
+
+// Helper to normalize workout days for comparison
+export function normalizeWorkoutDays(days: unknown): string[] {
+  const ALL_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  const defaultDays = ["Monday", "Wednesday", "Thursday", "Friday"];
+  
+  if (!Array.isArray(days) || days.length === 0) {
+    return defaultDays;
+  }
+
+  const normalizedSet = new Set<string>();
+  
+  for (const day of days) {
+    if (typeof day !== "string") continue;
+    const trimmed = day.trim();
+    const normalized = trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+    if (ALL_DAYS.includes(normalized)) {
+      normalizedSet.add(normalized);
+    }
+  }
+  
+  if (normalizedSet.size === 0) {
+    return defaultDays;
+  }
+  
+  return Array.from(normalizedSet).sort((a, b) => 
+    ALL_DAYS.indexOf(a) - ALL_DAYS.indexOf(b)
+  );
+}
+
+interface SchedulingDebugInfo {
+  profileWorkoutDays: string[];
+  scheduledWorkoutDays: string[];
+  hasMismatch: boolean;
+}
 
 interface UsePlanResult {
   plan: Plan | null;
@@ -19,12 +54,14 @@ interface UsePlanResult {
   currentWeekIndex: number;
   getPlanWeekStart: () => Date | null;
   hasGenerationIssue: boolean;
+  schedulingDebug: SchedulingDebugInfo | null;
 }
 
 export function usePlan(): UsePlanResult {
   const { user } = useAuth();
   const [plan, setPlan] = useState<Plan | null>(null);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -32,6 +69,7 @@ export function usePlan(): UsePlanResult {
     if (!user) {
       setPlan(null);
       setWorkouts([]);
+      setUserProfile(null);
       setLoading(false);
       return;
     }
@@ -39,6 +77,15 @@ export function usePlan(): UsePlanResult {
     try {
       setLoading(true);
       setError(null);
+
+      // Fetch user profile for workout_days comparison
+      const { data: profileData } = await supabase
+        .from('users_profile')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      setUserProfile(profileData);
 
       // Fetch latest plan
       const { data: planData, error: planError } = await supabase
@@ -263,6 +310,35 @@ export function usePlan(): UsePlanResult {
     return weekStart;
   }, [plan?.start_date]);
 
+  // Calculate scheduling debug info
+  const schedulingDebug: SchedulingDebugInfo | null = (() => {
+    if (!planJson?.weeks || !userProfile) return null;
+    
+    const profileWorkoutDays = normalizeWorkoutDays(userProfile.workout_days);
+    
+    // Get scheduled workout days from week 1 of the plan
+    const week1 = planJson.weeks.find(w => w.week_number === 1);
+    if (!week1) return null;
+    
+    const scheduledWorkoutDays = week1.days
+      .filter(d => {
+        const normalized = normalizePlanDayCompat(d);
+        return normalized.type === 'workout';
+      })
+      .map(d => d.day_name);
+    
+    // Check for mismatch
+    const hasMismatch = 
+      profileWorkoutDays.length !== scheduledWorkoutDays.length ||
+      !profileWorkoutDays.every(day => scheduledWorkoutDays.includes(day));
+    
+    return {
+      profileWorkoutDays,
+      scheduledWorkoutDays,
+      hasMismatch,
+    };
+  })();
+
   return {
     plan,
     planJson,
@@ -277,6 +353,7 @@ export function usePlan(): UsePlanResult {
     currentWeekIndex,
     getPlanWeekStart,
     hasGenerationIssue,
+    schedulingDebug,
   };
 }
 

@@ -53,7 +53,6 @@ interface WorkoutJson {
   blocks: WorkoutBlock[];
 }
 
-// Updated PlanDay with explicit type
 interface PlanDay {
   day_name: string;
   type: "workout" | "rest";
@@ -76,6 +75,119 @@ interface PlanJson {
 }
 
 const ALL_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+/**
+ * CRITICAL: Normalize workout_days array to ensure strict, deterministic scheduling.
+ * - Trims and capitalizes to match exactly: Monday..Sunday
+ * - Removes duplicates
+ * - Sorts in week order
+ * - If empty, defaults to ["Monday", "Wednesday", "Thursday", "Friday"]
+ */
+function normalizeWorkoutDays(days: unknown): string[] {
+  const defaultDays = ["Monday", "Wednesday", "Thursday", "Friday"];
+  
+  if (!Array.isArray(days) || days.length === 0) {
+    console.log("No workout_days found, using default:", defaultDays);
+    return defaultDays;
+  }
+
+  const normalizedSet = new Set<string>();
+  
+  for (const day of days) {
+    if (typeof day !== "string") continue;
+    
+    // Trim and capitalize first letter
+    const trimmed = day.trim();
+    const normalized = trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+    
+    // Only accept valid day names
+    if (ALL_DAYS.includes(normalized)) {
+      normalizedSet.add(normalized);
+    }
+  }
+  
+  if (normalizedSet.size === 0) {
+    console.log("No valid workout_days after normalization, using default:", defaultDays);
+    return defaultDays;
+  }
+  
+  // Sort in week order (Monday = 0, Sunday = 6)
+  const sorted = Array.from(normalizedSet).sort((a, b) => 
+    ALL_DAYS.indexOf(a) - ALL_DAYS.indexOf(b)
+  );
+  
+  console.log("Normalized workout_days:", sorted);
+  return sorted;
+}
+
+/**
+ * Calculate plan start date based on workout_days.
+ * - If today is a workout day, start from today
+ * - Otherwise, find the next occurrence of any workout day
+ */
+function calculatePlanStartDate(workoutDays: string[]): Date {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // Get today's day name (Monday-based)
+  const todayDayIndex = (today.getDay() + 6) % 7; // Convert Sunday=0 to Monday=0
+  const todayName = ALL_DAYS[todayDayIndex];
+  
+  console.log("Today is:", todayName, "Workout days:", workoutDays);
+  
+  // If today is a workout day, start from today
+  if (workoutDays.includes(todayName)) {
+    console.log("Today is a workout day, starting plan from today");
+    return today;
+  }
+  
+  // Find the next workout day
+  for (let i = 1; i <= 7; i++) {
+    const checkDate = new Date(today);
+    checkDate.setDate(today.getDate() + i);
+    const checkDayIndex = (checkDate.getDay() + 6) % 7;
+    const checkDayName = ALL_DAYS[checkDayIndex];
+    
+    if (workoutDays.includes(checkDayName)) {
+      console.log("Next workout day is:", checkDayName, "starting plan from:", checkDate.toISOString());
+      return checkDate;
+    }
+  }
+  
+  // Fallback (shouldn't happen with valid workout_days)
+  console.log("No workout day found within next 7 days, starting from today");
+  return today;
+}
+
+/**
+ * Get day index (0 = Monday, 6 = Sunday)
+ */
+function getDayIndex(dayName: string): number {
+  return ALL_DAYS.indexOf(dayName);
+}
+
+/**
+ * Calculate the date offset from start_date for a given week and day.
+ * Week 1 starts at start_date, week 2 at start_date + 7, etc.
+ * Days are offset by their position in the week relative to start_date's day.
+ */
+function calculateScheduledDate(startDate: Date, weekNumber: number, dayName: string): Date {
+  const startDayIndex = (startDate.getDay() + 6) % 7; // Monday = 0
+  const targetDayIndex = getDayIndex(dayName);
+  
+  // Calculate days from start_date to this day in week 1
+  let daysOffset = targetDayIndex - startDayIndex;
+  if (daysOffset < 0) {
+    daysOffset += 7; // Wrap to next week
+  }
+  
+  // Add week offset (weekNumber is 1-indexed)
+  daysOffset += (weekNumber - 1) * 7;
+  
+  const scheduledDate = new Date(startDate);
+  scheduledDate.setDate(startDate.getDate() + daysOffset);
+  return scheduledDate;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -114,7 +226,7 @@ serve(async (req) => {
 
     const userId = user.id;
 
-    // Fetch user profile
+    // CRITICAL: Fetch user profile FRESH from database (not from any cache)
     const { data: profile, error: profileError } = await supabase
       .from("users_profile")
       .select("*")
@@ -130,20 +242,32 @@ serve(async (req) => {
 
     const userProfile = profile as UserProfile;
 
-    // Get completed workout count from last plan (if exists)
-    const { data: lastPlan } = await supabase
+    // STRICT: Use normalized workout_days - NO fallback algorithms
+    const workoutDays = normalizeWorkoutDays(userProfile.workout_days);
+
+    console.log("=== PLAN GENERATION START ===");
+    console.log("User ID:", userId);
+    console.log("workout_days from profile:", userProfile.workout_days);
+    console.log("Normalized workout_days:", workoutDays);
+    console.log("Goal primary:", userProfile.goal_primary);
+    console.log("Goal secondary:", userProfile.goal_secondary);
+    console.log("Session minutes:", userProfile.session_minutes);
+    console.log("Equipment:", userProfile.equipment_json);
+
+    // Get existing plan to determine block number and handle deletion
+    const { data: existingPlans } = await supabase
       .from("plans")
       .select("id")
       .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .order("created_at", { ascending: false });
 
-    let completedWorkoutsCount = 0;
     let blockNumber = 1;
+    let completedWorkoutsCount = 0;
 
-    if (lastPlan) {
-      blockNumber = 2; // This would be the next block
+    if (existingPlans && existingPlans.length > 0) {
+      blockNumber = existingPlans.length + 1;
+      
+      // Count completed workouts for progression context
       const { count } = await supabase
         .from("workout_sessions")
         .select("*", { count: "exact", head: true })
@@ -151,24 +275,31 @@ serve(async (req) => {
         .not("completed_at", "is", null);
       
       completedWorkoutsCount = count || 0;
+      
+      // Delete workouts from the most recent plan (they will be replaced)
+      const mostRecentPlanId = existingPlans[0].id;
+      console.log("Deleting old workouts for plan:", mostRecentPlanId);
+      
+      await supabase
+        .from("workouts")
+        .delete()
+        .eq("plan_id", mostRecentPlanId);
+        
+      // Delete the old plan itself
+      await supabase
+        .from("plans")
+        .delete()
+        .eq("id", mostRecentPlanId);
+        
+      // Adjust block number since we're replacing
+      blockNumber = existingPlans.length;
     }
-
-    // Determine workout days - use workout_days if available, otherwise fallback
-    const workoutDays = getWorkoutDays(userProfile);
-
-    console.log("Generating plan for user:", userId);
-    console.log("User profile summary:", {
-      goal: userProfile.goal_primary,
-      experience: userProfile.experience_level,
-      days: workoutDays.length,
-      minutes: userProfile.session_minutes,
-      equipment: userProfile.equipment_json,
-      workoutDays,
-    });
 
     // Build the prompt for AI
     const systemPrompt = buildSystemPrompt();
     const userPrompt = buildUserPrompt(userProfile, completedWorkoutsCount, blockNumber, workoutDays);
+
+    console.log("Calling AI with", workoutDays.length, "workout days per week");
 
     // Call Lovable AI
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -188,7 +319,7 @@ serve(async (req) => {
             type: "function",
             function: {
               name: "create_training_plan",
-              description: "Create a complete 4-week progressive training plan with workouts for specified days only",
+              description: "Create a complete 4-week progressive training plan with workouts ONLY for specified workout days",
               parameters: {
                 type: "object",
                 properties: {
@@ -204,12 +335,12 @@ serve(async (req) => {
                   },
                   workouts: {
                     type: "array",
-                    description: "Array of workouts for the specified workout days only. Do NOT include rest days.",
+                    description: "Array of workouts ONLY for the specified workout days. Must match exactly the workout_days provided.",
                     items: {
                       type: "object",
                       properties: {
                         week_number: { type: "number" },
-                        day_name: { type: "string" },
+                        day_name: { type: "string", enum: ALL_DAYS },
                         focus: { type: "string" },
                         workout: {
                           type: "object",
@@ -297,14 +428,55 @@ serve(async (req) => {
     const generatedData = JSON.parse(toolCall.function.arguments);
     const { plan: planMeta, workouts: generatedWorkouts } = generatedData;
 
-    // Calculate start date - find next occurrence of earliest workout day (could be today)
+    console.log("AI generated", generatedWorkouts.length, "workouts");
+    console.log("Expected:", workoutDays.length * 4, "workouts");
+
+    // Calculate start date based on workout_days
     const startDate = calculatePlanStartDate(workoutDays);
     const startDateStr = startDate.toISOString().split("T")[0];
 
-    // Create plan record first
+    console.log("Plan start date:", startDateStr);
+
+    // Build the complete plan_json structure with all 7 days per week
+    const finalWeeks: PlanWeek[] = [];
+    
+    for (let weekNum = 1; weekNum <= 4; weekNum++) {
+      const weekDays: PlanDay[] = [];
+      
+      for (const dayName of ALL_DAYS) {
+        if (workoutDays.includes(dayName)) {
+          // This is a workout day - find the generated workout
+          const genWorkout = generatedWorkouts.find(
+            (w: { week_number: number; day_name: string }) => 
+              w.week_number === weekNum && w.day_name === dayName
+          );
+          
+          weekDays.push({
+            day_name: dayName,
+            type: "workout",
+            focus: genWorkout?.focus || "Training",
+            workout_id: "", // Will be updated after workout insert
+          });
+        } else {
+          // This is a rest day
+          weekDays.push({
+            day_name: dayName,
+            type: "rest",
+            label: "Rest Day",
+          });
+        }
+      }
+      
+      finalWeeks.push({
+        week_number: weekNum,
+        days: weekDays,
+      });
+    }
+
+    // Create plan record
     const planJson: PlanJson = {
       block_number: blockNumber,
-      weeks: [],
+      weeks: finalWeeks,
       progression_strategy: planMeta.progression_strategy,
       progression_notes: planMeta.progression_notes,
       coach_notes: planMeta.coach_notes,
@@ -327,7 +499,9 @@ serve(async (req) => {
       throw new Error("Failed to create plan record");
     }
 
-    // Prepare workout inserts
+    console.log("Plan created:", newPlan.id);
+
+    // Prepare workout inserts - ONLY for workout days
     const workoutInserts: Array<{
       user_id: string;
       plan_id: string;
@@ -337,12 +511,16 @@ serve(async (req) => {
     }> = [];
 
     for (const genWorkout of generatedWorkouts) {
-      // Calculate scheduled date
-      const dayIndex = getDayIndex(genWorkout.day_name);
-      const weekOffset = (genWorkout.week_number - 1) * 7;
-      const scheduledDate = new Date(startDate);
-      scheduledDate.setDate(startDate.getDate() + weekOffset + dayIndex);
+      // Validate that AI only generated for our workout days
+      if (!workoutDays.includes(genWorkout.day_name)) {
+        console.warn(`AI generated workout for non-workout day: ${genWorkout.day_name}, skipping`);
+        continue;
+      }
+
+      const scheduledDate = calculateScheduledDate(startDate, genWorkout.week_number, genWorkout.day_name);
       const scheduledDateStr = scheduledDate.toISOString().split("T")[0];
+
+      console.log(`Scheduling workout: Week ${genWorkout.week_number}, ${genWorkout.day_name} -> ${scheduledDateStr}`);
 
       const workoutJson: WorkoutJson = {
         title: genWorkout.workout.title,
@@ -360,6 +538,8 @@ serve(async (req) => {
       });
     }
 
+    console.log("Inserting", workoutInserts.length, "workouts");
+
     // Insert all workouts
     const { data: insertedWorkouts, error: workoutsError } = await supabase
       .from("workouts")
@@ -371,54 +551,26 @@ serve(async (req) => {
       throw new Error("Failed to create workout records");
     }
 
-    // Build workout ID map by scheduled date
+    // Build workout ID map by (week_number, day_name) from workout_json
     const workoutIdMap = new Map<string, string>();
     for (const workout of insertedWorkouts || []) {
+      const wJson = workout.workout_json as unknown as WorkoutJson;
+      const key = `${wJson.week_number}-${workout.scheduled_date}`;
       workoutIdMap.set(workout.scheduled_date, workout.id);
     }
 
-    // Build final weeks structure with explicit type field
-    const finalWeeks: PlanWeek[] = [];
-    for (let weekNum = 1; weekNum <= 4; weekNum++) {
-      const weekDays: PlanDay[] = [];
-      
-      for (const dayName of ALL_DAYS) {
-        const dayIndex = getDayIndex(dayName);
-        const weekOffset = (weekNum - 1) * 7;
-        const scheduledDate = new Date(startDate);
-        scheduledDate.setDate(startDate.getDate() + weekOffset + dayIndex);
-        const scheduledDateStr = scheduledDate.toISOString().split("T")[0];
-
-        if (workoutDays.includes(dayName)) {
-          // This is a workout day
-          const genWorkout = generatedWorkouts.find(
-            (w: { week_number: number; day_name: string }) => w.week_number === weekNum && w.day_name === dayName
-          );
-          const workoutId = workoutIdMap.get(scheduledDateStr) || "";
-          
-          weekDays.push({
-            day_name: dayName,
-            type: "workout",
-            focus: genWorkout?.focus || "Training",
-            workout_id: workoutId,
-          });
-        } else {
-          // This is a rest day
-          weekDays.push({
-            day_name: dayName,
-            type: "rest",
-            label: "Rest Day",
-          });
+    // Update plan_json with workout IDs
+    for (const week of finalWeeks) {
+      for (const day of week.days) {
+        if (day.type === "workout") {
+          const scheduledDate = calculateScheduledDate(startDate, week.week_number, day.day_name);
+          const scheduledDateStr = scheduledDate.toISOString().split("T")[0];
+          day.workout_id = workoutIdMap.get(scheduledDateStr) || "";
         }
       }
-      
-      finalWeeks.push({
-        week_number: weekNum,
-        days: weekDays,
-      });
     }
 
-    // Update plan with complete plan_json
+    // Update plan with workout IDs
     const completePlanJson: PlanJson = {
       ...planJson,
       weeks: finalWeeks,
@@ -429,13 +581,20 @@ serve(async (req) => {
       .update({ plan_json: completePlanJson })
       .eq("id", newPlan.id);
 
-    console.log("Plan generation complete:", newPlan.id);
+    console.log("=== PLAN GENERATION COMPLETE ===");
+    console.log("Plan ID:", newPlan.id);
+    console.log("Workouts created:", insertedWorkouts?.length || 0);
 
     return new Response(
       JSON.stringify({
         success: true,
         plan_id: newPlan.id,
         message: "Your personalized 4-week training plan has been created!",
+        debug: {
+          workout_days: workoutDays,
+          start_date: startDateStr,
+          workouts_created: insertedWorkouts?.length || 0,
+        },
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -455,109 +614,6 @@ serve(async (req) => {
   }
 });
 
-function getDayIndex(dayName: string): number {
-  const days: Record<string, number> = {
-    Monday: 0,
-    Tuesday: 1,
-    Wednesday: 2,
-    Thursday: 3,
-    Friday: 4,
-    Saturday: 5,
-    Sunday: 6,
-  };
-  return days[dayName] ?? 0;
-}
-
-/**
- * Get workout days from profile - uses workout_days if available, otherwise builds from legacy fields
- */
-function getWorkoutDays(profile: UserProfile): string[] {
-  // If workout_days is set, use it directly
-  if (profile.workout_days && Array.isArray(profile.workout_days) && profile.workout_days.length > 0) {
-    return profile.workout_days.sort((a, b) => getDayIndex(a) - getDayIndex(b));
-  }
-
-  // Fallback: build from days_per_week and rest_day
-  const daysPerWeek = profile.days_per_week || 4;
-  const preferredRestDay = profile.rest_day || "Sunday";
-
-  // Optimal day distributions for different training frequencies
-  const dayDistributions: Record<number, string[]> = {
-    2: ["Monday", "Thursday"],
-    3: ["Monday", "Wednesday", "Friday"],
-    4: ["Monday", "Tuesday", "Thursday", "Friday"],
-    5: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-    6: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-    7: ALL_DAYS,
-  };
-
-  const baseDistribution = dayDistributions[daysPerWeek] || dayDistributions[4];
-  const workoutDays: string[] = [];
-
-  for (const day of baseDistribution) {
-    if (day !== preferredRestDay) {
-      workoutDays.push(day);
-    }
-  }
-
-  // If we filtered out the rest day and need more workout days, add alternates
-  if (workoutDays.length < daysPerWeek) {
-    const alternatives = ALL_DAYS.filter(d => !workoutDays.includes(d) && d !== preferredRestDay);
-    for (const alt of alternatives) {
-      if (workoutDays.length >= daysPerWeek) break;
-      workoutDays.push(alt);
-    }
-  }
-
-  // Limit to exact days per week
-  while (workoutDays.length > daysPerWeek) {
-    workoutDays.pop();
-  }
-
-  return workoutDays.sort((a, b) => getDayIndex(a) - getDayIndex(b));
-}
-
-/**
- * Calculate plan start date - finds the next occurrence of the earliest workout day
- * If today is a workout day, start from today
- */
-function calculatePlanStartDate(workoutDays: string[]): Date {
-  const today = new Date();
-  const todayDayIndex = (today.getDay() + 6) % 7; // Convert Sunday=0 to Monday=0 format
-  
-  // Find the index of today in the ALL_DAYS array format
-  const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-  const todayName = dayNames[todayDayIndex];
-  
-  // If today is a workout day, start from today
-  if (workoutDays.includes(todayName)) {
-    // Set to start of day
-    today.setHours(0, 0, 0, 0);
-    return today;
-  }
-  
-  // Find the next workout day
-  for (let i = 1; i <= 7; i++) {
-    const checkDate = new Date(today);
-    checkDate.setDate(today.getDate() + i);
-    const checkDayIndex = (checkDate.getDay() + 6) % 7;
-    const checkDayName = dayNames[checkDayIndex];
-    
-    if (workoutDays.includes(checkDayName)) {
-      checkDate.setHours(0, 0, 0, 0);
-      return checkDate;
-    }
-  }
-  
-  // Fallback to next Monday if no workout days found (shouldn't happen)
-  const dayOfWeek = today.getDay();
-  const daysUntilMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7 || 7;
-  const startDate = new Date(today);
-  startDate.setDate(today.getDate() + daysUntilMonday);
-  startDate.setHours(0, 0, 0, 0);
-  return startDate;
-}
-
 function buildSystemPrompt(): string {
   return `You are an expert fitness coach AI that creates personalized, progressive 4-week training programs.
 
@@ -574,7 +630,8 @@ CRITICAL RULES:
 6. For intermediate/advanced: Can include more complex movements if equipment supports it.
 7. Each workout must have: warmup (5-10 min), main work, cooldown (3-5 min).
 8. Avoid identical workouts on consecutive weeks - show clear progression.
-9. ONLY generate workouts for the specified workout days. Do NOT include rest days in the output.
+9. CRITICAL: ONLY generate workouts for the EXACT workout days specified. Do NOT include any other days.
+10. Each week must have the SAME workout days. Do not vary which days have workouts across weeks.
 
 EQUIPMENT MAPPING:
 - "bodyweight": All bodyweight exercises
@@ -626,6 +683,8 @@ TRAINING PREFERENCES:
 ${preferences.map((p) => `- ${p}`).join("\n")}`;
   }
 
+  const totalWorkouts = workoutDays.length * 4;
+
   return `Create a 4-week progressive training plan for this user:
 
 USER PROFILE:
@@ -638,7 +697,7 @@ USER PROFILE:
 - Height: ${profile.height_cm ? `${profile.height_cm} cm` : "Not specified"}
 - Weight: ${profile.weight_kg ? `${profile.weight_kg} kg` : "Not specified"}
 
-WORKOUT DAYS (only create workouts for these days):
+WORKOUT DAYS - STRICT (only create workouts for EXACTLY these days, same days every week):
 ${workoutDays.map((d) => `- ${d}`).join("\n")}
 
 AVAILABLE EQUIPMENT:
@@ -653,9 +712,11 @@ CONTEXT:
 ${completedWorkouts > 0 ? "- Build on their previous progress with appropriate progression" : "- First time user - start conservatively"}
 
 REQUIRED OUTPUT:
-Generate exactly ${workoutDays.length} workouts per week across all 4 weeks (${workoutDays.length * 4} total workouts).
-Each workout must be assigned to one of the specified workout days.
-Each workout should have warmup, main training blocks (strength/conditioning), and cooldown.
+Generate EXACTLY ${totalWorkouts} workouts total:
+- ${workoutDays.length} workouts per week × 4 weeks = ${totalWorkouts} workouts
+- Each week MUST have workouts ONLY on: ${workoutDays.join(", ")}
+- Do NOT create workouts for any other days
+- Each workout should have warmup, main training blocks (strength/conditioning), and cooldown
 
 Make the plan specific, actionable, and encouraging. Include clear instructions for each exercise.`;
 }

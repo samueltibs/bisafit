@@ -31,7 +31,7 @@ const typeColors: Record<WorkoutType, string> = {
 
 export default function Plan() {
   const navigate = useNavigate();
-  const { plan, planJson, loading, getWorkoutsForWeek, refetch, hasGenerationIssue, currentWeekIndex, getPlanWeekStart } = usePlan();
+  const { plan, planJson, loading, getWorkoutsForWeek, refetch, hasGenerationIssue, currentWeekIndex, getPlanWeekStart, schedulingDebug } = usePlan();
   const { generatePlan, isGenerating } = usePlanGeneration();
   const [weekOffset, setWeekOffset] = useState(0);
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
@@ -148,6 +148,26 @@ export default function Plan() {
   return (
     <AppLayout>
       <div className="container space-y-6 px-4 py-6">
+        {/* Debug Banner (temporary) */}
+        {schedulingDebug && (
+          <div className="rounded-lg border bg-muted/50 p-3 text-sm space-y-1 animate-fade-in">
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Debug:</span>
+              <span>Workout days selected: {schedulingDebug.profileWorkoutDays.join(', ')}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Scheduled this week:</span>
+              <span>{schedulingDebug.scheduledWorkoutDays.join(', ')}</span>
+            </div>
+            {schedulingDebug.hasMismatch && (
+              <div className="flex items-center gap-2 text-destructive font-medium">
+                <AlertTriangle className="h-4 w-4" />
+                <span>Scheduling mismatch detected. Please regenerate your plan.</span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Generation Issue Warning */}
         {hasGenerationIssue && (
           <Alert variant="destructive" className="animate-fade-in">
