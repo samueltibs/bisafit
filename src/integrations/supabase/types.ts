@@ -272,6 +272,54 @@ export type Database = {
           },
         ]
       }
+      store_products: {
+        Row: {
+          category: string
+          checkout_url: string
+          created_at: string | null
+          description: string | null
+          id: string
+          image_urls: Json
+          is_active: boolean | null
+          is_featured: boolean | null
+          name: string
+          price_display: string
+          sort_order: number | null
+          supported_regions: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          checkout_url: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_urls?: Json
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          name: string
+          price_display: string
+          sort_order?: number | null
+          supported_regions?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          checkout_url?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_urls?: Json
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          name?: string
+          price_display?: string
+          sort_order?: number | null
+          supported_regions?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       users_profile: {
         Row: {
           calendar_provider: string | null
