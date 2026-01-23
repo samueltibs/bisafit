@@ -16,35 +16,46 @@ import type {
  * Get or create a user profile for the current authenticated user
  */
 export async function getOrCreateUserProfile(userId: string): Promise<UserProfile | null> {
-  // First, try to get existing profile
+  // First, try to get existing profile using maybeSingle to avoid errors when no row exists
   const { data: existingProfile, error: fetchError } = await supabase
     .from('users_profile')
     .select('*')
     .eq('id', userId)
-    .single();
+    .maybeSingle();
+
+  if (fetchError) {
+    console.error('Error fetching user profile:', fetchError);
+    throw new Error(`Failed to fetch profile: ${fetchError.code} - ${fetchError.message}`);
+  }
 
   if (existingProfile) {
     return existingProfile;
   }
 
-  // If no profile exists, create one
-  if (fetchError?.code === 'PGRST116') {
-    const { data: newProfile, error: insertError } = await supabase
-      .from('users_profile')
-      .insert({ id: userId })
-      .select()
-      .single();
+  // Profile doesn't exist, create one with minimal defaults
+  const { data: newProfile, error: insertError } = await supabase
+    .from('users_profile')
+    .insert({
+      id: userId,
+      full_name: null,
+      goal_primary: 'maintenance',
+      experience_level: 'beginner',
+      days_per_week: 4,
+      session_minutes: 45,
+      rest_day: 'Tuesday',
+      constraints_json: {},
+      equipment_json: [],
+      is_pro: false,
+    })
+    .select()
+    .single();
 
-    if (insertError) {
-      console.error('Error creating user profile:', insertError);
-      return null;
-    }
-
-    return newProfile;
+  if (insertError) {
+    console.error('Error creating user profile:', insertError);
+    throw new Error(`Failed to create profile: ${insertError.code} - ${insertError.message}`);
   }
 
-  console.error('Error fetching user profile:', fetchError);
-  return null;
+  return newProfile;
 }
 
 /**
