@@ -9,15 +9,17 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Flame, Beef, Wheat, Droplets, Loader2, Sparkles, 
   ChevronDown, ShoppingCart, Lightbulb, RefreshCw, 
-  Coffee, UtensilsCrossed, Moon, Apple, AlertTriangle, Target
+  Coffee, UtensilsCrossed, Moon, Apple, AlertTriangle, Target,
+  Camera
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNutrition, type Meal, type DayPlan } from '@/hooks/useNutrition';
+import { FridgeScanFlow } from '@/components/nutrition/FridgeScanFlow';
 
 const macroColors = {
-  protein: { bg: 'bg-blue-500/10', text: 'text-blue-500', bar: 'bg-blue-500' },
-  carbs: { bg: 'bg-energy/10', text: 'text-energy', bar: 'bg-energy' },
-  fat: { bg: 'bg-purple-500/10', text: 'text-purple-500', bar: 'bg-purple-500' },
+  protein: { bg: 'bg-primary/10', text: 'text-primary', bar: 'bg-primary' },
+  carbs: { bg: 'bg-accent/10', text: 'text-accent-foreground', bar: 'bg-accent' },
+  fat: { bg: 'bg-secondary/10', text: 'text-secondary-foreground', bar: 'bg-secondary' },
 };
 
 const mealIcons: Record<string, typeof Coffee> = {
@@ -199,6 +201,7 @@ export default function Nutrition() {
   } = useNutrition();
 
   const [selectedDay, setSelectedDay] = useState(0);
+  const [fridgeScanOpen, setFridgeScanOpen] = useState(false);
   
   const targets = profile?.targets_json;
   const mealPlan = profile?.meal_plan_json;
@@ -220,11 +223,26 @@ export default function Nutrition() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Nutrition</h1>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setFridgeScanOpen(true)}
+            className="gap-2"
+          >
+            <Camera className="h-4 w-4" />
+            Scan Fridge
+          </Button>
         </div>
 
+        {/* Fridge Scan Dialog */}
+        <FridgeScanFlow 
+          open={fridgeScanOpen} 
+          onOpenChange={setFridgeScanOpen}
+        />
+
         {/* Disclaimer */}
-        <Alert className="border-amber-500/50 bg-amber-500/10">
-          <AlertTriangle className="h-4 w-4 text-amber-500" />
+        <Alert className="border-muted bg-muted/50">
+          <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           <AlertDescription className="text-sm text-muted-foreground">
             Not medical advice. Consult a healthcare professional for personalized nutrition guidance.
           </AlertDescription>
@@ -304,8 +322,8 @@ export default function Nutrition() {
               {/* Water */}
               <Card className="border-border">
                 <CardContent className="p-4">
-                  <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
-                    <Droplets className="h-4 w-4 text-blue-500" />
+                  <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-secondary">
+                    <Droplets className="h-4 w-4 text-secondary-foreground" />
                   </div>
                   <p className="text-xs text-muted-foreground">Water</p>
                   <p className="text-xl font-bold">{targets.water_liters}L</p>
@@ -372,6 +390,28 @@ export default function Nutrition() {
                     <p className="text-muted-foreground text-sm mt-1">
                       Get a personalized 7-day meal plan with recipes and a grocery list.
                     </p>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Button 
+                      onClick={() => generateMealPlan(7)} 
+                      disabled={generatingMealPlan}
+                      className="gap-2"
+                    >
+                      {generatingMealPlan ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4" />
+                      )}
+                      Generate Plan
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setFridgeScanOpen(true)}
+                      className="gap-2"
+                    >
+                      <Camera className="h-4 w-4" />
+                      Use What I Have
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
