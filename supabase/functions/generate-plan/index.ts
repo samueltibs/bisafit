@@ -427,13 +427,65 @@ serve(async (req) => {
     const aiData = await aiResponse.json();
     console.log("AI response received");
 
-    // Extract the tool call result
-    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) {
-      throw new Error("No tool call in AI response");
+    // Define the expected structure type
+    interface GeneratedPlanData {
+      plan: {
+        block_number: number;
+        progression_strategy: string;
+        progression_notes: string;
+        coach_notes: string;
+      };
+      workouts: Array<{
+        week_number: number;
+        day_name: string;
+        focus: string;
+        workout: {
+          title: string;
+          total_estimated_minutes: number;
+          blocks: WorkoutBlock[];
+        };
+      }>;
     }
 
-    const generatedData = JSON.parse(toolCall.function.arguments);
+    // Extract the tool call result OR fallback to text content parsing
+    let generatedData: GeneratedPlanData;
+    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+    
+    if (toolCall) {
+      // Normal tool call response
+      generatedData = JSON.parse(toolCall.function.arguments);
+    } else {
+      // Fallback: AI returned text content instead of tool call
+      console.log("No tool call found, attempting to parse text content...");
+      const textContent = aiData.choices?.[0]?.message?.content;
+      
+      if (!textContent) {
+        console.error("AI response has no tool call and no text content");
+        throw new Error("AI returned empty response. Please try again.");
+      }
+      
+      // Try to extract JSON from the text content
+      try {
+        // Remove markdown code blocks if present
+        let cleanedContent = textContent
+          .replace(/```json\s*/g, "")
+          .replace(/```\s*/g, "")
+          .trim();
+        
+        // Try to find JSON object in the response
+        const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          generatedData = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error("No JSON found in AI text response");
+        }
+      } catch (parseErr) {
+        console.error("Failed to parse AI text content as JSON:", parseErr);
+        console.error("Text content:", textContent.substring(0, 500));
+        throw new Error("AI response format error. Please try again.");
+      }
+    }
+    
     const { plan: planMeta, workouts: generatedWorkouts } = generatedData;
 
     console.log("AI generated", generatedWorkouts.length, "workouts");
