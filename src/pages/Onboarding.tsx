@@ -28,6 +28,7 @@ interface FormData {
   unitPreference: string;
   // Step 2: Goals
   goalPrimary: string;
+  goalSecondary: string;
   experienceLevel: string;
   // Step 3: Schedule
   daysPerWeek: number;
@@ -57,6 +58,7 @@ const initialFormData: FormData = {
   weightKg: null,
   unitPreference: 'metric',
   goalPrimary: '',
+  goalSecondary: '',
   experienceLevel: '',
   daysPerWeek: 4,
   sessionMinutes: 45,
@@ -74,7 +76,6 @@ const initialFormData: FormData = {
     protein_emphasis: 'medium',
   },
 };
-
 export default function Onboarding() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -106,6 +107,7 @@ export default function Onboarding() {
         weightKg: profile.weight_kg ? Number(profile.weight_kg) : null,
         unitPreference: (profile as any).unit_preference || 'metric',
         goalPrimary: profile.goal_primary || '',
+        goalSecondary: (profile as any).goal_secondary || '',
         experienceLevel: profile.experience_level || '',
         daysPerWeek: profile.days_per_week || 4,
         sessionMinutes: profile.session_minutes || 45,
@@ -191,6 +193,7 @@ export default function Onboarding() {
         weight_kg: formData.weightKg,
         unit_preference: formData.unitPreference,
         goal_primary: formData.goalPrimary,
+        goal_secondary: formData.goalSecondary || null,
         experience_level: formData.experienceLevel,
         days_per_week: formData.daysPerWeek,
         session_minutes: formData.sessionMinutes,
@@ -287,8 +290,10 @@ export default function Onboarding() {
           {currentStep === 2 && (
             <StepGoals
               goalPrimary={formData.goalPrimary}
+              goalSecondary={formData.goalSecondary}
               experienceLevel={formData.experienceLevel}
-              onGoalChange={(v) => setFormData({ ...formData, goalPrimary: v })}
+              onGoalChange={(v) => setFormData({ ...formData, goalPrimary: v, goalSecondary: formData.goalSecondary === v ? '' : formData.goalSecondary })}
+              onSecondaryGoalChange={(v) => setFormData({ ...formData, goalSecondary: v })}
               onExperienceChange={(v) => setFormData({ ...formData, experienceLevel: v })}
             />
           )}

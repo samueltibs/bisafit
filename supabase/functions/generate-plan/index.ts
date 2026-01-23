@@ -9,6 +9,7 @@ const corsHeaders = {
 interface UserProfile {
   id: string;
   goal_primary: string | null;
+  goal_secondary: string | null;
   experience_level: string | null;
   days_per_week: number | null;
   session_minutes: number | null;
@@ -558,12 +559,18 @@ EQUIPMENT MAPPING:
 - "bench": Bench exercises, step-ups
 - "cable_machine": Cable exercises
 
-GOAL MAPPING:
-- "fat_loss": Higher volume, shorter rest, include conditioning
-- "muscle_gain": Moderate volume, focus on progressive overload, hypertrophy rep ranges
-- "strength": Lower rep ranges, longer rest, compound focus
+GOAL MAPPING (Primary goal drives the plan, secondary goal lightly influences variety):
+- "fat_loss": Higher volume, shorter rest, include conditioning blocks
+- "muscle_gain": Moderate volume, focus on progressive overload, hypertrophy rep ranges (8-12)
+- "strength": Lower rep ranges (3-6), longer rest, compound focus
 - "maintenance": Balanced approach, moderate everything
-- "endurance": Higher reps, circuit style, conditioning focus`;
+- "endurance": Higher reps (15+), circuit style, conditioning focus
+
+SECONDARY GOAL INFLUENCE:
+- If secondary = "fat_loss": Add 1-2 conditioning finishers per week
+- If secondary = "muscle_gain": Include accessory work for variety
+- If secondary = "endurance": Increase rep ranges slightly, add cardio intervals
+- If secondary = "strength": Include heavier compound sets where appropriate`;
 }
 
 function buildUserPrompt(
@@ -597,6 +604,7 @@ ${preferences.map((p) => `- ${p}`).join("\n")}`;
 USER PROFILE:
 - Name: ${profile.full_name || "User"}
 - Primary Goal: ${profile.goal_primary || "maintenance"}
+- Secondary Goal: ${profile.goal_secondary || "None (focus only on primary)"}
 - Experience Level: ${profile.experience_level || "beginner"}
 - Training Days Per Week: ${workoutDays.length}
 - Session Duration: ${profile.session_minutes || 45} minutes (±5 min acceptable)
