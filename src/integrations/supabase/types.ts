@@ -86,32 +86,53 @@ export type Database = {
       }
       nutrition_profiles: {
         Row: {
+          budget_level: string | null
           calories_target: number | null
           carbs_g: number | null
           created_at: string | null
+          cuisine_preferences_json: Json | null
           dietary_preferences_json: Json | null
           fat_g: number | null
+          meal_plan_json: Json | null
+          meals_per_day: number | null
+          nutrition_goal_style: string | null
           protein_g: number | null
+          snacks_per_day: number | null
+          targets_json: Json | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          budget_level?: string | null
           calories_target?: number | null
           carbs_g?: number | null
           created_at?: string | null
+          cuisine_preferences_json?: Json | null
           dietary_preferences_json?: Json | null
           fat_g?: number | null
+          meal_plan_json?: Json | null
+          meals_per_day?: number | null
+          nutrition_goal_style?: string | null
           protein_g?: number | null
+          snacks_per_day?: number | null
+          targets_json?: Json | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          budget_level?: string | null
           calories_target?: number | null
           carbs_g?: number | null
           created_at?: string | null
+          cuisine_preferences_json?: Json | null
           dietary_preferences_json?: Json | null
           fat_g?: number | null
+          meal_plan_json?: Json | null
+          meals_per_day?: number | null
+          nutrition_goal_style?: string | null
           protein_g?: number | null
+          snacks_per_day?: number | null
+          targets_json?: Json | null
           updated_at?: string | null
           user_id?: string
         }

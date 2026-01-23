@@ -1,57 +1,18 @@
 import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Flame, Beef, Wheat, Droplets, Apple, Coffee, UtensilsCrossed, Moon } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { 
+  Flame, Beef, Wheat, Droplets, Loader2, Sparkles, 
+  ChevronDown, ShoppingCart, Lightbulb, RefreshCw, 
+  Coffee, UtensilsCrossed, Moon, Apple, AlertTriangle, Target
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const nutritionTargets = {
-  calories: { current: 1450, target: 2000, unit: 'kcal' },
-  protein: { current: 85, target: 120, unit: 'g' },
-  carbs: { current: 165, target: 250, unit: 'g' },
-  fat: { current: 48, target: 65, unit: 'g' },
-};
-
-const meals = [
-  {
-    id: 1,
-    type: 'Breakfast',
-    icon: Coffee,
-    time: '7:30 AM',
-    items: [
-      { name: 'Oatmeal with berries', calories: 320, protein: 12, carbs: 55, fat: 6 },
-      { name: 'Greek yogurt', calories: 150, protein: 15, carbs: 8, fat: 5 },
-    ],
-  },
-  {
-    id: 2,
-    type: 'Lunch',
-    icon: UtensilsCrossed,
-    time: '12:30 PM',
-    items: [
-      { name: 'Grilled chicken salad', calories: 450, protein: 35, carbs: 20, fat: 22 },
-      { name: 'Whole grain bread', calories: 120, protein: 4, carbs: 22, fat: 2 },
-    ],
-  },
-  {
-    id: 3,
-    type: 'Snack',
-    icon: Apple,
-    time: '3:30 PM',
-    items: [
-      { name: 'Protein shake', calories: 200, protein: 25, carbs: 10, fat: 3 },
-    ],
-  },
-  {
-    id: 4,
-    type: 'Dinner',
-    icon: Moon,
-    time: 'Not logged',
-    items: [],
-  },
-];
+import { useNutrition, type Meal, type DayPlan } from '@/hooks/useNutrition';
 
 const macroColors = {
   protein: { bg: 'bg-blue-500/10', text: 'text-blue-500', bar: 'bg-blue-500' },
@@ -59,149 +20,436 @@ const macroColors = {
   fat: { bg: 'bg-purple-500/10', text: 'text-purple-500', bar: 'bg-purple-500' },
 };
 
-export default function Nutrition() {
-  const [selectedMeal, setSelectedMeal] = useState<number | null>(null);
+const mealIcons: Record<string, typeof Coffee> = {
+  Breakfast: Coffee,
+  Lunch: UtensilsCrossed,
+  Dinner: Moon,
+  Snack: Apple,
+  'Snack 1': Apple,
+  'Snack 2': Apple,
+};
 
-  const calorieProgress = (nutritionTargets.calories.current / nutritionTargets.calories.target) * 100;
+function MealCard({ 
+  meal, 
+  dayIndex, 
+  mealIndex, 
+  isSnack, 
+  onSwap, 
+  swapping 
+}: { 
+  meal: Meal; 
+  dayIndex: number; 
+  mealIndex: number; 
+  isSnack: boolean;
+  onSwap: (dayIndex: number, mealIndex: number, isSnack: boolean) => void;
+  swapping: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const Icon = mealIcons[meal.name] || UtensilsCrossed;
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <Card className="border-border">
+        <CardContent className="p-4">
+          <CollapsibleTrigger asChild>
+            <div className="flex items-center gap-4 cursor-pointer">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent shrink-0">
+                <Icon className="h-5 w-5 text-accent-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-medium truncate">{meal.recipe_title}</p>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <span>{meal.calories_est} kcal</span>
+                  <span>•</span>
+                  <span>{meal.protein_g_est}g protein</span>
+                </div>
+              </div>
+              <ChevronDown className={cn(
+                "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+                isOpen && "rotate-180"
+              )} />
+            </div>
+          </CollapsibleTrigger>
+          
+          <CollapsibleContent>
+            <div className="mt-4 space-y-4 border-t pt-4">
+              <div>
+                <p className="text-sm font-medium mb-2">Ingredients</p>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  {meal.ingredients.map((ing, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="text-primary">•</span>
+                      <span>{ing}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="text-sm font-medium mb-2">Instructions</p>
+                <p className="text-sm text-muted-foreground">{meal.instructions}</p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSwap(dayIndex, mealIndex, isSnack);
+                }}
+                disabled={swapping}
+              >
+                {swapping ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                Swap Meal
+              </Button>
+            </div>
+          </CollapsibleContent>
+        </CardContent>
+      </Card>
+    </Collapsible>
+  );
+}
+
+function DayMeals({ 
+  day, 
+  dayIndex, 
+  onSwap, 
+  swapping 
+}: { 
+  day: DayPlan; 
+  dayIndex: number;
+  onSwap: (dayIndex: number, mealIndex: number, isSnack: boolean) => void;
+  swapping: boolean;
+}) {
+  return (
+    <div className="space-y-3">
+      <h3 className="font-semibold text-lg">{day.day}</h3>
+      
+      {day.meals.map((meal, mealIndex) => (
+        <MealCard 
+          key={`meal-${mealIndex}`}
+          meal={meal}
+          dayIndex={dayIndex}
+          mealIndex={mealIndex}
+          isSnack={false}
+          onSwap={onSwap}
+          swapping={swapping}
+        />
+      ))}
+      
+      {day.snacks.map((snack, snackIndex) => (
+        <MealCard 
+          key={`snack-${snackIndex}`}
+          meal={snack}
+          dayIndex={dayIndex}
+          mealIndex={snackIndex}
+          isSnack={true}
+          onSwap={onSwap}
+          swapping={swapping}
+        />
+      ))}
+    </div>
+  );
+}
+
+function GroceryListSection({ groceryList }: { groceryList: { produce: string[]; proteins: string[]; pantry: string[]; dairy_optional: string[] } }) {
+  const sections = [
+    { title: 'Produce', items: groceryList.produce, icon: '🥬' },
+    { title: 'Proteins', items: groceryList.proteins, icon: '🍗' },
+    { title: 'Pantry', items: groceryList.pantry, icon: '🥫' },
+    { title: 'Dairy (Optional)', items: groceryList.dairy_optional, icon: '🧀' },
+  ].filter(s => s.items.length > 0);
+
+  return (
+    <div className="space-y-4">
+      {sections.map((section) => (
+        <Card key={section.title} className="border-border">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <span>{section.icon}</span>
+              {section.title}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {section.items.map((item, i) => (
+                <Badge key={i} variant="secondary" className="text-sm">
+                  {item}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+export default function Nutrition() {
+  const {
+    profile,
+    loading,
+    generateTargets,
+    generatingTargets,
+    generateMealPlan,
+    generatingMealPlan,
+    swapMeal,
+    swappingMeal,
+  } = useNutrition();
+
+  const [selectedDay, setSelectedDay] = useState(0);
+  
+  const targets = profile?.targets_json;
+  const mealPlan = profile?.meal_plan_json;
+  const isSimpleMode = profile?.nutrition_goal_style !== 'macros';
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
       <div className="container space-y-6 px-4 py-6">
-        {/* Calorie Overview */}
-        <Card className="gradient-primary text-primary-foreground animate-slide-up">
-          <CardContent className="p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Calories Today</p>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-bold">{nutritionTargets.calories.current}</span>
-                  <span className="text-lg opacity-80">/ {nutritionTargets.calories.target}</span>
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Nutrition</h1>
+        </div>
+
+        {/* Disclaimer */}
+        <Alert className="border-amber-500/50 bg-amber-500/10">
+          <AlertTriangle className="h-4 w-4 text-amber-500" />
+          <AlertDescription className="text-sm text-muted-foreground">
+            Not medical advice. Consult a healthcare professional for personalized nutrition guidance.
+          </AlertDescription>
+        </Alert>
+
+        {/* Targets Section */}
+        {!targets ? (
+          <Card className="border-dashed border-2">
+            <CardContent className="p-6 text-center space-y-4">
+              <div className="flex justify-center">
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Target className="h-8 w-8 text-primary" />
                 </div>
               </div>
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-foreground/20">
-                <Flame className="h-7 w-7" />
+              <div>
+                <h3 className="font-semibold text-lg">Set Your Nutrition Targets</h3>
+                <p className="text-muted-foreground text-sm mt-1">
+                  Generate personalized daily calorie and protein targets based on your goals.
+                </p>
               </div>
-            </div>
-            <Progress value={calorieProgress} className="h-3 bg-primary-foreground/20" />
-            <p className="mt-2 text-sm opacity-90">
-              {nutritionTargets.calories.target - nutritionTargets.calories.current} kcal remaining
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Macros */}
-        <div className="grid grid-cols-3 gap-3 animate-slide-up">
-          {Object.entries(nutritionTargets)
-            .filter(([key]) => key !== 'calories')
-            .map(([key, value]) => {
-              const colors = macroColors[key as keyof typeof macroColors];
-              const progress = (value.current / value.target) * 100;
-              
-              return (
-                <Card key={key} className="border-border">
-                  <CardContent className="p-4">
-                    <div className={cn("mb-2 flex h-8 w-8 items-center justify-center rounded-lg", colors.bg)}>
-                      {key === 'protein' && <Beef className={cn("h-4 w-4", colors.text)} />}
-                      {key === 'carbs' && <Wheat className={cn("h-4 w-4", colors.text)} />}
-                      {key === 'fat' && <Droplets className={cn("h-4 w-4", colors.text)} />}
-                    </div>
-                    <p className="text-xs capitalize text-muted-foreground">{key}</p>
-                    <p className="text-lg font-bold">{value.current}g</p>
-                    <Progress value={progress} className={cn("mt-2 h-1.5", colors.bar)} />
-                    <p className="mt-1 text-xs text-muted-foreground">/ {value.target}g</p>
-                  </CardContent>
-                </Card>
-              );
-            })}
-        </div>
-
-        {/* Meals */}
-        <div className="space-y-3 animate-slide-up">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Today's Meals</h2>
-            <Button size="sm" className="gap-1">
-              <Plus className="h-4 w-4" />
-              Add Food
-            </Button>
-          </div>
-
-          {meals.map((meal) => {
-            const Icon = meal.icon;
-            const totalCalories = meal.items.reduce((sum, item) => sum + item.calories, 0);
-            
-            return (
-              <Card
-                key={meal.id}
-                className={cn(
-                  "border-border cursor-pointer transition-all hover:border-primary/50",
-                  selectedMeal === meal.id && "border-primary"
+              <Button onClick={generateTargets} disabled={generatingTargets} className="gap-2">
+                {generatingTargets ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
                 )}
-                onClick={() => setSelectedMeal(selectedMeal === meal.id ? null : meal.id)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent">
-                      <Icon className="h-6 w-6 text-accent-foreground" />
+                Generate Targets
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {/* Calorie Target */}
+            <Card className="gradient-primary text-primary-foreground animate-slide-up">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm opacity-90">Daily Calorie Target</p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-3xl font-bold">
+                        {targets.calories_target.low}–{targets.calories_target.high}
+                      </span>
+                      <span className="text-lg opacity-80">kcal</span>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{meal.type}</p>
-                        <Badge variant="secondary" className="text-xs">
-                          {meal.time}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {meal.items.length > 0
-                          ? `${meal.items.length} items • ${totalCalories} kcal`
-                          : 'Tap to log meal'}
-                      </p>
-                    </div>
-                    <Button variant="ghost" size="icon">
-                      <Plus className="h-5 w-5" />
-                    </Button>
                   </div>
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-foreground/20">
+                    <Flame className="h-7 w-7" />
+                  </div>
+                </div>
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  className="gap-2"
+                  onClick={generateTargets}
+                  disabled={generatingTargets}
+                >
+                  {generatingTargets ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  Recalculate
+                </Button>
+              </CardContent>
+            </Card>
 
-                  {selectedMeal === meal.id && meal.items.length > 0 && (
-                    <div className="mt-4 space-y-2 border-t pt-4">
-                      {meal.items.map((item, index) => (
-                        <div key={index} className="flex items-center justify-between text-sm">
-                          <span>{item.name}</span>
-                          <span className="text-muted-foreground">{item.calories} kcal</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+            {/* Macro Cards */}
+            <div className={cn("grid gap-3 animate-slide-up", isSimpleMode ? "grid-cols-2" : "grid-cols-3")}>
+              {/* Protein - Always shown */}
+              <Card className="border-border">
+                <CardContent className="p-4">
+                  <div className={cn("mb-2 flex h-8 w-8 items-center justify-center rounded-lg", macroColors.protein.bg)}>
+                    <Beef className={cn("h-4 w-4", macroColors.protein.text)} />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Protein</p>
+                  <p className="text-xl font-bold">{targets.protein_g}g</p>
+                  <p className="text-xs text-muted-foreground mt-1">daily target</p>
                 </CardContent>
               </Card>
-            );
-          })}
-        </div>
 
-        {/* Water Intake */}
-        <Card className="border-border animate-slide-up">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Droplets className="h-5 w-5 text-blue-500" />
-              Water Intake
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="flex gap-1">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "h-8 w-6 rounded-md transition-all cursor-pointer",
-                      i < 5 ? "bg-blue-500" : "bg-blue-500/20 hover:bg-blue-500/40"
-                    )}
-                  />
-                ))}
-              </div>
-              <span className="text-lg font-bold">5/8 glasses</span>
+              {/* Water */}
+              <Card className="border-border">
+                <CardContent className="p-4">
+                  <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
+                    <Droplets className="h-4 w-4 text-blue-500" />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Water</p>
+                  <p className="text-xl font-bold">{targets.water_liters}L</p>
+                  <p className="text-xs text-muted-foreground mt-1">daily target</p>
+                </CardContent>
+              </Card>
+
+              {/* Carbs - Only in macros mode */}
+              {!isSimpleMode && targets.carbs_g_optional && (
+                <Card className="border-border">
+                  <CardContent className="p-4">
+                    <div className={cn("mb-2 flex h-8 w-8 items-center justify-center rounded-lg", macroColors.carbs.bg)}>
+                      <Wheat className={cn("h-4 w-4", macroColors.carbs.text)} />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Carbs</p>
+                    <p className="text-xl font-bold">{targets.carbs_g_optional}g</p>
+                    <p className="text-xs text-muted-foreground mt-1">daily target</p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
-          </CardContent>
-        </Card>
+
+            {/* Notes */}
+            {targets.notes && (
+              <Card className="border-border">
+                <CardContent className="p-4">
+                  <p className="text-sm text-muted-foreground">{targets.notes}</p>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
+
+        {/* Meal Plan Section */}
+        {targets && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">7-Day Meal Plan</h2>
+              <Button 
+                onClick={() => generateMealPlan(7)} 
+                disabled={generatingMealPlan}
+                variant={mealPlan ? "outline" : "default"}
+                className="gap-2"
+              >
+                {generatingMealPlan ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                {mealPlan ? 'Regenerate' : 'Generate Plan'}
+              </Button>
+            </div>
+
+            {!mealPlan ? (
+              <Card className="border-dashed border-2">
+                <CardContent className="p-6 text-center space-y-4">
+                  <div className="flex justify-center">
+                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                      <UtensilsCrossed className="h-8 w-8 text-primary" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">Generate Your Meal Plan</h3>
+                    <p className="text-muted-foreground text-sm mt-1">
+                      Get a personalized 7-day meal plan with recipes and a grocery list.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Tabs defaultValue="meals" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="meals">Meals</TabsTrigger>
+                  <TabsTrigger value="grocery" className="gap-1">
+                    <ShoppingCart className="h-4 w-4" />
+                    Grocery
+                  </TabsTrigger>
+                  <TabsTrigger value="tips" className="gap-1">
+                    <Lightbulb className="h-4 w-4" />
+                    Tips
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="meals" className="space-y-4 mt-4">
+                  {/* Day selector */}
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {mealPlan.days.map((day, i) => (
+                      <Button
+                        key={day.day}
+                        variant={selectedDay === i ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedDay(i)}
+                        className="shrink-0"
+                      >
+                        {day.day.slice(0, 3)}
+                      </Button>
+                    ))}
+                  </div>
+
+                  {/* Selected day meals */}
+                  {mealPlan.days[selectedDay] && (
+                    <DayMeals 
+                      day={mealPlan.days[selectedDay]}
+                      dayIndex={selectedDay}
+                      onSwap={swapMeal}
+                      swapping={swappingMeal}
+                    />
+                  )}
+                </TabsContent>
+
+                <TabsContent value="grocery" className="mt-4">
+                  <GroceryListSection groceryList={mealPlan.grocery_list} />
+                </TabsContent>
+
+                <TabsContent value="tips" className="space-y-4 mt-4">
+                  <Card className="border-border">
+                    <CardHeader>
+                      <CardTitle className="text-base">Prep Tips</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2">
+                        {mealPlan.prep_tips.map((tip, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                            <span className="text-primary shrink-0">💡</span>
+                            <span>{tip}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-border">
+                    <CardHeader>
+                      <CardTitle className="text-base">Swap Rules</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">{mealPlan.swap_rules}</p>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            )}
+          </div>
+        )}
       </div>
     </AppLayout>
   );
