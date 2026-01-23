@@ -1,0 +1,96 @@
+import { supabase } from '@/integrations/supabase/client';
+
+// Allowed event names for type safety
+export type AnalyticsEventName =
+  // Activation
+  | 'signup_completed'
+  | 'profile_completed'
+  | 'plan_preview_viewed'
+  | 'trial_started'
+  | 'paywall_viewed'
+  // Engagement
+  | 'workout_started'
+  | 'workout_completed'
+  | 'nutrition_plan_generated'
+  | 'ingredient_scan_used'
+  | 'calendar_event_created'
+  // Quality
+  | 'generation_error';
+
+export interface AnalyticsEventProperties {
+  // Optional common properties
+  plan_type?: 'monthly' | 'annual';
+  cuisine_theme?: string;
+  feature?: 'workout' | 'nutrition';
+  reason?: string;
+  // Allow additional custom properties
+  [key: string]: string | number | boolean | undefined;
+}
+
+/**
+ * Track an analytics event with automatic user_id, platform, and timestamp.
+ * Fire-and-forget: does not block the UI.
+ */
+export async function trackEvent(
+  name: AnalyticsEventName,
+  props: AnalyticsEventProperties = {}
+): Promise<void> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      // Don't track events for unauthenticated users
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Analytics] Skipped (no user):', name, props);
+      }
+      return;
+    }
+
+    const eventData = {
+      user_id: user.id,
+      event_name: name,
+      platform: 'web' as const,
+      properties: {
+        ...props,
+        timestamp: new Date().toISOString(),
+      },
+    };
+
+    // Fire and forget - don't await in production
+    const insertPromise = supabase
+      .from('analytics_events')
+      .insert(eventData);
+
+    if (process.env.NODE_ENV === 'development') {
+      const { error } = await insertPromise;
+      if (error) {
+        console.error('[Analytics] Error:', error.message);
+      } else {
+        console.log('[Analytics] Tracked:', name, props);
+      }
+    }
+  } catch (err) {
+    // Silent fail - analytics should never break the app
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[Analytics] Exception:', err);
+    }
+  }
+}
+
+/**
+ * Fetch recent events for the current user (dev/debug only)
+ */
+export async function getRecentEvents(limit = 20) {
+  const { data, error } = await supabase
+    .from('analytics_events')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('[Analytics] Fetch error:', error.message);
+    return [];
+  }
+
+  return data || [];
+}

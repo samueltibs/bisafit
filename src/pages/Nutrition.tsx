@@ -26,6 +26,7 @@ import { useIngredientSession, type IngredientMode } from '@/hooks/useIngredient
 import { usePremiumFeature } from '@/hooks/usePremiumFeature';
 import { PremiumFeatureModal } from '@/components/subscription';
 import { supabase } from '@/integrations/supabase/client';
+import { trackEvent } from '@/lib/analytics';
 
 const macroColors = {
   protein: { bg: 'bg-primary/10', text: 'text-primary', bar: 'bg-primary' },
@@ -306,6 +307,10 @@ export default function Nutrition() {
       
       await refetch();
       
+      trackEvent('nutrition_plan_generated', { 
+        cuisine_theme: weekCuisineTheme || undefined 
+      });
+      
       toast.success(
         activeMode === 'strict_only' 
           ? 'Meal plan generated using only what you have!' 
@@ -318,6 +323,7 @@ export default function Nutrition() {
       }, 500);
     } catch (err) {
       console.error('Generate from ingredients error:', err);
+      trackEvent('generation_error', { feature: 'nutrition', reason: err instanceof Error ? err.message : 'unknown' });
       // Restore status to ready on failure
       updateStatus('ready');
       toast.error("Couldn't generate plan right now. Try again.");
@@ -370,9 +376,15 @@ export default function Nutrition() {
       await updateLastPlanMode('generic');
       
       await refetch();
+      
+      trackEvent('nutrition_plan_generated', { 
+        cuisine_theme: weekCuisineTheme || undefined 
+      });
+      
       toast.success('Meal plan generated!');
     } catch (err) {
       console.error('Generate meal plan error:', err);
+      trackEvent('generation_error', { feature: 'nutrition', reason: err instanceof Error ? err.message : 'unknown' });
       toast.error("Couldn't generate plan right now. Try again.");
     }
   }, [refetch, weekCuisineTheme, updateLastPlanMode, checkPremiumAccess]);

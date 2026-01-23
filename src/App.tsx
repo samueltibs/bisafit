@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SubscriptionGate } from "@/components/subscription/SubscriptionGate";
+import { AnalyticsDebugPanel } from "@/components/debug/AnalyticsDebugPanel";
 
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -97,6 +98,7 @@ const App = () => (
             } />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <AnalyticsDebugPanel />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

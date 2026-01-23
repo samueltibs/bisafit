@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dumbbell, Mail, Lock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { trackEvent } from '@/lib/analytics';
 
 export default function Auth() {
   const { user, loading: authLoading } = useAuth();
@@ -64,6 +65,7 @@ export default function Auth() {
     if (error) {
       toast.error(error.message);
     } else {
+      trackEvent('signup_completed');
       toast.success('Account created! Welcome to BisaFit!');
     }
     

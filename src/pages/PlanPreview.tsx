@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Check
 } from 'lucide-react';
+import { trackEvent } from '@/lib/analytics';
 
 export default function PlanPreview() {
   const navigate = useNavigate();
@@ -24,6 +25,13 @@ export default function PlanPreview() {
 
   const isLoading = profileLoading || planLoading;
   const subscriptionStatus = profile?.subscription_status;
+
+  // Track plan preview view
+  useEffect(() => {
+    if (!isLoading && plan) {
+      trackEvent('plan_preview_viewed');
+    }
+  }, [isLoading, plan]);
 
   // Redirect to Home if already subscribed/trialing
   useEffect(() => {

@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useIngredientSession, type SessionIngredient } from '@/hooks/useIngredientSession';
+import { trackEvent } from '@/lib/analytics';
 
 interface DetectedIngredient {
   name: string;
@@ -169,6 +170,9 @@ export function FridgeScanFlow({
       setIgnoredItems(data.ignored_items || []);
       setLowConfidenceWarning(data.low_confidence_warning || false);
       setStep('review');
+
+      // Track successful scan
+      trackEvent('ingredient_scan_used');
 
       if (detected.length === 0) {
         const msg = scanMode === 'receipt' 

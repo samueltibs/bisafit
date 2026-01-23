@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_events: {
+        Row: {
+          created_at: string
+          event_name: string
+          id: string
+          platform: string
+          properties: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_name: string
+          id?: string
+          platform?: string
+          properties?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_name?: string
+          id?: string
+          platform?: string
+          properties?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       health_uploads: {
         Row: {
           created_at: string | null
