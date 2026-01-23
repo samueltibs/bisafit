@@ -272,6 +272,30 @@ export type Database = {
           },
         ]
       }
+      store_interest: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          interests_json: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          interests_json?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          interests_json?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       store_products: {
         Row: {
           category: string
