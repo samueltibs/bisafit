@@ -13,7 +13,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { ChevronLeft, ChevronRight, Dumbbell, Timer, Check, Sparkles, Calendar, Loader2, AlertTriangle, Bed, RefreshCw, Rocket, Lock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Dumbbell, Timer, Check, Sparkles, Calendar, Loader2, AlertTriangle, Bed, RefreshCw, Rocket, Lock, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, addDays, startOfWeek, isToday } from 'date-fns';
 import { usePlan } from '@/hooks/usePlan';
@@ -47,12 +47,16 @@ export default function Plan() {
     allPlans,
     selectedPlanId,
     setSelectedPlanId,
-    activePlanId,
-    isViewingActivePlan,
+    currentPlanId,
+    isViewingCurrentPlan,
+    startBlock,
+    markBlockComplete,
   } = usePlan();
   const { generatePlan, isGenerating } = usePlanGeneration();
+  // For non-current plans, default to week 0 (Week 1) instead of using today's date
   const [weekOffset, setWeekOffset] = useState(0);
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
+  const [showMarkCompleteConfirm, setShowMarkCompleteConfirm] = useState(false);
 
   // Progression engine state
   const {
@@ -86,35 +90,39 @@ export default function Plan() {
   }, [plan, planJson, checkEligibility]);
 
   // Calculate week start based on plan start + current week offset
+  // For non-current plans, start from Week 1 (offset 0)
   const getWeekStartForOffset = (offset: number): Date => {
     const planWeekStart = getPlanWeekStart();
     if (planWeekStart) {
-      return addDays(planWeekStart, (currentWeekIndex + offset) * 7);
+      // For current plan, use currentWeekIndex; for others, start from week 0
+      const baseWeekIndex = isViewingCurrentPlan ? currentWeekIndex : 0;
+      return addDays(planWeekStart, (baseWeekIndex + offset) * 7);
     }
     return addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), offset * 7);
   };
 
   const currentWeekStart = getWeekStartForOffset(weekOffset);
 
+  // Reset week offset when switching plans
   useEffect(() => {
-    if (plan?.start_date) {
-      setWeekOffset(0);
-    }
-  }, [plan?.start_date]);
+    setWeekOffset(0);
+  }, [selectedPlanId]);
 
   const goToPreviousWeek = () => {
-    if (weekOffset > -currentWeekIndex) {
+    const baseWeekIndex = isViewingCurrentPlan ? currentWeekIndex : 0;
+    if (weekOffset > -baseWeekIndex) {
       setWeekOffset(weekOffset - 1);
     }
   };
 
   const goToNextWeek = () => {
-    if (currentWeekIndex + weekOffset < 3) {
+    const baseWeekIndex = isViewingCurrentPlan ? currentWeekIndex : 0;
+    if (baseWeekIndex + weekOffset < 3) {
       setWeekOffset(weekOffset + 1);
     }
   };
 
-  const viewingPlanWeek = currentWeekIndex + weekOffset + 1;
+  const viewingPlanWeek = (isViewingCurrentPlan ? currentWeekIndex : 0) + weekOffset + 1;
   const isViewingCurrentWeek = weekOffset === 0;
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
@@ -165,8 +173,24 @@ export default function Plan() {
         // Plan already exists, just refresh to show it
         await refetch();
       } else {
+        // Show success dialog - plan is queued
         setShowSuccessDialog(true);
       }
+    }
+  };
+
+  // Handle starting a queued block
+  const handleStartBlock = async () => {
+    if (plan?.id) {
+      await startBlock(plan.id);
+    }
+  };
+
+  // Handle marking block complete
+  const handleMarkComplete = async () => {
+    if (plan?.id) {
+      await markBlockComplete(plan.id);
+      setShowMarkCompleteConfirm(false);
     }
   };
 
@@ -231,8 +255,8 @@ export default function Plan() {
   return (
     <AppLayout>
       <div className="container space-y-6 px-4 py-6">
-        {/* Progression CTAs - Only show for active plan */}
-        {isViewingActivePlan && (
+        {/* Progression CTAs - Only show for current plan */}
+        {isViewingCurrentPlan && (
         <Card className={cn(
           "animate-fade-in transition-all",
           eligibility?.isEligible 
@@ -388,12 +412,32 @@ export default function Plan() {
               onSelectPlan={setSelectedPlanId}
               disabled={isGenerating || isGeneratingNextBlock}
             />
-            {!isViewingActivePlan && (
-              <Badge variant="outline" className="text-xs flex items-center gap-1">
-                <Lock className="h-3 w-3" />
-                Read-only
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Queued block: Show "Start This Block" button */}
+              {allPlans.find(p => p.id === selectedPlanId)?.status === 'queued' && (
+                <Button size="sm" onClick={handleStartBlock}>
+                  <Play className="h-3 w-3 mr-1" />
+                  Start This Block
+                </Button>
+              )}
+              {/* Current block: Show "Mark Complete" button */}
+              {isViewingCurrentPlan && (
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setShowMarkCompleteConfirm(true)}
+                >
+                  <Check className="h-3 w-3 mr-1" />
+                  Mark Complete
+                </Button>
+              )}
+              {!isViewingCurrentPlan && allPlans.find(p => p.id === selectedPlanId)?.status !== 'queued' && (
+                <Badge variant="outline" className="text-xs flex items-center gap-1">
+                  <Lock className="h-3 w-3" />
+                  Completed
+                </Badge>
+              )}
+            </div>
           </div>
 
           {/* Week Navigation */}
@@ -406,9 +450,9 @@ export default function Plan() {
                 {format(currentWeekStart, 'MMM d')} - {format(addDays(currentWeekStart, 6), 'MMM d, yyyy')}
               </h2>
               {planJson && (
-                <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                   Week {viewingPlanWeek} of 4 • {workoutDaysCount} workouts
-                  {isViewingCurrentWeek && isViewingActivePlan && (
+                  {isViewingCurrentWeek && isViewingCurrentPlan && (
                     <Badge variant="outline" className="ml-2 text-[10px]">Current</Badge>
                   )}
                 </p>
@@ -464,7 +508,7 @@ export default function Plan() {
                   {planJson.progression_strategy}
                 </Badge>
               )}
-              {isViewingActivePlan ? (
+              {isViewingCurrentPlan ? (
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -484,10 +528,10 @@ export default function Plan() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setSelectedPlanId(activePlanId)}
+                  onClick={() => setSelectedPlanId(currentPlanId)}
                 >
                   <Sparkles className="h-3 w-3 mr-1" />
-                  Go to Active Block
+                  Go to Current Block
                 </Button>
               )}
             </div>
@@ -545,6 +589,27 @@ export default function Plan() {
                   Regenerate Plan
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Mark Complete Confirmation Dialog */}
+      <Dialog open={showMarkCompleteConfirm} onOpenChange={setShowMarkCompleteConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mark Block Complete?</DialogTitle>
+            <DialogDescription>
+              This will mark Block {planJson?.block_number || 1} as completed. You can still view it in your block history.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowMarkCompleteConfirm(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleMarkComplete}>
+              <Check className="mr-2 h-4 w-4" />
+              Mark Complete
             </Button>
           </DialogFooter>
         </DialogContent>

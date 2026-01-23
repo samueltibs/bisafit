@@ -612,6 +612,7 @@ serve(async (req) => {
       coach_notes: planMeta.coach_notes,
     };
 
+    // Create plan as QUEUED (not in_progress) - user must explicitly start it
     const { data: newPlan, error: newPlanError } = await supabase
       .from("plans")
       .insert({
@@ -620,6 +621,9 @@ serve(async (req) => {
         start_date: newStartDateStr,
         weeks: 4,
         plan_json: planJson,
+        block_number: newBlockNumber,
+        status: "queued",
+        started_at: null,
       })
       .select()
       .single();
@@ -708,11 +712,12 @@ serve(async (req) => {
         block_number: newBlockNumber,
         start_date: newStartDateStr,
         workouts_created: insertedWorkouts?.length || 0,
+        status: "queued",
         analysis: {
           adherence_rate: analysis.adherence_rate,
           progression_applied: finalRecommendation,
         },
-        message: `Block ${newBlockNumber} is ready! Your training continues on ${newStartDateStr}.`,
+        message: `Block ${newBlockNumber} created (Queued). Start it when you're ready.`,
       }),
       {
         status: 200,
