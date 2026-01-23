@@ -777,16 +777,15 @@ ${preferenceNotes}
 ${constraintNotes ? `\nADDITIONAL NOTES: ${constraintNotes}` : ""}
 
 CONTEXT:
+- User's first name: ${profile.full_name?.split(' ')[0] || 'there'}
 - User has completed ${completedWorkouts} workouts previously
-${completedWorkouts > 0 ? "- Build on their previous progress with appropriate progression. In your coach_notes, use phrases like 'Welcome back — this block focuses on...' rather than referencing block numbers." : "- First time user - start conservatively. In your coach_notes, use phrases like 'Welcome — this block focuses on...' rather than referencing block numbers."}
+${completedWorkouts > 0 ? "- Build on their previous progress with appropriate progression" : "- First time user - start conservatively"}
 
-COACH NOTES GUIDELINES:
-- Do NOT reference specific block numbers (e.g., "Block 5", "Training Block #3")
-- Instead, use context-aware phrases like:
-  - "Welcome — this block focuses on..."
-  - "Welcome back — here's the focus for this block"
-  - "In this block, we're prioritizing..."
-  - "This training block is designed to..."
+COACH NOTES GUIDELINES (CRITICAL):
+- ALWAYS start coach_notes with: "Welcome back, ${profile.full_name?.split(' ')[0] || 'there'}."
+- Do NOT reference block numbers, block indices, or progression counts
+- Immediately follow the greeting with the training focus
+- Example format: "Welcome back, John. This block focuses on building your foundational strength with progressive overload on compound movements."
 
 REQUIRED OUTPUT:
 Generate EXACTLY ${totalWorkouts} workouts total:
