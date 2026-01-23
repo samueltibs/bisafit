@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Flame, Droplets, Footprints, Dumbbell, Apple, ChevronRight, Trophy } from 'lucide-react';
+import { Flame, Droplets, Footprints, Dumbbell, Apple, ChevronRight, Trophy, User } from 'lucide-react';
 
 export default function Home() {
-  const { profile, loading } = useUserProfile();
+  const navigate = useNavigate();
+  const { profile, loading, refetch } = useUserProfile();
   const [greeting, setGreeting] = useState('');
 
   useEffect(() => {
@@ -18,7 +19,17 @@ export default function Home() {
     else setGreeting('Good evening');
   }, []);
 
+  // Refetch profile on page focus to get latest data
+  useEffect(() => {
+    const handleFocus = () => {
+      refetch();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [refetch]);
+
   const fullName = profile?.full_name?.trim() || '';
+  const hasName = fullName.length > 0;
 
   // Mock data for today's summary
   const todayStats = {
@@ -27,15 +38,37 @@ export default function Home() {
     steps: { current: 6234, target: 10000 },
   };
 
+  const handleAddName = () => {
+    navigate('/settings?edit=true');
+  };
+
   return (
     <AppLayout>
       <div className="container space-y-6 px-4 py-6">
         {/* Greeting Section */}
         <div className="animate-fade-in">
           <h1 className="text-2xl font-bold text-foreground">
-            {fullName ? `${greeting}, ${fullName} 👋` : `${greeting} 👋`}
+            {hasName ? `${greeting}, ${fullName} 👋` : `${greeting} 👋`}
           </h1>
         </div>
+
+        {/* Personalization Banner - shown if no name */}
+        {!loading && !hasName && (
+          <Card className="border-primary/30 bg-primary/5 animate-fade-in">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                <User className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Personalize your experience</p>
+                <p className="text-xs text-muted-foreground">Add your name to get started</p>
+              </div>
+              <Button size="sm" onClick={handleAddName}>
+                Add Name
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Daily Progress Card */}
         <Card className="gradient-primary text-primary-foreground animate-slide-up">
