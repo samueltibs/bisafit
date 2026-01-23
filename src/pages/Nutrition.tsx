@@ -10,14 +10,14 @@ import {
   Flame, Beef, Wheat, Droplets, Loader2, Sparkles, 
   ChevronDown, ShoppingCart, Lightbulb, RefreshCw, 
   Coffee, UtensilsCrossed, Moon, Apple, AlertTriangle, Target,
-  Camera, ShoppingBasket
+  Camera, ShoppingBasket, Lock, Shuffle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useNutrition, type Meal, type DayPlan, type NutritionTargets } from '@/hooks/useNutrition';
 import { FridgeScanFlow } from '@/components/nutrition/FridgeScanFlow';
 import { CuisineThemeSelector } from '@/components/nutrition/CuisineThemeSelector';
-import { useIngredientSession } from '@/hooks/useIngredientSession';
+import { useIngredientSession, type IngredientMode } from '@/hooks/useIngredientSession';
 import { supabase } from '@/integrations/supabase/client';
 
 const macroColors = {
@@ -219,7 +219,7 @@ export default function Nutrition() {
   const [generatingFromIngredients, setGeneratingFromIngredients] = useState(false);
   const [weekCuisineTheme, setWeekCuisineTheme] = useState<string | null>(null);
   
-  const { hasActiveSession, getIngredientNames, clearIngredients } = useIngredientSession();
+  const { hasActiveSession, getIngredientNames, clearIngredients, mode } = useIngredientSession();
   
   const targets = profile?.targets_json as NutritionTargets | null;
   const mealPlan = profile?.meal_plan_json;
@@ -228,14 +228,29 @@ export default function Nutrition() {
   const isFallbackTargets = targets?.source === 'fallback';
 
   // Generate meal plan from saved ingredients
-  const handleGeneratePlanFromIngredients = useCallback(async () => {
+  const handleGeneratePlanFromIngredients = useCallback(async (overrideMode?: IngredientMode) => {
     const ingredientNames = getIngredientNames();
+    const activeMode = overrideMode || mode;
+    
     if (ingredientNames.length < 2) return;
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Nutrition] Generating meal plan from ingredients:', {
+        count: ingredientNames.length,
+        mode: activeMode,
+        weekCuisineTheme,
+      });
+    }
 
     setGeneratingFromIngredients(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-meal-plan', {
-        body: { days: 7, ingredients: ingredientNames, weekCuisineTheme },
+        body: { 
+          days: 7, 
+          ingredients: ingredientNames, 
+          weekCuisineTheme,
+          ingredientMode: activeMode,
+        },
       });
 
       if (error) throw error;
@@ -249,7 +264,7 @@ export default function Nutrition() {
     } finally {
       setGeneratingFromIngredients(false);
     }
-  }, [getIngredientNames, clearIngredients, refetch, weekCuisineTheme]);
+  }, [getIngredientNames, clearIngredients, refetch, weekCuisineTheme, mode]);
 
   // Handle generate meal plan with cuisine theme
   const handleGenerateMealPlan = useCallback(async (days = 7) => {
@@ -305,62 +320,95 @@ export default function Nutrition() {
         
         {/* Active ingredient session hint */}
         {hasActiveSession && !fridgeScanOpen && (
-          <Alert className="border-primary/50 bg-primary/5">
-            <ShoppingBasket className="h-4 w-4 text-primary" />
+          <Alert className={cn(
+            "border-primary/50",
+            mode === 'strict_only' ? "bg-amber-500/10" : "bg-primary/5"
+          )}>
+            {mode === 'strict_only' ? (
+              <Lock className="h-4 w-4 text-amber-600" />
+            ) : (
+              <ShoppingBasket className="h-4 w-4 text-primary" />
+            )}
             <AlertDescription className="text-sm">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <span>
-                  You have saved ingredients from your scan ({getIngredientNames().length} items).
-                </span>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => setFridgeScanOpen(true)}
-                    className="h-auto py-1 px-2 text-xs text-muted-foreground"
-                  >
-                    Edit ingredients
-                  </Button>
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    onClick={async () => {
-                      const ingredientNames = getIngredientNames();
-                      if (process.env.NODE_ENV === 'development') {
-                        console.log('[Nutrition] Banner CTA clicked, ingredients count:', ingredientNames.length);
-                      }
-                      if (ingredientNames.length < 2) {
-                        toast.error('Need at least 2 ingredients. Add more or scan again.');
-                        return;
-                      }
-                      try {
-                        await handleGeneratePlanFromIngredients();
-                        toast.success('Meal plan generated using what you already have!');
-                        // Scroll to meal plan section
-                        setTimeout(() => {
-                          document.getElementById('meal-plan-section')?.scrollIntoView({ behavior: 'smooth' });
-                        }, 500);
-                      } catch (err) {
-                        console.error('[Nutrition] Generate from ingredients error:', err);
-                        toast.error("Couldn't generate plan right now. Try again.");
-                      }
-                    }}
-                    disabled={generatingFromIngredients || getIngredientNames().length < 2}
-                    className="h-auto py-1 px-3 gap-2"
-                  >
-                    {generatingFromIngredients ? (
-                      <>
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-3 w-3" />
-                        Generate plan using these
-                      </>
-                    )}
-                  </Button>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span>
+                      {getIngredientNames().length} saved ingredients
+                    </span>
+                    <Badge variant="outline" className="text-xs">
+                      {mode === 'strict_only' ? (
+                        <>
+                          <Lock className="h-2.5 w-2.5 mr-1" />
+                          Strict
+                        </>
+                      ) : (
+                        <>
+                          <Shuffle className="h-2.5 w-2.5 mr-1" />
+                          Flexible
+                        </>
+                      )}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setFridgeScanOpen(true)}
+                      className="h-auto py-1 px-2 text-xs text-muted-foreground"
+                    >
+                      Edit ingredients
+                    </Button>
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      onClick={async () => {
+                        const ingredientNames = getIngredientNames();
+                        if (process.env.NODE_ENV === 'development') {
+                          console.log('[Nutrition] Banner CTA clicked, ingredients count:', ingredientNames.length, 'mode:', mode);
+                        }
+                        if (ingredientNames.length < 2) {
+                          toast.error('Need at least 2 ingredients. Add more or scan again.');
+                          return;
+                        }
+                        try {
+                          await handleGeneratePlanFromIngredients();
+                          toast.success(
+                            mode === 'strict_only' 
+                              ? 'Meal plan generated using only what you have!' 
+                              : 'Meal plan generated using your ingredients!'
+                          );
+                          // Scroll to meal plan section
+                          setTimeout(() => {
+                            document.getElementById('meal-plan-section')?.scrollIntoView({ behavior: 'smooth' });
+                          }, 500);
+                        } catch (err) {
+                          console.error('[Nutrition] Generate from ingredients error:', err);
+                          toast.error("Couldn't generate plan right now. Try again.");
+                        }
+                      }}
+                      disabled={generatingFromIngredients || getIngredientNames().length < 2}
+                      className="h-auto py-1 px-3 gap-2"
+                    >
+                      {generatingFromIngredients ? (
+                        <>
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-3 w-3" />
+                          Generate plan using these
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  {mode === 'strict_only' 
+                    ? "Uses only scanned ingredients — no additions." 
+                    : "Uses scanned ingredients + common staples if needed."}
+                </p>
               </div>
             </AlertDescription>
           </Alert>
