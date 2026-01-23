@@ -15,6 +15,8 @@ import {
 import { useWorkoutPlayer } from '@/hooks/useWorkoutPlayer';
 import { useVoiceCues } from '@/hooks/useVoiceCues';
 import { useWorkoutResume } from '@/hooks/useWorkoutResume';
+import { usePremiumFeature } from '@/hooks/usePremiumFeature';
+import { PremiumFeatureModal } from '@/components/subscription';
 import {
   WorkoutTimer,
   ExerciseCard,
@@ -33,6 +35,9 @@ export default function Workout() {
   const [showSetLog, setShowSetLog] = useState(false);
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
   const [bigMode, setBigMode] = useState(false);
+
+  // Premium feature gating
+  const { showModal: showPremiumModal, setShowModal: setShowPremiumModal, checkPremiumAccess } = usePremiumFeature();
 
   // Hooks
   const {
@@ -178,6 +183,8 @@ export default function Workout() {
 
   const handlePrimaryAction = () => {
     if (playerState === 'idle') {
+      // Gate starting workout behind premium
+      if (!checkPremiumAccess()) return;
       handleStart();
       return;
     }
@@ -444,6 +451,11 @@ export default function Workout() {
           onDiscard={discardSession}
           startedAt={incompleteSession?.started_at || ''}
           setsCompleted={incompleteSession?.session_log_json?.sets?.length}
+        />
+
+        <PremiumFeatureModal
+          open={showPremiumModal}
+          onOpenChange={setShowPremiumModal}
         />
       </div>
     </AppLayout>
