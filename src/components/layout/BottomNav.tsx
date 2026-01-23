@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Calendar, Dumbbell, Apple, TrendingUp, Settings } from 'lucide-react';
+import { Home, Calendar, Dumbbell, Apple, TrendingUp, ShoppingBag, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -8,6 +8,7 @@ const navItems = [
   { path: '/workout/today', icon: Dumbbell, label: 'Workout' },
   { path: '/nutrition', icon: Apple, label: 'Nutrition' },
   { path: '/progress', icon: TrendingUp, label: 'Progress' },
+  { path: '/store', icon: ShoppingBag, label: 'Store' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 

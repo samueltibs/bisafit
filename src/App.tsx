@@ -14,6 +14,7 @@ import Plan from "./pages/Plan";
 import Workout from "./pages/Workout";
 import Nutrition from "./pages/Nutrition";
 import Progress from "./pages/Progress";
+import Store from "./pages/Store";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -57,6 +58,11 @@ const App = () => (
             <Route path="/progress" element={
               <ProtectedRoute>
                 <Progress />
+              </ProtectedRoute>
+            } />
+            <Route path="/store" element={
+              <ProtectedRoute>
+                <Store />
               </ProtectedRoute>
             } />
             <Route path="/settings" element={
