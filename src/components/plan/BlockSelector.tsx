@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { format } from 'date-fns';
 import { ChevronDown, Check, History, Play, CheckCircle, Clock, Archive, AlertCircle } from 'lucide-react';
 import {
   DropdownMenu,
@@ -109,20 +110,26 @@ function getBlockLabel(plan: PlanSummary): string {
 }
 
 /**
- * Separate plans into primary (newest per block_number) and archived duplicates
+ * Separate plans into primary (newest per block_number), archived duplicates, and needs regeneration
  */
 function separatePlans(plans: PlanSummary[]): {
   primaryPlans: PlanSummary[];
   archivedDuplicates: PlanSummary[];
+  needsRegeneration: PlanSummary[];
 } {
   const blockMap = new Map<number, PlanSummary[]>();
+  const needsRegeneration: PlanSummary[] = [];
   
-  // Group by block number
+  // First pass: separate plans that need regeneration (no workouts)
   for (const plan of plans) {
-    const blockNum = plan.blockNumber || 0;
-    const existing = blockMap.get(blockNum) || [];
-    existing.push(plan);
-    blockMap.set(blockNum, existing);
+    if (plan.needsRegeneration || plan.workoutCount === 0) {
+      needsRegeneration.push(plan);
+    } else {
+      const blockNum = plan.blockNumber || 0;
+      const existing = blockMap.get(blockNum) || [];
+      existing.push(plan);
+      blockMap.set(blockNum, existing);
+    }
   }
   
   const primaryPlans: PlanSummary[] = [];
@@ -141,11 +148,14 @@ function separatePlans(plans: PlanSummary[]): {
     }
   }
   
-  // Sort primary plans by block number descending
+  // Sort primary plans by block number descending (newest first)
   primaryPlans.sort((a, b) => b.blockNumber - a.blockNumber);
   archivedDuplicates.sort((a, b) => b.blockNumber - a.blockNumber);
+  needsRegeneration.sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
   
-  return { primaryPlans, archivedDuplicates };
+  return { primaryPlans, archivedDuplicates, needsRegeneration };
 }
 
 export function BlockSelector({
@@ -156,8 +166,9 @@ export function BlockSelector({
   disabled,
 }: BlockSelectorProps) {
   const [showArchived, setShowArchived] = useState(false);
+  const [showNeedsRegen, setShowNeedsRegen] = useState(false);
   const selectedPlan = plans.find(p => p.id === selectedPlanId);
-  const { primaryPlans, archivedDuplicates } = separatePlans(plans);
+  const { primaryPlans, archivedDuplicates, needsRegeneration } = separatePlans(plans);
 
   if (plans.length <= 1) {
     // Single plan - show simple label
@@ -249,6 +260,56 @@ export function BlockSelector({
           );
         })}
         
+        {/* Needs Regeneration section */}
+        {needsRegeneration.length > 0 && (
+          <>
+            <DropdownMenuSeparator />
+            <Collapsible open={showNeedsRegen} onOpenChange={setShowNeedsRegen}>
+              <CollapsibleTrigger asChild>
+                <div className="flex items-center justify-between px-2 py-2 text-xs text-muted-foreground cursor-pointer hover:bg-accent rounded">
+                  <div className="flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3 text-destructive" />
+                    <span className="text-destructive">Needs regeneration ({needsRegeneration.length})</span>
+                  </div>
+                  <ChevronDown className={cn(
+                    "h-3 w-3 transition-transform",
+                    showNeedsRegen && "rotate-180"
+                  )} />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                {needsRegeneration.map((plan) => {
+                  const isSelected = plan.id === selectedPlanId;
+
+                  return (
+                    <DropdownMenuItem
+                      key={plan.id}
+                      onClick={() => onSelectPlan(plan.id)}
+                      className={cn(
+                        "flex items-center justify-between cursor-pointer py-2 pl-6 opacity-60",
+                        isSelected && "bg-accent opacity-100"
+                      )}
+                    >
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{getBlockLabel(plan)}</span>
+                          <Badge variant="destructive" className="text-[10px] h-4">
+                            No workouts
+                          </Badge>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          Created {format(new Date(plan.createdAt), 'MMM d, yyyy')}
+                        </span>
+                      </div>
+                      {isSelected && <Check className="h-4 w-4 text-primary" />}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </CollapsibleContent>
+            </Collapsible>
+          </>
+        )}
+
         {/* Archived duplicates section */}
         {archivedDuplicates.length > 0 && (
           <>
