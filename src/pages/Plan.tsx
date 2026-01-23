@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,11 +13,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { ChevronLeft, ChevronRight, Dumbbell, Timer, Check, Sparkles, Calendar, Loader2, AlertTriangle, Bed, RefreshCw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Dumbbell, Timer, Check, Sparkles, Calendar, Loader2, AlertTriangle, Bed, RefreshCw, Rocket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, addDays, startOfWeek, isToday } from 'date-fns';
 import { usePlan } from '@/hooks/usePlan';
 import { usePlanGeneration } from '@/hooks/usePlanGeneration';
+import { useProgressionEngine, type BlockFeedback } from '@/hooks/useProgressionEngine';
+import { BlockFeedbackDialog, NextBlockSuccessDialog } from '@/components/progression';
 import type { DisplayWorkout, WorkoutType } from '@/types/plan';
 
 const typeColors: Record<WorkoutType, string> = {
@@ -36,46 +38,68 @@ export default function Plan() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
 
+  // Progression engine state
+  const {
+    checkEligibility,
+    generateNextBlock,
+    isGenerating: isGeneratingNextBlock,
+    generationResult,
+  } = useProgressionEngine({
+    planId: plan?.id,
+    planJson: planJson as UseProgressionEngineProps['planJson'],
+    currentWeekIndex,
+  });
+
+  const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [eligibility, setEligibility] = useState<{
+    isEligible: boolean;
+    adherenceRate: number;
+    completedWorkouts: number;
+    plannedWorkouts: number;
+  } | null>(null);
+
+  // Check eligibility when plan loads
+  useEffect(() => {
+    if (plan && planJson) {
+      checkEligibility().then(setEligibility);
+    }
+  }, [plan, planJson, checkEligibility]);
+
   // Calculate week start based on plan start + current week offset
   const getWeekStartForOffset = (offset: number): Date => {
     const planWeekStart = getPlanWeekStart();
     if (planWeekStart) {
-      // Calculate from plan start
       return addDays(planWeekStart, (currentWeekIndex + offset) * 7);
     }
-    // Fallback to current calendar week
     return addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), offset * 7);
   };
 
   const currentWeekStart = getWeekStartForOffset(weekOffset);
 
-  // Initialize to current plan week when plan loads
   useEffect(() => {
     if (plan?.start_date) {
-      setWeekOffset(0); // Start at the current week of the plan
+      setWeekOffset(0);
     }
   }, [plan?.start_date]);
 
   const goToPreviousWeek = () => {
-    if (weekOffset > -currentWeekIndex) { // Don't go before plan start
+    if (weekOffset > -currentWeekIndex) {
       setWeekOffset(weekOffset - 1);
     }
   };
 
   const goToNextWeek = () => {
-    if (currentWeekIndex + weekOffset < 3) { // Don't go past week 4
+    if (currentWeekIndex + weekOffset < 3) {
       setWeekOffset(weekOffset + 1);
     }
   };
 
-  // Calculate which plan week we're viewing
-  const viewingPlanWeek = currentWeekIndex + weekOffset + 1; // 1-indexed for display
+  const viewingPlanWeek = currentWeekIndex + weekOffset + 1;
   const isViewingCurrentWeek = weekOffset === 0;
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
   const displayWorkouts = plan ? getWorkoutsForWeek(currentWeekStart) : [];
-
-  // Count actual workout days in current week
   const workoutDaysCount = displayWorkouts.filter(w => !w.isRest).length;
 
   const handleGeneratePlan = async () => {
@@ -93,6 +117,25 @@ export default function Plan() {
     } else {
       handleGeneratePlan();
     }
+  };
+
+  // Handle next block generation
+  const handleBuildNextBlock = () => {
+    setShowFeedbackDialog(true);
+  };
+
+  const handleFeedbackSubmit = async (feedback: BlockFeedback) => {
+    const result = await generateNextBlock(feedback);
+    if (result.success) {
+      setShowFeedbackDialog(false);
+      setShowSuccessDialog(true);
+    }
+  };
+
+  const handleViewNewPlan = async () => {
+    setShowSuccessDialog(false);
+    setWeekOffset(0);
+    await refetch();
   };
 
   // Loading state
@@ -148,6 +191,47 @@ export default function Plan() {
   return (
     <AppLayout>
       <div className="container space-y-6 px-4 py-6">
+        {/* Next Block CTA - Show when eligible */}
+        {eligibility?.isEligible && (
+          <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10 animate-fade-in">
+            <CardContent className="p-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20">
+                    <Rocket className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-primary">Ready for Your Next Block!</p>
+                    <p className="text-sm text-muted-foreground">
+                      {eligibility.adherenceRate >= 0.7 
+                        ? `Great work! You've completed ${Math.round(eligibility.adherenceRate * 100)}% of Block ${planJson?.block_number || 1}.`
+                        : `You're in Week 4 of Block ${planJson?.block_number || 1}. Time to plan ahead!`
+                      }
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={handleBuildNextBlock}
+                  disabled={isGeneratingNextBlock}
+                  className="shrink-0"
+                >
+                  {isGeneratingNextBlock ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Building...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Build My Next Block
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Debug Banner (temporary) */}
         {schedulingDebug && (
           <div className="rounded-lg border bg-muted/50 p-3 text-sm space-y-1 animate-fade-in">
@@ -337,8 +421,48 @@ export default function Plan() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Block Feedback Dialog */}
+      <BlockFeedbackDialog
+        open={showFeedbackDialog}
+        onOpenChange={setShowFeedbackDialog}
+        onSubmit={handleFeedbackSubmit}
+        isLoading={isGeneratingNextBlock}
+        blockNumber={planJson?.block_number || 1}
+        adherenceRate={eligibility?.adherenceRate || 0}
+      />
+
+      {/* Next Block Success Dialog */}
+      {generationResult && (
+        <NextBlockSuccessDialog
+          open={showSuccessDialog}
+          onOpenChange={setShowSuccessDialog}
+          onViewPlan={handleViewNewPlan}
+          blockNumber={generationResult.block_number || 2}
+          startDate={generationResult.start_date || ''}
+          workoutsCreated={16}
+          progressionApplied={generationResult.analysis?.progression_applied}
+        />
+      )}
     </AppLayout>
   );
+}
+
+// Type for useProgressionEngine props (needed for casting)
+interface UseProgressionEngineProps {
+  planId?: string;
+  planJson?: {
+    block_number: number;
+    weeks: Array<{
+      week_number: number;
+      days: Array<{
+        day_name: string;
+        type: 'workout' | 'rest';
+        workout_id?: string;
+      }>;
+    }>;
+  } | null;
+  currentWeekIndex: number;
 }
 
 interface WorkoutDayCardProps {
