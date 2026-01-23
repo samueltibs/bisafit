@@ -116,6 +116,7 @@ export function ExerciseCard({
 
               {/* Coaching cues */}
               <CoachingCues
+                exerciseName={item.name}
                 instructions={item.instructions}
                 coachingCues={item.coaching_cues}
                 bigMode
@@ -229,6 +230,7 @@ export function ExerciseCard({
         {/* Coaching cues - full width below */}
         <div className="mt-4">
           <CoachingCues
+            exerciseName={item.name}
             instructions={item.instructions}
             coachingCues={item.coaching_cues}
             isActiveCard={isActive && !isPaused}
