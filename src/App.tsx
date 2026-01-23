@@ -5,10 +5,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { SubscriptionGate } from "@/components/subscription/SubscriptionGate";
 
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
+import PaywallPage from "./pages/PaywallPage";
 import Home from "./pages/Home";
 import Plan from "./pages/Plan";
 import Workout from "./pages/Workout";
@@ -35,31 +37,48 @@ const App = () => (
                 <Onboarding />
               </ProtectedRoute>
             } />
+            <Route path="/paywall" element={
+              <ProtectedRoute>
+                <PaywallPage />
+              </ProtectedRoute>
+            } />
+            {/* Premium features - gated by subscription */}
             <Route path="/home" element={
               <ProtectedRoute>
-                <Home />
+                <SubscriptionGate>
+                  <Home />
+                </SubscriptionGate>
               </ProtectedRoute>
             } />
             <Route path="/plan" element={
               <ProtectedRoute>
-                <Plan />
+                <SubscriptionGate>
+                  <Plan />
+                </SubscriptionGate>
               </ProtectedRoute>
             } />
             <Route path="/workout/:id" element={
               <ProtectedRoute>
-                <Workout />
+                <SubscriptionGate>
+                  <Workout />
+                </SubscriptionGate>
               </ProtectedRoute>
             } />
             <Route path="/nutrition" element={
               <ProtectedRoute>
-                <Nutrition />
+                <SubscriptionGate>
+                  <Nutrition />
+                </SubscriptionGate>
               </ProtectedRoute>
             } />
             <Route path="/progress" element={
               <ProtectedRoute>
-                <Progress />
+                <SubscriptionGate>
+                  <Progress />
+                </SubscriptionGate>
               </ProtectedRoute>
             } />
+            {/* Store & Settings - accessible without premium */}
             <Route path="/store" element={
               <ProtectedRoute>
                 <Store />

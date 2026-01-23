@@ -363,6 +363,13 @@ export type Database = {
           is_pro: boolean | null
           rest_day: string | null
           session_minutes: number | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_plan: string | null
+          subscription_provider: string | null
+          subscription_status: string | null
+          trial_end_date: string | null
+          trial_start_date: string | null
           unit_preference: string | null
           updated_at: string | null
           weight_kg: number | null
@@ -387,6 +394,13 @@ export type Database = {
           is_pro?: boolean | null
           rest_day?: string | null
           session_minutes?: number | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_plan?: string | null
+          subscription_provider?: string | null
+          subscription_status?: string | null
+          trial_end_date?: string | null
+          trial_start_date?: string | null
           unit_preference?: string | null
           updated_at?: string | null
           weight_kg?: number | null
@@ -411,6 +425,13 @@ export type Database = {
           is_pro?: boolean | null
           rest_day?: string | null
           session_minutes?: number | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_plan?: string | null
+          subscription_provider?: string | null
+          subscription_status?: string | null
+          trial_end_date?: string | null
+          trial_start_date?: string | null
           unit_preference?: string | null
           updated_at?: string | null
           weight_kg?: number | null
