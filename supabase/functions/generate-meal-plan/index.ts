@@ -101,7 +101,7 @@ serve(async (req) => {
     const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     const requestedDays = dayNames.slice(0, Math.min(days, 7));
 
-    // Determine active cuisine theme
+    // Determine active cuisine theme - applies freely when no ingredients uploaded
     const activeCuisine = weekCuisineTheme || (cuisinePreferences.length > 0 ? cuisinePreferences[0] : null);
     
     const cuisineInstructions = activeCuisine
@@ -113,8 +113,15 @@ serve(async (req) => {
 - Dietary restrictions and nutrition targets take priority over cuisine theme`
       : `CUISINE: No specific theme. Use variety based on user's general cuisine preferences: ${JSON.stringify(cuisinePreferences)}`;
 
+    // Ingredient mode logic:
+    // - If NO ingredients uploaded: ingredientInstructions is empty, cuisine applies freely with no compatibility checks
+    // - If ingredients uploaded + Strict mode: Only use listed ingredients, no additions allowed
+    // - If ingredients uploaded + Flexible mode: Prioritize listed ingredients, allow up to 5 staples
+    // NOTE: "No ingredients" is NOT the same as Strict mode - Strict only applies when ingredients exist AND user selected it
+    const hasIngredients = ingredients && Array.isArray(ingredients) && ingredients.length > 0;
     const isStrictMode = ingredientMode === 'strict_only';
-    const ingredientInstructions = ingredients && Array.isArray(ingredients) && ingredients.length > 0
+    
+    const ingredientInstructions = hasIngredients
       ? isStrictMode
         ? `STRICT INGREDIENT MODE: Use ONLY these ingredients: ${ingredients.join(", ")}
 - Do NOT add any oils, spices, sauces, or staples that are not in this list
@@ -125,7 +132,7 @@ serve(async (req) => {
 - Build meals primarily around these available ingredients
 - You may add up to 5 common staples if needed (oil, salt, pepper, garlic, basic spices)
 - List any additions separately in recipe notes`
-      : "";
+      : ""; // No ingredient constraints - cuisine theme applies freely
 
     const systemPrompt = `You are a nutrition expert creating meal plans. Generate practical, delicious meals that meet nutritional targets.
 
