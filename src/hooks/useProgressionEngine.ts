@@ -56,13 +56,11 @@ export function useProgressionEngine({
 
     // Count planned workouts
     let plannedWorkouts = 0;
-    const workoutIds: string[] = [];
 
     for (const week of planJson.weeks) {
       for (const day of week.days) {
         if (day.type === 'workout' && day.workout_id) {
           plannedWorkouts++;
-          workoutIds.push(day.workout_id);
         }
       }
     }
@@ -77,15 +75,24 @@ export function useProgressionEngine({
     };
   }, [planJson, currentWeekIndex]);
 
-  // Check eligibility for next block (async)
+  // Check eligibility for next block (async) - returns real data from workout_sessions
   const checkEligibility = useCallback(async (): Promise<{
     isEligible: boolean;
     adherenceRate: number;
     completedWorkouts: number;
     plannedWorkouts: number;
+    isWeek4: boolean;
+    hasAnyWorkouts: boolean;
   }> => {
     if (!planJson || !planId) {
-      return { isEligible: false, adherenceRate: 0, completedWorkouts: 0, plannedWorkouts: 0 };
+      return { 
+        isEligible: false, 
+        adherenceRate: 0, 
+        completedWorkouts: 0, 
+        plannedWorkouts: 0,
+        isWeek4: false,
+        hasAnyWorkouts: false,
+      };
     }
 
     // Get all workout IDs from plan
@@ -101,10 +108,17 @@ export function useProgressionEngine({
     const plannedWorkouts = workoutIds.length;
 
     if (plannedWorkouts === 0) {
-      return { isEligible: false, adherenceRate: 0, completedWorkouts: 0, plannedWorkouts: 0 };
+      return { 
+        isEligible: false, 
+        adherenceRate: 0, 
+        completedWorkouts: 0, 
+        plannedWorkouts: 0,
+        isWeek4: false,
+        hasAnyWorkouts: false,
+      };
     }
 
-    // Count completed sessions
+    // Count completed sessions from workout_sessions table
     const { data: sessions } = await supabase
       .from('workout_sessions')
       .select('id, completed_at')
@@ -113,6 +127,7 @@ export function useProgressionEngine({
 
     const completedWorkouts = sessions?.length || 0;
     const adherenceRate = completedWorkouts / plannedWorkouts;
+    const hasAnyWorkouts = completedWorkouts > 0;
 
     // Eligible if: Week 4 OR >= 70% completion
     const isWeek4 = currentWeekIndex >= 3;
@@ -124,6 +139,8 @@ export function useProgressionEngine({
       adherenceRate,
       completedWorkouts,
       plannedWorkouts,
+      isWeek4,
+      hasAnyWorkouts,
     };
   }, [planJson, planId, currentWeekIndex]);
 
