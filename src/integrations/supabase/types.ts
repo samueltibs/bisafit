@@ -127,29 +127,41 @@ export type Database = {
       }
       plans: {
         Row: {
+          block_number: number | null
+          completed_at: string | null
           created_at: string | null
           id: string
           name: string | null
           plan_json: Json
           start_date: string | null
+          started_at: string | null
+          status: string | null
           user_id: string
           weeks: number | null
         }
         Insert: {
+          block_number?: number | null
+          completed_at?: string | null
           created_at?: string | null
           id?: string
           name?: string | null
           plan_json: Json
           start_date?: string | null
+          started_at?: string | null
+          status?: string | null
           user_id: string
           weeks?: number | null
         }
         Update: {
+          block_number?: number | null
+          completed_at?: string | null
           created_at?: string | null
           id?: string
           name?: string | null
           plan_json?: Json
           start_date?: string | null
+          started_at?: string | null
+          status?: string | null
           user_id?: string
           weeks?: number | null
         }
@@ -240,6 +252,7 @@ export type Database = {
         Row: {
           constraints_json: Json | null
           created_at: string | null
+          current_plan_id: string | null
           days_per_week: number | null
           equipment_json: Json | null
           experience_level: string | null
@@ -260,6 +273,7 @@ export type Database = {
         Insert: {
           constraints_json?: Json | null
           created_at?: string | null
+          current_plan_id?: string | null
           days_per_week?: number | null
           equipment_json?: Json | null
           experience_level?: string | null
@@ -280,6 +294,7 @@ export type Database = {
         Update: {
           constraints_json?: Json | null
           created_at?: string | null
+          current_plan_id?: string | null
           days_per_week?: number | null
           equipment_json?: Json | null
           experience_level?: string | null
@@ -297,7 +312,15 @@ export type Database = {
           weight_kg?: number | null
           workout_days?: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "users_profile_current_plan_id_fkey"
+            columns: ["current_plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workout_sessions: {
         Row: {

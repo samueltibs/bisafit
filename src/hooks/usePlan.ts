@@ -40,12 +40,15 @@ interface SchedulingDebugInfo {
   hasMismatch: boolean;
 }
 
+export type PlanStatus = 'in_progress' | 'queued' | 'completed';
+
 export interface PlanSummary {
   id: string;
   blockNumber: number;
   startDate: string;
   createdAt: string;
-  isActive: boolean;
+  isActive: boolean; // true for current_plan_id
+  status: PlanStatus;
 }
 
 interface UsePlanResult {
@@ -67,8 +70,11 @@ interface UsePlanResult {
   allPlans: PlanSummary[];
   selectedPlanId: string | null;
   setSelectedPlanId: (id: string | null) => void;
-  activePlanId: string | null;
-  isViewingActivePlan: boolean;
+  currentPlanId: string | null; // users_profile.current_plan_id
+  isViewingCurrentPlan: boolean;
+  // Lifecycle actions
+  startBlock: (planId: string) => Promise<boolean>;
+  markBlockComplete: (planId: string) => Promise<boolean>;
 }
 
 export function usePlan(): UsePlanResult {
@@ -82,7 +88,7 @@ export function usePlan(): UsePlanResult {
   // Multi-plan state
   const [allPlans, setAllPlans] = useState<PlanSummary[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
-  const [activePlanId, setActivePlanId] = useState<string | null>(null);
+  const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
 
   const fetchPlan = useCallback(async () => {
     if (!user) {
@@ -90,7 +96,7 @@ export function usePlan(): UsePlanResult {
       setWorkouts([]);
       setUserProfile(null);
       setAllPlans([]);
-      setActivePlanId(null);
+      setCurrentPlanId(null);
       setLoading(false);
       return;
     }
@@ -99,7 +105,7 @@ export function usePlan(): UsePlanResult {
       setLoading(true);
       setError(null);
 
-      // Fetch user profile for workout_days comparison
+      // Fetch user profile for current_plan_id and workout_days
       const { data: profileData } = await supabase
         .from('users_profile')
         .select('*')
@@ -107,6 +113,10 @@ export function usePlan(): UsePlanResult {
         .maybeSingle();
       
       setUserProfile(profileData);
+      
+      // Get current_plan_id from profile (cast to access new column)
+      const profileCurrentPlanId = (profileData as UserProfile & { current_plan_id?: string })?.current_plan_id || null;
+      setCurrentPlanId(profileCurrentPlanId);
 
       // Fetch ALL plans for this user
       const { data: allPlansData, error: allPlansError } = await supabase
@@ -121,49 +131,61 @@ export function usePlan(): UsePlanResult {
         setPlan(null);
         setWorkouts([]);
         setAllPlans([]);
-        setActivePlanId(null);
         setLoading(false);
         return;
       }
 
-      // Build plan summaries and find active plan (highest block_number)
+      // Build plan summaries with status
       const planSummaries: PlanSummary[] = [];
-      let maxBlockNumber = 0;
-      let activePlan: Plan | null = null;
+      let fallbackCurrentPlan: Plan | null = null;
 
       for (const p of allPlansData) {
         const pJson = p.plan_json as unknown as PlanJson;
-        const blockNumber = pJson?.block_number || 1;
+        const blockNumber = (p as Plan & { block_number?: number }).block_number || pJson?.block_number || 1;
+        const status = ((p as Plan & { status?: string }).status || 'in_progress') as PlanStatus;
+        
+        // Track if this matches current_plan_id
+        const isActive = p.id === profileCurrentPlanId;
         
         planSummaries.push({
           id: p.id,
           blockNumber,
           startDate: p.start_date || '',
           createdAt: p.created_at || '',
-          isActive: false, // Will update after finding max
+          isActive,
+          status,
         });
 
-        if (blockNumber > maxBlockNumber) {
-          maxBlockNumber = blockNumber;
-          activePlan = p;
+        // Fallback: if no current_plan_id, find oldest in_progress or newest plan
+        if (!profileCurrentPlanId) {
+          if (status === 'in_progress') {
+            if (!fallbackCurrentPlan) fallbackCurrentPlan = p;
+          } else if (!fallbackCurrentPlan) {
+            fallbackCurrentPlan = p;
+          }
         }
-      }
-
-      // Mark active plan
-      const activeId = activePlan?.id || allPlansData[0]?.id;
-      for (const summary of planSummaries) {
-        summary.isActive = summary.id === activeId;
       }
 
       // Sort by block number descending
       planSummaries.sort((a, b) => b.blockNumber - a.blockNumber);
 
       setAllPlans(planSummaries);
-      setActivePlanId(activeId);
 
-      // Use selected plan or default to active
-      const targetPlanId = selectedPlanId || activeId;
-      const targetPlan = allPlansData.find(p => p.id === targetPlanId) || activePlan;
+      // Determine effective current plan
+      const effectiveCurrentId = profileCurrentPlanId || fallbackCurrentPlan?.id || allPlansData[0]?.id;
+      
+      // If current_plan_id was null, set the fallback as isActive
+      if (!profileCurrentPlanId && effectiveCurrentId) {
+        for (const summary of planSummaries) {
+          summary.isActive = summary.id === effectiveCurrentId;
+        }
+      }
+
+      // Use selected plan or default to current
+      const targetPlanId = selectedPlanId || effectiveCurrentId;
+      const targetPlan = allPlansData.find(p => p.id === targetPlanId) 
+        || allPlansData.find(p => p.id === effectiveCurrentId)
+        || allPlansData[0];
 
       if (!targetPlan) {
         setPlan(null);
@@ -174,7 +196,7 @@ export function usePlan(): UsePlanResult {
 
       setPlan(targetPlan);
       if (!selectedPlanId) {
-        setSelectedPlanId(activeId);
+        setSelectedPlanId(effectiveCurrentId);
       }
 
       // Fetch all workouts for this plan
@@ -200,11 +222,73 @@ export function usePlan(): UsePlanResult {
     fetchPlan();
   }, [fetchPlan]);
 
+  // Start a queued block (set it as current and in_progress)
+  const startBlock = useCallback(async (planId: string): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      // Update plan status to in_progress
+      const { error: planError } = await supabase
+        .from('plans')
+        .update({ 
+          status: 'in_progress',
+          started_at: new Date().toISOString(),
+        })
+        .eq('id', planId);
+
+      if (planError) throw planError;
+
+      // Set as current plan in profile
+      const { error: profileError } = await supabase
+        .from('users_profile')
+        .update({ current_plan_id: planId })
+        .eq('id', user.id);
+
+      if (profileError) throw profileError;
+
+      // Refresh data
+      await fetchPlan();
+      return true;
+    } catch (err) {
+      console.error('Failed to start block:', err);
+      return false;
+    }
+  }, [user, fetchPlan]);
+
+  // Mark a block as completed
+  const markBlockComplete = useCallback(async (planId: string): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('plans')
+        .update({ 
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', planId);
+
+      if (error) throw error;
+
+      // Refresh data
+      await fetchPlan();
+      return true;
+    } catch (err) {
+      console.error('Failed to mark block complete:', err);
+      return false;
+    }
+  }, [user, fetchPlan]);
+
   const planJson = plan?.plan_json as unknown as PlanJson | null;
 
   // Calculate current week number based on plan start date (0-indexed internally, 1-indexed for display)
+  // IMPORTANT: Only use today's date for the CURRENT plan, not for historical blocks
   const getCurrentWeekIndex = (): number => {
     if (!plan?.start_date) return 0;
+    
+    // For non-current plans, default to week 0 (Week 1)
+    if (plan.id !== currentPlanId) return 0;
+    
     const startDate = new Date(plan.start_date);
     startDate.setHours(0, 0, 0, 0);
     const today = new Date();
@@ -289,8 +373,10 @@ export function usePlan(): UsePlanResult {
     return weekDays;
   }, [workouts, planJson, plan?.start_date]);
 
+  // Get today's workout - ONLY from the current plan
   const getTodayWorkout = useCallback((): DisplayWorkout | null => {
-    if (!plan?.start_date) return null;
+    // Only return workouts for the current plan
+    if (!plan?.start_date || plan.id !== currentPlanId) return null;
     
     const today = new Date();
     const todayStr = format(today, 'yyyy-MM-dd');
@@ -333,10 +419,13 @@ export function usePlan(): UsePlanResult {
     }
     
     return null;
-  }, [workouts, planJson, plan?.start_date]);
+  }, [workouts, planJson, plan?.start_date, plan?.id, currentPlanId]);
 
-  // Get next upcoming workout within 7 days
+  // Get next upcoming workout within 7 days - ONLY from current plan
   const getNextUpcomingWorkout = useCallback((): DisplayWorkout | null => {
+    // Only return workouts for the current plan
+    if (plan?.id !== currentPlanId) return null;
+    
     const today = new Date();
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     
@@ -365,7 +454,7 @@ export function usePlan(): UsePlanResult {
     }
     
     return null;
-  }, [workouts]);
+  }, [workouts, plan?.id, currentPlanId]);
 
   // Get the start date for a specific plan week (0-indexed)
   const getPlanWeekStart = useCallback((): Date | null => {
@@ -409,7 +498,7 @@ export function usePlan(): UsePlanResult {
     };
   })();
 
-  const isViewingActivePlan = selectedPlanId === activePlanId;
+  const isViewingCurrentPlan = selectedPlanId === currentPlanId;
 
   return {
     plan,
@@ -430,8 +519,11 @@ export function usePlan(): UsePlanResult {
     allPlans,
     selectedPlanId,
     setSelectedPlanId,
-    activePlanId,
-    isViewingActivePlan,
+    currentPlanId,
+    isViewingCurrentPlan,
+    // Lifecycle actions
+    startBlock,
+    markBlockComplete,
   };
 }
 
@@ -498,9 +590,15 @@ function inferWorkoutTypeFromJson(workoutJson: WorkoutJson | undefined): Display
   if (hasConditioning && hasStrength) return 'strength'; // Mixed
   
   const title = workoutJson.title.toLowerCase();
-  if (title.includes('recovery') || title.includes('mobility')) return 'recovery';
-  if (title.includes('core') || title.includes('abs')) return 'core';
-  if (title.includes('cardio') || title.includes('hiit')) return 'cardio';
+  if (title.includes('cardio') || title.includes('hiit') || title.includes('conditioning')) {
+    return 'cardio';
+  }
+  if (title.includes('recovery') || title.includes('mobility')) {
+    return 'recovery';
+  }
+  if (title.includes('core') || title.includes('abs')) {
+    return 'core';
+  }
   
   return 'strength';
 }

@@ -490,6 +490,7 @@ serve(async (req) => {
       coach_notes: planMeta.coach_notes,
     };
 
+    // Create first plan as in_progress and set as current
     const { data: newPlan, error: planError } = await supabase
       .from("plans")
       .insert({
@@ -498,6 +499,9 @@ serve(async (req) => {
         start_date: startDateStr,
         weeks: 4,
         plan_json: planJson,
+        block_number: blockNumber,
+        status: "in_progress",
+        started_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -588,6 +592,12 @@ serve(async (req) => {
       .from("plans")
       .update({ plan_json: completePlanJson })
       .eq("id", newPlan.id);
+
+    // Set this plan as the user's current plan
+    await supabase
+      .from("users_profile")
+      .update({ current_plan_id: newPlan.id })
+      .eq("id", userId);
 
     console.log("=== PLAN GENERATION COMPLETE ===");
     console.log("Plan ID:", newPlan.id);

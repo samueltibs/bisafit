@@ -1,4 +1,4 @@
-import { ChevronDown, Check, History } from 'lucide-react';
+import { ChevronDown, Check, History, Play, CheckCircle, Clock } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { PlanSummary } from '@/hooks/usePlan';
+import type { PlanSummary, PlanStatus } from '@/hooks/usePlan';
 import { format } from 'date-fns';
 
 interface BlockSelectorProps {
@@ -20,6 +20,12 @@ interface BlockSelectorProps {
   disabled?: boolean;
 }
 
+const statusLabels: Record<PlanStatus, { label: string; icon: React.ReactNode; variant: 'default' | 'secondary' | 'outline' }> = {
+  in_progress: { label: 'Current', icon: <Play className="h-3 w-3" />, variant: 'default' },
+  queued: { label: 'Queued', icon: <Clock className="h-3 w-3" />, variant: 'outline' },
+  completed: { label: 'Completed', icon: <CheckCircle className="h-3 w-3" />, variant: 'secondary' },
+};
+
 export function BlockSelector({
   plans,
   selectedPlanId,
@@ -27,20 +33,27 @@ export function BlockSelector({
   disabled,
 }: BlockSelectorProps) {
   const selectedPlan = plans.find(p => p.id === selectedPlanId);
-  const activePlan = plans.find(p => p.isActive);
 
   if (plans.length <= 1) {
     // Single plan - show simple label
+    const status = selectedPlan?.status || 'in_progress';
+    const statusInfo = statusLabels[status];
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <History className="h-4 w-4" />
         <span>Block {selectedPlan?.blockNumber || 1}</span>
         {selectedPlan?.isActive && (
-          <Badge variant="secondary" className="text-[10px]">Active</Badge>
+          <Badge variant={statusInfo.variant} className="text-[10px] flex items-center gap-1">
+            {statusInfo.icon}
+            {statusInfo.label}
+          </Badge>
         )}
       </div>
     );
   }
+
+  const selectedStatus = selectedPlan?.status || 'in_progress';
+  const selectedStatusInfo = statusLabels[selectedStatus];
 
   return (
     <DropdownMenu>
@@ -54,18 +67,24 @@ export function BlockSelector({
           <History className="h-4 w-4" />
           <span>Block {selectedPlan?.blockNumber || 1}</span>
           {selectedPlan?.isActive && (
-            <Badge variant="secondary" className="text-[10px]">Active</Badge>
+            <Badge variant={selectedStatusInfo.variant} className="text-[10px] flex items-center gap-1">
+              {selectedStatusInfo.icon}
+              {selectedStatusInfo.label}
+            </Badge>
           )}
           <ChevronDown className="h-3 w-3 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent 
         align="start" 
-        className="w-64 bg-popover border border-border shadow-lg z-50"
+        className="w-72 bg-popover border border-border shadow-lg z-50"
       >
         <DropdownMenuLabel className="text-xs text-muted-foreground">
           Training Blocks
         </DropdownMenuLabel>
+        <div className="px-2 pb-2 text-[10px] text-muted-foreground">
+          Current block drives Today's Workout on Home
+        </div>
         <DropdownMenuSeparator />
         {plans.map((plan) => {
           const isSelected = plan.id === selectedPlanId;
@@ -73,6 +92,7 @@ export function BlockSelector({
           const dateLabel = plan.startDate 
             ? format(new Date(plan.startDate), 'MMM d, yyyy')
             : '';
+          const statusInfo = statusLabels[plan.status];
 
           return (
             <DropdownMenuItem
@@ -86,11 +106,10 @@ export function BlockSelector({
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">Block {plan.blockNumber}</span>
-                  {plan.isActive && (
-                    <Badge variant="default" className="text-[10px] h-4">
-                      Active
-                    </Badge>
-                  )}
+                  <Badge variant={statusInfo.variant} className="text-[10px] h-4 flex items-center gap-1">
+                    {statusInfo.icon}
+                    {statusInfo.label}
+                  </Badge>
                 </div>
                 <span className="text-xs text-muted-foreground">
                   {weekRange} • {dateLabel}
