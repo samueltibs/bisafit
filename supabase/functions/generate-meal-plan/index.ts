@@ -50,7 +50,7 @@ serve(async (req) => {
       });
     }
 
-    const { days = 7, ingredients, weekCuisineTheme } = await req.json().catch(() => ({ days: 7, ingredients: null, weekCuisineTheme: null }));
+    const { days = 7, ingredients, weekCuisineTheme, ingredientMode = 'flexible_prefer' } = await req.json().catch(() => ({ days: 7, ingredients: null, weekCuisineTheme: null, ingredientMode: 'flexible_prefer' }));
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -113,10 +113,18 @@ serve(async (req) => {
 - Dietary restrictions and nutrition targets take priority over cuisine theme`
       : `CUISINE: No specific theme. Use variety based on user's general cuisine preferences: ${JSON.stringify(cuisinePreferences)}`;
 
+    const isStrictMode = ingredientMode === 'strict_only';
     const ingredientInstructions = ingredients && Array.isArray(ingredients) && ingredients.length > 0
-      ? `PRIORITY INGREDIENTS: Use these ingredients first: ${ingredients.join(", ")}
+      ? isStrictMode
+        ? `STRICT INGREDIENT MODE: Use ONLY these ingredients: ${ingredients.join(", ")}
+- Do NOT add any oils, spices, sauces, or staples that are not in this list
+- If an ingredient is not listed, do NOT use it
+- Create simpler meals if needed - this is acceptable
+- NEVER add optional or missing ingredients`
+        : `FLEXIBLE INGREDIENT MODE: Prioritize these ingredients: ${ingredients.join(", ")}
 - Build meals primarily around these available ingredients
-- Allow up to 3 common staples if needed (oil, spices, etc.)`
+- You may add up to 5 common staples if needed (oil, salt, pepper, garlic, basic spices)
+- List any additions separately in recipe notes`
       : "";
 
     const systemPrompt = `You are a nutrition expert creating meal plans. Generate practical, delicious meals that meet nutritional targets.

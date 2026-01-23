@@ -34,7 +34,7 @@ serve(async (req) => {
       });
     }
 
-    const { ingredients } = await req.json();
+    const { ingredients, mode = 'flexible_prefer' } = await req.json();
 
     if (!ingredients || !Array.isArray(ingredients) || ingredients.length === 0) {
       return new Response(JSON.stringify({ error: "At least one ingredient is required" }), {
@@ -42,6 +42,8 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const isStrictMode = mode === 'strict_only';
 
     // Fetch nutrition profile and user profile
     const [nutritionResult, profileResult] = await Promise.all([
@@ -90,9 +92,27 @@ serve(async (req) => {
 - Dietary restrictions take priority over cuisine preferences`
       : "";
 
+    // Mode-specific instructions
+    const modeInstructions = isStrictMode
+      ? `MODE: STRICT - Use ONLY the provided ingredients
+- Do NOT add any oils, spices, sauces, or staples that are not explicitly in the ingredient list
+- If an ingredient is not in the list, do NOT use it
+- Create simpler meals if needed - this is acceptable
+- missing_optional array MUST be empty (no additions allowed)
+- Add "is_strict_mode": true to each meal
+- Include mode_note: "Strict mode enabled — using only what you have."`
+      : `MODE: FLEXIBLE - Prefer provided ingredients, allow basics
+- Prioritize using the provided ingredients first
+- You may add UP TO 5 common staples/basics (oil, salt, pepper, garlic, onion, basic spices)
+- Return all additions in a top-level "optional_additions" array
+- These are suggestions only - the meal should still work without them
+- Include mode_note: "Uses scanned ingredients + optional additions."`;
+
     const systemPrompt = `You are a nutrition-focused chef AI that creates healthy, practical meals from available ingredients.
 
-Your task is to generate meal suggestions using the provided ingredients. Prioritize using the available ingredients, but you may suggest up to 3 common staples if needed (oil, salt, pepper, garlic, onion, basic spices).
+Your task is to generate meal suggestions using the provided ingredients.
+
+${modeInstructions}
 
 User's Nutrition Targets:
 - Calories: ${targets.calories_target?.low || 1800}-${targets.calories_target?.high || 2200} kcal/day
@@ -109,9 +129,10 @@ Guidelines:
 - Create practical, quick meals (under 30 minutes prep when possible)
 - Each meal should contribute meaningfully to protein targets
 - Be realistic about portion sizes and calorie estimates
-- If there aren't enough ingredients for complete meals, suggest simple combinations
+- If there aren't enough ingredients for complete meals, generate simpler meals - NEVER fail silently
 - Do NOT suggest meals that violate dietary restrictions
 - Cuisine preferences are flexible - never fail due to cuisine mismatch
+- NEVER switch modes automatically - always respect the requested mode
 
 You MUST respond with ONLY valid JSON in this exact format:
 {
@@ -120,17 +141,20 @@ You MUST respond with ONLY valid JSON in this exact format:
       "meal_name": "Lunch",
       "recipe_title": "Garlic Chicken & Spinach Skillet",
       "uses_ingredients": ["chicken breast", "spinach"],
-      "missing_optional": ["olive oil", "garlic"],
-      "ingredients_with_amounts": ["1 lb chicken breast", "2 cups spinach", "1 tbsp olive oil", "2 cloves garlic"],
+      "missing_optional": ${isStrictMode ? '[]' : '["olive oil", "garlic"]'},
+      "ingredients_with_amounts": ["1 lb chicken breast", "2 cups spinach"${isStrictMode ? '' : ', "1 tbsp olive oil", "2 cloves garlic"'}],
       "instructions": "Step by step cooking instructions...",
       "protein_g_est": 45,
       "calories_est": 550,
       "prep_time_minutes": 20,
-      "cuisine_style": "Mediterranean-inspired"
+      "cuisine_style": "Mediterranean-inspired",
+      "is_strict_mode": ${isStrictMode}
     }
   ],
+  ${isStrictMode ? '' : '"optional_additions": ["olive oil", "garlic", "salt", "pepper"],'}
   "leftover_tips": ["Store cooked chicken for up to 3 days", "Spinach can be added to eggs tomorrow"],
   "shopping_suggestions": ["Items that would complement these ingredients well"],
+  "mode_note": "${isStrictMode ? 'Strict mode enabled — using only what you have.' : 'Uses scanned ingredients + optional additions.'}",
   "note": "Brief note about the meal suggestions"
 }
 
@@ -232,18 +256,23 @@ Please suggest ${Math.min(mealsPerDay, 3)} meal ideas using these ingredients. P
       meal_name: meal.meal_name || "Meal",
       recipe_title: meal.recipe_title || "Recipe",
       uses_ingredients: Array.isArray(meal.uses_ingredients) ? meal.uses_ingredients : [],
-      missing_optional: Array.isArray(meal.missing_optional) ? meal.missing_optional : [],
+      missing_optional: isStrictMode ? [] : (Array.isArray(meal.missing_optional) ? meal.missing_optional : []),
       ingredients_with_amounts: Array.isArray(meal.ingredients_with_amounts) ? meal.ingredients_with_amounts : [],
       instructions: meal.instructions || "",
       protein_g_est: typeof meal.protein_g_est === "number" ? meal.protein_g_est : 0,
       calories_est: typeof meal.calories_est === "number" ? meal.calories_est : 0,
       prep_time_minutes: typeof meal.prep_time_minutes === "number" ? meal.prep_time_minutes : 30,
+      is_strict_mode: isStrictMode,
     }));
 
     result.leftover_tips = Array.isArray(result.leftover_tips) ? result.leftover_tips : [];
     result.shopping_suggestions = Array.isArray(result.shopping_suggestions) ? result.shopping_suggestions : [];
+    result.optional_additions = isStrictMode ? [] : (Array.isArray(result.optional_additions) ? result.optional_additions : []);
+    result.mode_note = isStrictMode 
+      ? "Strict mode enabled — using only what you have."
+      : "Uses scanned ingredients + optional additions.";
 
-    console.log(`Generated ${result.meals.length} meals from ${ingredients.length} ingredients for user ${user.id}`);
+    console.log(`Generated ${result.meals.length} meals (mode: ${mode}) from ${ingredients.length} ingredients for user ${user.id}`);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
