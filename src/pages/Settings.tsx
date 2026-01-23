@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,8 @@ import {
   Loader2,
   Edit2,
   Calendar,
+  Dumbbell,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -37,10 +40,10 @@ import {
   ftInToCm,
   cmToFtIn,
   formatHeight,
-  formatWeight,
   type UnitPreference,
 } from '@/lib/unitConversions';
 import { WorkoutDaysSelector } from '@/components/settings/WorkoutDaysSelector';
+import { EquipmentEditor, formatEquipmentName, normalizeEquipmentName } from '@/components/settings/EquipmentEditor';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -52,20 +55,19 @@ export default function Settings() {
   
   // Profile editing modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isEquipmentModalOpen, setIsEquipmentModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showEquipmentBanner, setShowEquipmentBanner] = useState(false);
   const [editForm, setEditForm] = useState({
     fullName: '',
     unitPreference: 'metric' as UnitPreference,
-    // Imperial height fields
     heightFeet: '',
     heightInches: '',
-    // Metric height field
     heightCm: '',
-    // Weight fields (display in selected unit)
     weight: '',
-    // Workout days
     workoutDays: ['Monday', 'Wednesday', 'Thursday', 'Friday'] as string[],
   });
+  const [equipmentList, setEquipmentList] = useState<string[]>([]);
 
   // Auto-open modal if ?edit=true in URL
   useEffect(() => {
@@ -73,7 +75,19 @@ export default function Settings() {
       setIsEditModalOpen(true);
       setSearchParams({});
     }
+    if (searchParams.get('equipment') === 'true' && !loading) {
+      setIsEquipmentModalOpen(true);
+      setSearchParams({});
+    }
   }, [searchParams, loading, setSearchParams]);
+
+  // Initialize equipment list when modal opens
+  useEffect(() => {
+    if (isEquipmentModalOpen && profile) {
+      const equipment = (profile as any).equipment_json || [];
+      setEquipmentList(Array.isArray(equipment) ? equipment : []);
+    }
+  }, [isEquipmentModalOpen, profile]);
 
   // Initialize edit form when modal opens
   useEffect(() => {
@@ -240,6 +254,35 @@ export default function Settings() {
     }
   };
 
+  const handleSaveEquipment = async () => {
+    setIsSaving(true);
+    try {
+      // Normalize all equipment names
+      const normalizedEquipment = equipmentList.map(normalizeEquipmentName);
+      // Deduplicate
+      const uniqueEquipment = [...new Set(normalizedEquipment)];
+
+      const success = await update({
+        equipment_json: uniqueEquipment,
+      } as any);
+
+      if (success) {
+        await refetch();
+        toast.success('Equipment updated');
+        setIsEquipmentModalOpen(false);
+        // Show banner about plan regeneration
+        setShowEquipmentBanner(true);
+      } else {
+        toast.error('Failed to update equipment');
+      }
+    } catch (error) {
+      console.error('Equipment update error:', error);
+      toast.error('Failed to update equipment');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const getInitials = () => {
     if (profile?.full_name) {
       return profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -339,6 +382,52 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Equipment Section */}
+        <Card className="border-border animate-slide-up">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Dumbbell className="h-5 w-5 text-muted-foreground" />
+                <div className="flex-1">
+                  <p className="font-medium">My Equipment</p>
+                  {(profile as any)?.equipment_json && ((profile as any).equipment_json as string[]).length > 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      {((profile as any).equipment_json as string[]).slice(0, 3).map(formatEquipmentName).join(', ')}
+                      {((profile as any).equipment_json as string[]).length > 3 && ` +${((profile as any).equipment_json as string[]).length - 3} more`}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No equipment added</p>
+                  )}
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setIsEquipmentModalOpen(true)}>
+                <Edit2 className="h-3 w-3 mr-1" />
+                Edit
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Equipment Update Banner */}
+        {showEquipmentBanner && (
+          <Alert className="border-primary/30 bg-primary/5 animate-fade-in">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>New equipment added. Regenerate your plan to include it.</span>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => {
+                  setShowEquipmentBanner(false);
+                  navigate('/plan');
+                }}
+              >
+                Regenerate Plan
+              </Button>
+            </AlertDescription>
+          </Alert>
         )}
 
         {/* Subscription */}
@@ -534,6 +623,43 @@ export default function Settings() {
                 </>
               ) : (
                 'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Equipment Edit Modal */}
+      <Dialog open={isEquipmentModalOpen} onOpenChange={setIsEquipmentModalOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Equipment</DialogTitle>
+            <DialogDescription>
+              Update your available equipment. Your plan will use these for exercise selection.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <EquipmentEditor
+              equipment={equipmentList}
+              onEquipmentChange={setEquipmentList}
+              showTitle={false}
+              compact
+            />
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsEquipmentModalOpen(false)} disabled={isSaving}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEquipment} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Equipment'
               )}
             </Button>
           </DialogFooter>
