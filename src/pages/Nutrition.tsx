@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,11 +10,13 @@ import {
   Flame, Beef, Wheat, Droplets, Loader2, Sparkles, 
   ChevronDown, ShoppingCart, Lightbulb, RefreshCw, 
   Coffee, UtensilsCrossed, Moon, Apple, AlertTriangle, Target,
-  Camera
+  Camera, ShoppingBasket
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNutrition, type Meal, type DayPlan } from '@/hooks/useNutrition';
 import { FridgeScanFlow } from '@/components/nutrition/FridgeScanFlow';
+import { useIngredientSession } from '@/hooks/useIngredientSession';
+import { supabase } from '@/integrations/supabase/client';
 
 const macroColors = {
   protein: { bg: 'bg-primary/10', text: 'text-primary', bar: 'bg-primary' },
@@ -198,14 +200,42 @@ export default function Nutrition() {
     generatingMealPlan,
     swapMeal,
     swappingMeal,
+    refetch,
   } = useNutrition();
 
   const [selectedDay, setSelectedDay] = useState(0);
   const [fridgeScanOpen, setFridgeScanOpen] = useState(false);
+  const [generatingFromIngredients, setGeneratingFromIngredients] = useState(false);
+  
+  const { hasActiveSession, getIngredientNames, clearIngredients } = useIngredientSession();
   
   const targets = profile?.targets_json;
   const mealPlan = profile?.meal_plan_json;
   const isSimpleMode = profile?.nutrition_goal_style !== 'macros';
+
+  // Generate meal plan from saved ingredients
+  const handleGeneratePlanFromIngredients = useCallback(async () => {
+    const ingredientNames = getIngredientNames();
+    if (ingredientNames.length < 2) return;
+
+    setGeneratingFromIngredients(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-meal-plan', {
+        body: { days: 7, ingredients: ingredientNames },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      clearIngredients();
+      await refetch();
+    } catch (err) {
+      console.error('Generate from ingredients error:', err);
+      throw err;
+    } finally {
+      setGeneratingFromIngredients(false);
+    }
+  }, [getIngredientNames, clearIngredients, refetch]);
 
   if (loading) {
     return (
@@ -238,7 +268,27 @@ export default function Nutrition() {
         <FridgeScanFlow 
           open={fridgeScanOpen} 
           onOpenChange={setFridgeScanOpen}
+          onGeneratePlanFromIngredients={handleGeneratePlanFromIngredients}
+          generatingPlan={generatingFromIngredients}
         />
+        
+        {/* Active ingredient session hint */}
+        {hasActiveSession && !fridgeScanOpen && (
+          <Alert className="border-primary/50 bg-primary/5">
+            <ShoppingBasket className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-sm flex items-center justify-between">
+              <span>You have saved ingredients from your scan.</span>
+              <Button 
+                variant="link" 
+                size="sm" 
+                onClick={() => setFridgeScanOpen(true)}
+                className="p-0 h-auto text-primary"
+              >
+                Generate plan using these →
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Disclaimer */}
         <Alert className="border-muted bg-muted/50">
