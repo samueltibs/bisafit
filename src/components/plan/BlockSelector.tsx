@@ -13,7 +13,10 @@ import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import type { PlanSummary, PlanStatus } from '@/hooks/usePlan';
-import { format, addDays } from 'date-fns';
+import { 
+  computeBlockEndDate, 
+  formatBlockDateRange,
+} from '@/lib/blockEngine';
 
 interface BlockSelectorProps {
   plans: PlanSummary[];
@@ -71,7 +74,7 @@ function getStatusInfo(plan: PlanSummary, currentPlanId: string | null): {
 }
 
 /**
- * Calculate block end date from start date (4 weeks = 27 days after start)
+ * Calculate block end date from start date using blockEngine constants
  */
 function getBlockDateRange(startDateStr: string | null | undefined): { 
   start: Date | null; 
@@ -84,15 +87,13 @@ function getBlockDateRange(startDateStr: string | null | undefined): {
   }
   
   const start = new Date(startDateStr);
-  const end = addDays(start, 27); // 4 weeks minus 1 day
-  
-  const startLabel = format(start, 'MMM d');
-  const endLabel = format(end, 'MMM d, yyyy');
+  const endDateStr = computeBlockEndDate(startDateStr);
+  const end = new Date(endDateStr);
   
   return { 
     start, 
     end, 
-    label: `${startLabel}–${endLabel}`,
+    label: formatBlockDateRange(startDateStr),
     hasDates: true,
   };
 }
@@ -236,7 +237,7 @@ export function BlockSelector({
                   Weeks 1–4 • {dateRange.hasDates ? (
                     dateRange.label
                   ) : (
-                    <span className="text-orange-500 flex items-center gap-1">
+                    <span className="text-destructive flex items-center gap-1">
                       <AlertCircle className="h-3 w-3" />
                       {dateRange.label}
                     </span>

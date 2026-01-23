@@ -4,6 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Plan, Workout, UserProfile } from '@/types/database';
 import type { PlanJson, WorkoutJson, DisplayWorkout, PlanDay } from '@/types/plan';
 import { format, addDays } from 'date-fns';
+import { 
+  recomputeUserBlocks, 
+  getWeekIndexInBlock,
+  BLOCK_WEEKS,
+} from '@/lib/blockEngine';
 
 // Helper to normalize workout days for comparison
 export function normalizeWorkoutDays(days: unknown): string[] {
@@ -328,206 +333,29 @@ export function usePlan(): UsePlanResult {
   }, [user, fetchPlan]);
 
   // Repair plan start_dates based on earliest workout scheduled_date
+  // Uses the canonical blockEngine service
   const repairPlanDates = useCallback(async (): Promise<number> => {
-    const result = await reindexPlansInternal();
-    return result.updated;
-  }, []);
-
-  // Comprehensive re-indexing: compute start_date from workouts, assign block_number sequentially
-  const reindexPlansInternal = useCallback(async (): Promise<{ updated: number; currentPlanChanged: boolean }> => {
-    if (!user) return { updated: 0, currentPlanChanged: false };
-
-    try {
-      console.log('Starting plan reindex...');
-      
-      // Fetch all plans for user
-      const { data: plans, error: plansError } = await supabase
-        .from('plans')
-        .select('id, start_date, created_at, block_number, plan_json, status')
-        .eq('user_id', user.id);
-
-      if (plansError || !plans) {
-        console.error('Failed to fetch plans for reindex:', plansError);
-        return { updated: 0, currentPlanChanged: false };
-      }
-
-      // Fetch all workouts for user to compute earliest dates
-      const { data: allWorkouts, error: workoutsError } = await supabase
-        .from('workouts')
-        .select('plan_id, scheduled_date')
-        .eq('user_id', user.id);
-
-      if (workoutsError) {
-        console.error('Failed to fetch workouts for reindex:', workoutsError);
-        return { updated: 0, currentPlanChanged: false };
-      }
-
-      // Group workouts by plan_id and find earliest date per plan
-      const earliestDateByPlan = new Map<string, string>();
-      const workoutCountByPlan = new Map<string, number>();
-      
-      for (const w of allWorkouts || []) {
-        if (!w.plan_id || !w.scheduled_date) continue;
-        
-        const count = (workoutCountByPlan.get(w.plan_id) || 0) + 1;
-        workoutCountByPlan.set(w.plan_id, count);
-        
-        const current = earliestDateByPlan.get(w.plan_id);
-        if (!current || w.scheduled_date < current) {
-          earliestDateByPlan.set(w.plan_id, w.scheduled_date);
-        }
-      }
-
-      // Build list of plans with computed start_date
-      interface PlanForReindex {
-        id: string;
-        computedStartDate: string | null;
-        hasWorkouts: boolean;
-        workoutCount: number;
-        currentStartDate: string | null;
-        currentBlockNumber: number | null;
-        planJson: Record<string, unknown>;
-        status: string;
-        createdAt: string;
-      }
-
-      const plansToProcess: PlanForReindex[] = [];
-
-      for (const p of plans) {
-        const earliestDate = earliestDateByPlan.get(p.id) || null;
-        const workoutCount = workoutCountByPlan.get(p.id) || 0;
-        const pJson = (p.plan_json || {}) as Record<string, unknown>;
-        
-        plansToProcess.push({
-          id: p.id,
-          computedStartDate: earliestDate,
-          hasWorkouts: workoutCount > 0,
-          workoutCount,
-          currentStartDate: p.start_date,
-          currentBlockNumber: (p as { block_number?: number }).block_number || null,
-          planJson: pJson,
-          status: (p as { status?: string }).status || 'in_progress',
-          createdAt: p.created_at || '',
-        });
-      }
-
-      // Separate valid plans (with workouts) from invalid (needs regeneration)
-      const validPlans = plansToProcess.filter(p => p.hasWorkouts && p.computedStartDate);
-      const invalidPlans = plansToProcess.filter(p => !p.hasWorkouts || !p.computedStartDate);
-
-      // Sort valid plans by computed start_date ascending (oldest first)
-      validPlans.sort((a, b) => {
-        if (!a.computedStartDate || !b.computedStartDate) return 0;
-        return a.computedStartDate.localeCompare(b.computedStartDate);
-      });
-
-      // Assign block_number sequentially: 1, 2, 3, ...
-      let updatedCount = 0;
-      const blockNumberMap = new Map<string, number>();
-
-      for (let i = 0; i < validPlans.length; i++) {
-        const plan = validPlans[i];
-        const newBlockNumber = i + 1;
-        blockNumberMap.set(plan.id, newBlockNumber);
-
-        const needsStartDateUpdate = plan.currentStartDate !== plan.computedStartDate;
-        const needsBlockNumberUpdate = plan.currentBlockNumber !== newBlockNumber;
-
-        if (needsStartDateUpdate || needsBlockNumberUpdate) {
-          // Update plan_json with new block_number
-          const updatedPlanJson = {
-            ...plan.planJson,
-            block_number: newBlockNumber,
-          };
-
-          const { error } = await supabase
-            .from('plans')
-            .update({
-              start_date: plan.computedStartDate,
-              block_number: newBlockNumber,
-              plan_json: updatedPlanJson,
-            })
-            .eq('id', plan.id);
-
-          if (!error) {
-            updatedCount++;
-            console.log(`Reindexed plan ${plan.id}: block=${newBlockNumber}, start=${plan.computedStartDate}`);
-          } else {
-            console.error(`Failed to update plan ${plan.id}:`, error);
-          }
-        }
-      }
-
-      // Mark invalid plans with needs_regeneration flag
-      for (const plan of invalidPlans) {
-        if (!plan.planJson.needs_regeneration) {
-          const updatedPlanJson = {
-            ...plan.planJson,
-            needs_regeneration: true,
-          };
-
-          const { error } = await supabase
-            .from('plans')
-            .update({ plan_json: updatedPlanJson })
-            .eq('id', plan.id);
-
-          if (!error) {
-            updatedCount++;
-            console.log(`Marked plan ${plan.id} as needs_regeneration (no workouts)`);
-          }
-        }
-      }
-
-      // Fix current_plan_id: should point to the highest block_number among valid plans
-      let currentPlanChanged = false;
-      if (validPlans.length > 0) {
-        const latestValidPlan = validPlans[validPlans.length - 1]; // Highest block number (last in sorted array)
-        
-        // Fetch current profile to check current_plan_id
-        const { data: profile } = await supabase
-          .from('users_profile')
-          .select('current_plan_id')
-          .eq('id', user.id)
-          .single();
-
-        const profileCurrentPlanId = profile?.current_plan_id;
-        const currentPlanIsInvalid = profileCurrentPlanId && invalidPlans.some(p => p.id === profileCurrentPlanId);
-        const currentPlanMissing = !profileCurrentPlanId;
-
-        if (currentPlanIsInvalid || currentPlanMissing) {
-          const { error } = await supabase
-            .from('users_profile')
-            .update({ current_plan_id: latestValidPlan.id })
-            .eq('id', user.id);
-
-          if (!error) {
-            currentPlanChanged = true;
-            console.log(`Updated current_plan_id to ${latestValidPlan.id} (Block ${blockNumberMap.get(latestValidPlan.id)})`);
-          }
-        }
-      }
-
-      // Refresh data after reindex
-      if (updatedCount > 0 || currentPlanChanged) {
-        await fetchPlan();
-      }
-
-      console.log(`Reindex complete: ${updatedCount} plans updated, currentPlanChanged=${currentPlanChanged}`);
-      return { updated: updatedCount, currentPlanChanged };
-    } catch (err) {
-      console.error('Failed to reindex plans:', err);
-      return { updated: 0, currentPlanChanged: false };
+    if (!user) return 0;
+    const result = await recomputeUserBlocks(user.id);
+    if (result.updated > 0 || result.currentPlanChanged) {
+      await fetchPlan();
     }
+    return result.updated;
   }, [user, fetchPlan]);
 
-  // Public wrapper for reindexPlans
+  // Comprehensive re-indexing using blockEngine
   const reindexPlans = useCallback(async (): Promise<{ updated: number; currentPlanChanged: boolean }> => {
-    return reindexPlansInternal();
-  }, [reindexPlansInternal]);
+    if (!user) return { updated: 0, currentPlanChanged: false };
+    const result = await recomputeUserBlocks(user.id);
+    if (result.updated > 0 || result.currentPlanChanged) {
+      await fetchPlan();
+    }
+    return { updated: result.updated, currentPlanChanged: result.currentPlanChanged };
+  }, [user, fetchPlan]);
 
   const planJson = plan?.plan_json as unknown as PlanJson | null;
 
-  // Calculate current week number based on plan start date (0-indexed internally, 1-indexed for display)
+  // Calculate current week index using blockEngine
   // IMPORTANT: Only use today's date for the CURRENT plan, not for historical blocks
   const getCurrentWeekIndex = (): number => {
     if (!plan?.start_date) return 0;
@@ -535,14 +363,9 @@ export function usePlan(): UsePlanResult {
     // For non-current plans, default to week 0 (Week 1)
     if (plan.id !== currentPlanId) return 0;
     
-    const startDate = new Date(plan.start_date);
-    startDate.setHours(0, 0, 0, 0);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const diffTime = today.getTime() - startDate.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    const weekIndex = Math.floor(diffDays / 7);
-    return Math.max(0, Math.min(3, weekIndex)); // Clamp between 0-3
+    // Use blockEngine for consistent week calculation
+    const weekIndex = getWeekIndexInBlock(plan.start_date, new Date());
+    return Math.max(0, Math.min(BLOCK_WEEKS - 1, weekIndex)); // Clamp between 0-3
   };
 
   const currentWeekIndex = getCurrentWeekIndex();
