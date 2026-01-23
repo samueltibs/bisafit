@@ -1,11 +1,15 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { 
   Bell, 
   Moon, 
@@ -14,22 +18,87 @@ import {
   LogOut,
   ChevronRight,
   Crown,
-  Loader2
+  Loader2,
+  Edit2,
+  X,
+  Check
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useState } from 'react';
 
 export default function Settings() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { profile, loading } = useUserProfile();
+  const { profile, loading, update } = useUserProfile();
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+  
+  // Profile editing state
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    fullName: '',
+    gender: '',
+    heightCm: null as number | null,
+    weightKg: null as number | null,
+    unitPreference: 'metric',
+  });
+
+  // Initialize edit form when profile loads
+  useEffect(() => {
+    if (profile) {
+      setEditForm({
+        fullName: profile.full_name || '',
+        gender: profile.gender || '',
+        heightCm: profile.height_cm || null,
+        weightKg: profile.weight_kg ? Number(profile.weight_kg) : null,
+        unitPreference: (profile as any).unit_preference || 'metric',
+      });
+    }
+  }, [profile]);
 
   const handleSignOut = async () => {
     await signOut();
     toast.success('Signed out successfully');
     navigate('/auth');
+  };
+
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
+    try {
+      const success = await update({
+        full_name: editForm.fullName.trim() || null,
+        gender: editForm.gender || null,
+        height_cm: editForm.heightCm,
+        weight_kg: editForm.weightKg,
+        unit_preference: editForm.unitPreference,
+      } as any);
+
+      if (success) {
+        toast.success('Profile updated successfully');
+        setIsEditing(false);
+      } else {
+        toast.error('Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Profile update error:', error);
+      toast.error('Failed to update profile');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    // Reset form to current profile values
+    if (profile) {
+      setEditForm({
+        fullName: profile.full_name || '',
+        gender: profile.gender || '',
+        heightCm: profile.height_cm || null,
+        weightKg: profile.weight_kg ? Number(profile.weight_kg) : null,
+        unitPreference: (profile as any).unit_preference || 'metric',
+      });
+    }
+    setIsEditing(false);
   };
 
   const getInitials = () => {
@@ -44,6 +113,50 @@ export default function Settings() {
     muscle_gain: 'Build Muscle',
     endurance: 'Endurance',
     maintenance: 'Maintenance',
+  };
+
+  const genderLabels: Record<string, string> = {
+    male: 'Male',
+    female: 'Female',
+    other: 'Other',
+    prefer_not_to_say: 'Prefer not to say',
+  };
+
+  const isMetric = editForm.unitPreference === 'metric';
+
+  // Convert values for display in edit mode
+  const displayHeight = isMetric
+    ? editForm.heightCm
+    : editForm.heightCm
+    ? Math.round(editForm.heightCm / 2.54)
+    : null;
+
+  const displayWeight = isMetric
+    ? editForm.weightKg
+    : editForm.weightKg
+    ? Math.round(editForm.weightKg * 2.205)
+    : null;
+
+  const handleHeightChange = (value: string) => {
+    if (value === '') {
+      setEditForm({ ...editForm, heightCm: null });
+      return;
+    }
+    const num = parseFloat(value);
+    if (isNaN(num)) return;
+    const cmValue = isMetric ? num : num * 2.54;
+    setEditForm({ ...editForm, heightCm: Math.round(cmValue) });
+  };
+
+  const handleWeightChange = (value: string) => {
+    if (value === '') {
+      setEditForm({ ...editForm, weightKg: null });
+      return;
+    }
+    const num = parseFloat(value);
+    if (isNaN(num)) return;
+    const kgValue = isMetric ? num : num / 2.205;
+    setEditForm({ ...editForm, weightKg: Math.round(kgValue * 10) / 10 });
   };
 
   if (loading) {
@@ -76,32 +189,132 @@ export default function Settings() {
                 </p>
               )}
             </div>
-            <Button variant="outline" size="sm" onClick={() => navigate('/onboarding')}>
-              Edit
-            </Button>
+            {!isEditing && (
+              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <Edit2 className="h-4 w-4 mr-1" />
+                Edit
+              </Button>
+            )}
           </CardContent>
         </Card>
 
-        {/* Stats Summary */}
-        {(profile?.height_cm || profile?.weight_kg) && (
-          <div className="grid grid-cols-2 gap-3 animate-slide-up">
-            {profile.height_cm && (
-              <Card className="border-border">
-                <CardContent className="p-4 text-center">
-                  <p className="text-2xl font-bold">{profile.height_cm}</p>
-                  <p className="text-sm text-muted-foreground">Height (cm)</p>
-                </CardContent>
-              </Card>
-            )}
-            {profile.weight_kg && (
-              <Card className="border-border">
-                <CardContent className="p-4 text-center">
-                  <p className="text-2xl font-bold">{Number(profile.weight_kg)}</p>
-                  <p className="text-sm text-muted-foreground">Weight (kg)</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+        {/* Editable Profile Section */}
+        {isEditing ? (
+          <Card className="border-border animate-slide-up">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center justify-between">
+                Edit Profile
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={handleCancelEdit} disabled={isSaving}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                  <Button size="sm" onClick={handleSaveProfile} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Full Name */}
+              <div className="space-y-2">
+                <Label htmlFor="editFullName">Name</Label>
+                <Input
+                  id="editFullName"
+                  placeholder="Enter your name"
+                  value={editForm.fullName}
+                  onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
+                />
+              </div>
+
+              {/* Gender */}
+              <div className="space-y-2">
+                <Label>Gender</Label>
+                <RadioGroup
+                  value={editForm.gender}
+                  onValueChange={(v) => setEditForm({ ...editForm, gender: v })}
+                  className="grid grid-cols-2 gap-2"
+                >
+                  {Object.entries(genderLabels).map(([value, label]) => (
+                    <div key={value} className="flex items-center space-x-2">
+                      <RadioGroupItem value={value} id={`edit-gender-${value}`} />
+                      <Label htmlFor={`edit-gender-${value}`} className="cursor-pointer font-normal text-sm">
+                        {label}
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
+
+              {/* Unit Preference */}
+              <div className="space-y-2">
+                <Label>Unit Preference</Label>
+                <RadioGroup
+                  value={editForm.unitPreference}
+                  onValueChange={(v) => setEditForm({ ...editForm, unitPreference: v })}
+                  className="flex gap-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="metric" id="edit-unit-metric" />
+                    <Label htmlFor="edit-unit-metric" className="cursor-pointer font-normal">
+                      Metric (kg, cm)
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="imperial" id="edit-unit-imperial" />
+                    <Label htmlFor="edit-unit-imperial" className="cursor-pointer font-normal">
+                      Imperial (lb, in)
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {/* Height & Weight */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="editHeight">Height ({isMetric ? 'cm' : 'in'})</Label>
+                  <Input
+                    id="editHeight"
+                    type="number"
+                    placeholder={isMetric ? '170' : '67'}
+                    value={displayHeight ?? ''}
+                    onChange={(e) => handleHeightChange(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editWeight">Weight ({isMetric ? 'kg' : 'lb'})</Label>
+                  <Input
+                    id="editWeight"
+                    type="number"
+                    placeholder={isMetric ? '70' : '154'}
+                    value={displayWeight ?? ''}
+                    onChange={(e) => handleWeightChange(e.target.value)}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          /* Stats Summary (only when not editing) */
+          (profile?.height_cm || profile?.weight_kg) && (
+            <div className="grid grid-cols-2 gap-3 animate-slide-up">
+              {profile.height_cm && (
+                <Card className="border-border">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-2xl font-bold">{profile.height_cm}</p>
+                    <p className="text-sm text-muted-foreground">Height (cm)</p>
+                  </CardContent>
+                </Card>
+              )}
+              {profile.weight_kg && (
+                <Card className="border-border">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-2xl font-bold">{Number(profile.weight_kg)}</p>
+                    <p className="text-sm text-muted-foreground">Weight (kg)</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )
         )}
 
         {/* Subscription */}

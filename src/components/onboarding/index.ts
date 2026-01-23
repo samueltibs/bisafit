@@ -1,4 +1,5 @@
 export { OnboardingProgress } from './OnboardingProgress';
+export { StepAboutYou } from './StepAboutYou';
 export { StepGoals } from './StepGoals';
 export { StepSchedule } from './StepSchedule';
 export { StepEquipment } from './StepEquipment';
