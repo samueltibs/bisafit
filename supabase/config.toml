@@ -5,3 +5,15 @@ verify_jwt = false
 
 [functions.detect-equipment]
 verify_jwt = false
+
+[functions.generate-next-block]
+verify_jwt = false
+
+[functions.generate-nutrition-targets]
+verify_jwt = false
+
+[functions.generate-meal-plan]
+verify_jwt = false
+
+[functions.swap-meal]
+verify_jwt = false
