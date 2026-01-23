@@ -18,8 +18,7 @@ export default function Home() {
     else setGreeting('Good evening');
   }, []);
 
-  const firstName = profile?.full_name?.split(' ')[0] || '';
-  const displayName = firstName || 'there';
+  const fullName = profile?.full_name?.trim() || '';
 
   // Mock data for today's summary
   const todayStats = {
@@ -33,9 +32,8 @@ export default function Home() {
       <div className="container space-y-6 px-4 py-6">
         {/* Greeting Section */}
         <div className="animate-fade-in">
-          <p className="text-muted-foreground">{greeting}</p>
           <h1 className="text-2xl font-bold text-foreground">
-            Hi, {displayName} 👋
+            {fullName ? `${greeting}, ${fullName} 👋` : `${greeting} 👋`}
           </h1>
         </div>
 
