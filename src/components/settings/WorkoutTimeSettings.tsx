@@ -26,6 +26,7 @@ import {
   WorkoutForCalendar,
   PlanForCalendar,
 } from '@/lib/calendarUtils';
+import { trackEvent } from '@/lib/analytics';
 
 interface WorkoutTimeSettingsProps {
   preferences: WorkoutTimePreferences;
@@ -89,6 +90,7 @@ export function WorkoutTimeSettings({
     setIsDownloading(true);
     try {
       downloadICSFile(currentPlanWorkouts, currentPlan, preferences);
+      trackEvent('calendar_event_created');
       toast.success('Calendar file downloaded');
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 5000);

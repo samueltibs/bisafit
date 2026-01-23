@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dumbbell, ChevronRight, ChevronLeft, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { trackEvent } from '@/lib/analytics';
 
 import { OnboardingProgress, StepAboutYou } from '@/components/onboarding';
 import { StepGoals } from '@/components/onboarding/StepGoals';
@@ -241,6 +242,7 @@ export default function Onboarding() {
       }
 
       toast.success('Profile saved! Generating your plan...');
+      trackEvent('profile_completed');
 
       // Generate the AI plan
       const result = await generatePlan();
@@ -249,6 +251,7 @@ export default function Onboarding() {
         toast.success(result.message || 'Your plan is ready!');
         navigate('/plan-preview');
       } else {
+        trackEvent('generation_error', { feature: 'workout', reason: result.error || 'unknown' });
         throw new Error(result.error || 'Failed to generate plan');
       }
     } catch (error) {

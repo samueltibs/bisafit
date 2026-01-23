@@ -5,7 +5,7 @@
  * NOTE: Stripe Checkout + webhooks will replace mock provider once LLC and Stripe account are live.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, Crown, Sparkles, Zap, Calendar, Utensils, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { useToast } from '@/hooks/use-toast';
 import { SUBSCRIPTION_PLANS, type SubscriptionPlan } from '@/types/subscription';
 import { cn } from '@/lib/utils';
+import { trackEvent } from '@/lib/analytics';
 
 const PREMIUM_FEATURES = [
   { icon: Zap, label: 'Personalized AI workouts' },
@@ -36,6 +37,11 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Track paywall view on mount
+  useEffect(() => {
+    trackEvent('paywall_viewed');
+  }, []);
+
   const handleStartTrial = async () => {
     setIsLoading(true);
     
@@ -43,6 +49,8 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
       const success = await startTrial(selectedPlan);
       
       if (success) {
+        trackEvent('trial_started', { plan_type: selectedPlan });
+        
         toast({
           title: "Trial started — welcome to BisaFit Premium 💪",
         });

@@ -28,6 +28,7 @@ import {
   ProgressIndicator,
 } from '@/components/workout';
 import { cn } from '@/lib/utils';
+import { trackEvent } from '@/lib/analytics';
 
 export default function Workout() {
   const { id } = useParams();
@@ -114,6 +115,7 @@ export default function Workout() {
 
   // Voice cue: workout start
   const handleStart = () => {
+    trackEvent('workout_started');
     startWorkout();
     voiceCues.announceWorkoutStart();
   };
@@ -140,9 +142,10 @@ export default function Workout() {
     voiceCues.announceTimerWarning(seconds);
   };
 
-  // Voice cue: workout complete
+  // Voice cue: workout complete + analytics
   useEffect(() => {
     if (playerState === 'completed') {
+      trackEvent('workout_completed');
       voiceCues.announceWorkoutComplete();
     }
   }, [playerState, voiceCues]);
