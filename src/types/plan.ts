@@ -9,6 +9,8 @@ export interface WorkoutItem {
   tempo?: string;
   instructions: string;
   video_url_optional?: string;
+  image_url?: string;
+  coaching_cues?: string[];
 }
 
 export interface WorkoutBlock {
