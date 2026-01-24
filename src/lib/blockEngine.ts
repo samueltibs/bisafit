@@ -15,6 +15,80 @@ import { addDays, format } from 'date-fns';
 export const BLOCK_DURATION_DAYS = 28;
 export const BLOCK_WEEKS = 4;
 
+/**
+ * Timeline Position - Calculated from program_start_date
+ * This is the canonical way to determine where a user is in their training program.
+ */
+export interface TimelinePosition {
+  daysSinceStart: number;      // Total days since program_start_date
+  currentBlockIndex: number;   // 0-indexed block (0 = Block 1)
+  currentBlockNumber: number;  // 1-indexed block (1 = Block 1)
+  dayInBlock: number;          // 1-indexed day within current block (1-28)
+  weekInBlock: number;         // 1-indexed week within current block (1-4)
+  dayInWeek: number;           // 1-indexed day within current week (1-7)
+}
+
+/**
+ * Calculate the user's position in the training timeline based on program_start_date.
+ * This is the CANONICAL source of truth for "current block", "current week", "current day".
+ * 
+ * @param programStartDate - The date the user completed onboarding (YYYY-MM-DD)
+ * @param currentDate - The date to calculate position for (defaults to today)
+ * @param blockLengthWeeks - Number of weeks per block (defaults to 4)
+ * @returns TimelinePosition object with all position data
+ */
+export function calculateTimelinePosition(
+  programStartDate: string,
+  currentDate: Date = new Date(),
+  blockLengthWeeks: number = BLOCK_WEEKS
+): TimelinePosition {
+  const start = new Date(programStartDate);
+  start.setHours(0, 0, 0, 0);
+  
+  const current = new Date(currentDate);
+  current.setHours(0, 0, 0, 0);
+  
+  // Calculate days since start (Day 1 = 0 days since start)
+  const diffTime = current.getTime() - start.getTime();
+  const daysSinceStart = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+  
+  const blockLengthDays = blockLengthWeeks * 7;
+  
+  // Calculate block position (0-indexed)
+  const currentBlockIndex = Math.floor(daysSinceStart / blockLengthDays);
+  
+  // Day within current block (1-indexed, 1-28)
+  const dayInBlock = (daysSinceStart % blockLengthDays) + 1;
+  
+  // Week within current block (1-indexed, 1-4)
+  const weekInBlock = Math.floor((dayInBlock - 1) / 7) + 1;
+  
+  // Day within current week (1-indexed, 1-7)
+  const dayInWeek = ((dayInBlock - 1) % 7) + 1;
+  
+  return {
+    daysSinceStart,
+    currentBlockIndex,
+    currentBlockNumber: currentBlockIndex + 1,
+    dayInBlock,
+    weekInBlock,
+    dayInWeek,
+  };
+}
+
+/**
+ * Get the start date of a specific block based on program_start_date.
+ * @param programStartDate - The anchor date (YYYY-MM-DD)
+ * @param blockNumber - 1-indexed block number
+ * @returns Date string in YYYY-MM-DD format
+ */
+export function getBlockStartDate(programStartDate: string, blockNumber: number): string {
+  const start = new Date(programStartDate);
+  const daysToAdd = (blockNumber - 1) * BLOCK_DURATION_DAYS;
+  const blockStart = addDays(start, daysToAdd);
+  return format(blockStart, 'yyyy-MM-dd');
+}
+
 export interface BlockInfo {
   planId: string;
   blockNumber: number;

@@ -218,6 +218,10 @@ export default function Onboarding() {
     setSaveError(null);
 
     try {
+      // Get today's date in YYYY-MM-DD format for program_start_date
+      const today = new Date();
+      const programStartDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
       // Update user profile (include workout time prefs if set)
       const profileSuccess = await update({
         full_name: formData.fullName.trim(),
@@ -235,6 +239,8 @@ export default function Onboarding() {
         equipment_json: formData.equipment,
         constraints_json: formData.constraints,
         coach_tone: formData.coachTone,
+        // Set program_start_date to today (enrollment date)
+        program_start_date: programStartDate,
         // Only save workout time prefs if user set them
         ...(formData.workoutTimePrefs && {
           workout_time_preferences_json: formData.workoutTimePrefs,
