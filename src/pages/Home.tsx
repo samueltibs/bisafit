@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner';
+import { IntroTour } from '@/components/onboarding/IntroTour';
 import { Flame, Droplets, Footprints, Dumbbell, Apple, ChevronRight, Trophy, User, Bed } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,9 +16,23 @@ import { useAuth } from '@/hooks/useAuth';
 export default function Home() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { profile, loading, refetch } = useUserProfile();
+  const { profile, loading, refetch, update } = useUserProfile();
   const { getTodayWorkout, getNextUpcomingWorkout, plan } = usePlan();
   const [greeting, setGreeting] = useState('');
+  const [showIntroTour, setShowIntroTour] = useState(false);
+
+  // Check if we should show the intro tour (only once after onboarding)
+  useEffect(() => {
+    if (!loading && profile && !profile.has_seen_intro_tour) {
+      setShowIntroTour(true);
+    }
+  }, [loading, profile]);
+
+  const handleTourComplete = async () => {
+    setShowIntroTour(false);
+    // Mark tour as seen in database
+    await update({ has_seen_intro_tour: true });
+  };
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -62,6 +77,9 @@ export default function Home() {
 
   return (
     <AppLayout>
+      {/* Intro Tour - shown once after onboarding */}
+      <IntroTour open={showIntroTour} onComplete={handleTourComplete} />
+      
       <div className="container space-y-6 px-4 py-6">
         {/* Greeting Section */}
         <div className="animate-fade-in">

@@ -1,4 +1,5 @@
 export { OnboardingProgress } from './OnboardingProgress';
+export { IntroTour } from './IntroTour';
 export { StepAboutYou } from './StepAboutYou';
 export { StepGoals } from './StepGoals';
 export { StepSchedule, type WorkoutTimePrefs } from './StepSchedule';
