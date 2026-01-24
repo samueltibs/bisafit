@@ -16,6 +16,41 @@ const EMAIL_NO_REPLY = "no-reply@bisafit.com";
 const EMAIL_SUPPORT = "support@bisafit.com";
 const PRIMARY_COLOR = "#10B981"; // Emerald green
 
+// Email categories
+const TRANSACTIONAL_EMAILS: string[] = [
+  "welcome",
+  "trial_started", 
+  "trial_ending",
+  "subscription_confirmed",
+  "payment_failed",
+  "subscription_cancelled",
+];
+
+const OPTIONAL_EMAILS: string[] = [
+  "product_update",
+  "store_launch",
+  "feature_announcement",
+];
+
+// Generate unsubscribe token (must match unsubscribe function)
+function generateUnsubscribeToken(userId: string, secret: string): string {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(userId + secret);
+  let hash = 0;
+  for (let i = 0; i < data.length; i++) {
+    hash = ((hash << 5) - hash) + data[i];
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(36);
+}
+
+// Generate unsubscribe URL for optional emails
+function getUnsubscribeUrl(userId: string, secret: string): string {
+  const token = generateUnsubscribeToken(userId, secret);
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  return `${supabaseUrl}/functions/v1/unsubscribe?uid=${userId}&token=${token}`;
+}
+
 // Common email styles
 const baseStyles = `
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f9fafb; }
@@ -41,24 +76,39 @@ const baseStyles = `
   .footer a { color: ${PRIMARY_COLOR}; text-decoration: none; }
 `;
 
-const emailFooter = `
+// Generate footer based on email type
+function getEmailFooter(isOptional: boolean, unsubscribeUrl?: string): string {
+  const unsubscribeSection = isOptional && unsubscribeUrl 
+    ? `<p style="margin-top: 12px; font-size: 11px; color: #9ca3af;">
+        <a href="${unsubscribeUrl}" style="color: #9ca3af;">Unsubscribe from optional emails</a>
+      </p>`
+    : `<p style="margin-top: 12px; font-size: 11px; color: #9ca3af;">
+        This is a transactional email related to your ${APP_NAME} account.
+      </p>`;
+
+  return `
 <div class="footer">
   <p>© ${APP_NAME} • <a href="${APP_URL}">${APP_URL}</a></p>
   <p>Need help? Contact <a href="mailto:${EMAIL_SUPPORT}">${EMAIL_SUPPORT}</a></p>
-  <p style="margin-top: 12px; font-size: 11px; color: #9ca3af;">
-    This is a transactional email related to your ${APP_NAME} account.
-  </p>
+  ${unsubscribeSection}
 </div>
 `;
+}
 
-// Email template types
+// Legacy footer for backward compatibility
+const emailFooter = getEmailFooter(false);
+
+// Email template types - includes optional email types
 type EmailType = 
   | "welcome"
   | "trial_started"
   | "trial_ending"
   | "subscription_confirmed"
   | "payment_failed"
-  | "subscription_cancelled";
+  | "subscription_cancelled"
+  | "product_update"
+  | "store_launch"
+  | "feature_announcement";
 
 interface EmailRequest {
   type: EmailType;
@@ -364,20 +414,39 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Processing ${type} email for user ${userId}`);
 
-    // Check email consent
+    // Check if this is an optional email
+    const isOptionalEmail = OPTIONAL_EMAILS.includes(type);
+    const isTransactionalEmail = TRANSACTIONAL_EMAILS.includes(type);
+
+    // Check email consent for optional emails only
     const { data: profile } = await supabase
       .from("users_profile")
-      .select("email_consent, full_name")
+      .select("email_consent, email_preferences_json, full_name")
       .eq("id", userId)
       .single();
 
-    if (profile?.email_consent === false) {
-      console.log("User has opted out of emails");
-      return new Response(
-        JSON.stringify({ success: false, reason: "email_consent_disabled" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // For optional emails, check consent and preferences
+    if (isOptionalEmail) {
+      if (profile?.email_consent === false) {
+        console.log("User has opted out of optional emails");
+        return new Response(
+          JSON.stringify({ success: false, reason: "email_consent_disabled" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check specific email type preference
+      const preferences = (profile?.email_preferences_json as string[]) || [];
+      if (!preferences.includes(type)) {
+        console.log(`User has not opted in for ${type} emails`);
+        return new Response(
+          JSON.stringify({ success: false, reason: "email_type_not_enabled" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
+
+    // Transactional emails always send regardless of preferences
 
     // Use profile name if firstName not provided
     const name = firstName || profile?.full_name?.split(" ")[0] || "";

@@ -50,6 +50,7 @@ import { WorkoutDaysSelector } from '@/components/settings/WorkoutDaysSelector';
 import { EquipmentEditor, formatEquipmentName, normalizeEquipmentName } from '@/components/settings/EquipmentEditor';
 import { WorkoutTimeSettings } from '@/components/settings/WorkoutTimeSettings';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
+import { EmailPreferences } from '@/components/settings/EmailPreferences';
 import { APP_NAME, APP_VERSION, EMAIL_SUPPORT, SUPPORT_MESSAGE } from '@/lib/branding';
 
 export default function Settings() {
@@ -510,6 +511,11 @@ export default function Settings() {
         {/* Notification Settings */}
         <div className="animate-slide-up">
           <NotificationSettings />
+        </div>
+
+        {/* Email Preferences */}
+        <div className="animate-slide-up">
+          <EmailPreferences />
         </div>
 
         {/* Settings List */}

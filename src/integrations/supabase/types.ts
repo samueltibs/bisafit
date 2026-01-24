@@ -83,6 +83,47 @@ export type Database = {
         }
         Relationships: []
       }
+      email_preference_log: {
+        Row: {
+          change_source: string | null
+          changed_at: string
+          id: string
+          new_email_consent: boolean | null
+          new_preferences: Json | null
+          previous_email_consent: boolean | null
+          previous_preferences: Json | null
+          user_id: string
+        }
+        Insert: {
+          change_source?: string | null
+          changed_at?: string
+          id?: string
+          new_email_consent?: boolean | null
+          new_preferences?: Json | null
+          previous_email_consent?: boolean | null
+          previous_preferences?: Json | null
+          user_id: string
+        }
+        Update: {
+          change_source?: string | null
+          changed_at?: string
+          id?: string
+          new_email_consent?: boolean | null
+          new_preferences?: Json | null
+          previous_email_consent?: boolean | null
+          previous_preferences?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_preference_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       health_uploads: {
         Row: {
           created_at: string | null
@@ -494,6 +535,7 @@ export type Database = {
           current_plan_id: string | null
           days_per_week: number | null
           email_consent: boolean | null
+          email_preferences_json: Json | null
           equipment_json: Json | null
           experience_level: string | null
           full_name: string | null
@@ -529,6 +571,7 @@ export type Database = {
           current_plan_id?: string | null
           days_per_week?: number | null
           email_consent?: boolean | null
+          email_preferences_json?: Json | null
           equipment_json?: Json | null
           experience_level?: string | null
           full_name?: string | null
@@ -564,6 +607,7 @@ export type Database = {
           current_plan_id?: string | null
           days_per_week?: number | null
           email_consent?: boolean | null
+          email_preferences_json?: Json | null
           equipment_json?: Json | null
           experience_level?: string | null
           full_name?: string | null
