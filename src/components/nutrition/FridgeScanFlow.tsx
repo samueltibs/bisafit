@@ -183,6 +183,7 @@ export function FridgeScanFlow({
     } catch (err) {
       console.error('Detection error:', err);
       toast.error('Failed to analyze images. Please try again.');
+      trackEvent('scan_error', { reason: err instanceof Error ? err.message : 'unknown' });
     } finally {
       setDetecting(false);
     }

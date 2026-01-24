@@ -1,5 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 
+// App version from package.json or build
+const APP_VERSION = '1.0.0';
+
 // Allowed event names for type safety
 export type AnalyticsEventName =
   // Activation
@@ -15,7 +18,8 @@ export type AnalyticsEventName =
   | 'ingredient_scan_used'
   | 'calendar_event_created'
   // Quality
-  | 'generation_error';
+  | 'generation_error'
+  | 'scan_error';
 
 export interface AnalyticsEventProperties {
   // Optional common properties
@@ -28,8 +32,9 @@ export interface AnalyticsEventProperties {
 }
 
 /**
- * Track an analytics event with automatic user_id, platform, and timestamp.
+ * Track an analytics event with automatic user_id, platform, app_version, and timestamp.
  * Fire-and-forget: does not block the UI.
+ * Note: Never log PII (no raw health records, no full image data).
  */
 export async function trackEvent(
   name: AnalyticsEventName,
@@ -52,6 +57,7 @@ export async function trackEvent(
       platform: 'web' as const,
       properties: {
         ...props,
+        app_version: APP_VERSION,
         timestamp: new Date().toISOString(),
       },
     };
