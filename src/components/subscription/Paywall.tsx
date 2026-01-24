@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { SUBSCRIPTION_PLANS, type SubscriptionPlan } from '@/types/subscription';
 import { cn } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics';
+import { ERROR_MESSAGES } from '@/lib/branding';
 
 const PREMIUM_FEATURES = [
   { icon: Zap, label: 'Personalized AI workouts' },
@@ -66,7 +67,7 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
     } catch (error) {
       toast({
         title: "Something went wrong",
-        description: "Please try again or contact support.",
+        description: ERROR_MESSAGES.trialStart,
         variant: "destructive",
       });
     } finally {

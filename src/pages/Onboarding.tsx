@@ -10,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dumbbell, ChevronRight, ChevronLeft, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { trackEvent } from '@/lib/analytics';
+import { SUPPORT_MESSAGE_SHORT, EMAIL_SUPPORT } from '@/lib/branding';
 
 import { OnboardingProgress, StepAboutYou } from '@/components/onboarding';
 import { StepGoals } from '@/components/onboarding/StepGoals';
@@ -360,6 +361,11 @@ export default function Onboarding() {
           )}
         </CardContent>
       </Card>
+
+      {/* Support Reference */}
+      <p className="text-center text-xs text-muted-foreground mt-2">
+        {SUPPORT_MESSAGE_SHORT}
+      </p>
 
       {/* Navigation */}
       <div className="mt-4 flex gap-3">

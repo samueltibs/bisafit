@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { APP_NAME, EMAIL_STORE } from '@/lib/branding';
 
 const INTEREST_OPTIONS = [
   { id: 'apparel', label: 'Apparel', icon: Shirt },
@@ -83,7 +84,7 @@ export default function Store() {
             <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
               <ShoppingBag className="w-8 h-8 text-primary" />
             </div>
-            <h1 className="text-3xl font-bold text-foreground">BisaFit Store</h1>
+            <h1 className="text-3xl font-bold text-foreground">{APP_NAME} Store</h1>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent text-accent-foreground text-sm font-medium">
               <Sparkles className="w-4 h-4" />
               Launching Soon
@@ -92,7 +93,7 @@ export default function Store() {
 
           {/* Body Copy */}
           <p className="text-muted-foreground leading-relaxed">
-            Soon you'll be able to purchase BisaFit-branded essentials for your fitness journey — 
+            Soon you'll be able to purchase {APP_NAME}-branded essentials for your fitness journey — 
             from workout outfits to bottles, bands, and more.
           </p>
 
@@ -143,7 +144,7 @@ export default function Store() {
 
           {hasSubmitted && (
             <p className="text-sm text-muted-foreground">
-              We'll send you an email when the store goes live. 💪
+              We'll email you at launch from {EMAIL_STORE}. 💪
             </p>
           )}
 

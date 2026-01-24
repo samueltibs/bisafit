@@ -119,7 +119,7 @@ function formatICSDate(date: Date): string {
  * Generate a unique ID for ICS events
  */
 function generateUID(workoutId: string): string {
-  return `${workoutId}@bisafit.app`;
+  return `${workoutId}@bisafit.com`;
 }
 
 /**
