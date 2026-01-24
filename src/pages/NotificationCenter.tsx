@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Bell, Check, CheckCheck, Dumbbell, Apple, Clock, Megaphone } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
+import { trackEvent } from '@/lib/analytics';
 
 interface Notification {
   id: string;
@@ -57,7 +58,7 @@ export default function NotificationCenter() {
     }
   };
 
-  const markAsRead = async (notificationId: string) => {
+  const markAsRead = async (notificationId: string, notificationType: string) => {
     try {
       const { error } = await supabase
         .from('notifications_log')
@@ -65,6 +66,9 @@ export default function NotificationCenter() {
         .eq('id', notificationId);
 
       if (error) throw error;
+
+      // Track notification opened
+      trackEvent('notification_opened', { notification_type: notificationType });
 
       setNotifications(prev =>
         prev.map(n => (n.id === notificationId ? { ...n, is_read: true } : n))
@@ -193,7 +197,7 @@ export default function NotificationCenter() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 shrink-0"
-                              onClick={() => markAsRead(notification.id)}
+                              onClick={() => markAsRead(notification.id, notification.type)}
                             >
                               <Check className="h-4 w-4" />
                             </Button>
