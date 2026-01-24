@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { BottomNav } from './BottomNav';
 import { Header } from './Header';
 import { TrialBanner } from '@/components/subscription/TrialBanner';
+import { PageTransition } from '@/components/ui/page-transition';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -15,7 +16,9 @@ export function AppLayout({ children, title = 'BisaFit', showNav = true }: AppLa
       <TrialBanner />
       <Header title={title} />
       <main className="flex-1 pb-20">
-        {children}
+        <PageTransition>
+          {children}
+        </PageTransition>
       </main>
       {showNav && <BottomNav />}
     </div>
