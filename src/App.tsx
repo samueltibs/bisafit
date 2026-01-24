@@ -20,6 +20,7 @@ import Nutrition from "./pages/Nutrition";
 import Progress from "./pages/Progress";
 import Store from "./pages/Store";
 import Settings from "./pages/Settings";
+import NotificationCenter from "./pages/NotificationCenter";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -94,6 +95,11 @@ const App = () => (
             <Route path="/settings" element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            } />
+            <Route path="/notifications" element={
+              <ProtectedRoute>
+                <NotificationCenter />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

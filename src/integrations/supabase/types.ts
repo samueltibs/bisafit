@@ -117,6 +117,7 @@ export type Database = {
           created_at: string
           failure_reason: string | null
           id: string
+          is_read: boolean | null
           scheduled_for: string | null
           sent_at: string | null
           status: string
@@ -129,6 +130,7 @@ export type Database = {
           created_at?: string
           failure_reason?: string | null
           id?: string
+          is_read?: boolean | null
           scheduled_for?: string | null
           sent_at?: string | null
           status?: string
@@ -141,6 +143,7 @@ export type Database = {
           created_at?: string
           failure_reason?: string | null
           id?: string
+          is_read?: boolean | null
           scheduled_for?: string | null
           sent_at?: string | null
           status?: string
