@@ -18,8 +18,10 @@ import { useWorkoutContext } from '@/hooks/useWorkoutContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { RescheduleWorkoutDialog } from '@/components/workout/RescheduleWorkoutDialog';
 import { SkipWorkoutConfirmDialog } from '@/components/workout/SkipWorkoutConfirmDialog';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import type { DisplayWorkout } from '@/types/plan';
 import { 
   getCoachMessage, 
@@ -49,6 +51,7 @@ export default function WorkoutToday() {
   // Skip confirmation dialog state
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
   const [workoutToSkip, setWorkoutToSkip] = useState<DisplayWorkout | null>(null);
+  const [isSkipping, setIsSkipping] = useState(false);
 
   // Extract user preferences for suggestions
   const workoutDays = Array.isArray((profile as any)?.workout_days) 
@@ -86,11 +89,42 @@ export default function WorkoutToday() {
     }
   };
 
-  const handleSkipConfirm = () => {
-    // Navigate to plan page when skipping
-    setShowSkipConfirm(false);
-    setWorkoutToSkip(null);
-    navigate('/plan');
+  const handleSkipConfirm = async () => {
+    if (!workoutToSkip) return;
+
+    setIsSkipping(true);
+    try {
+      // Mark the workout as skipped by moving its scheduled_date to past (effectively removing it from active state)
+      // We move it back 30 days so it won't show as "missed" anymore
+      const skipDate = format(addDays(new Date(), -30), 'yyyy-MM-dd');
+      
+      await supabase
+        .from('workouts')
+        .update({ scheduled_date: skipDate })
+        .eq('id', workoutToSkip.id);
+
+      // Close dialog and clear state
+      setShowSkipConfirm(false);
+      setWorkoutToSkip(null);
+
+      // Show confirmation toast
+      toast({
+        title: "Workout skipped",
+        description: "We'll get you ready for your next scheduled workout.",
+      });
+
+      // Refresh the workout context to show next state
+      refetch();
+    } catch (error) {
+      console.error('Error skipping workout:', error);
+      toast({
+        title: "Error",
+        description: "Failed to skip workout. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSkipping(false);
+    }
   };
 
   // Loading state
@@ -164,14 +198,24 @@ export default function WorkoutToday() {
                   <Play className="mr-2 h-5 w-5" />
                   {getCoachMessage('workout_start_cta', coachTone)}
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  className="w-full text-muted-foreground"
-                  onClick={() => handleOpenReschedule(todayWorkout)}
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Reschedule for another day
-                </Button>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="h-12"
+                    onClick={() => handleOpenSkipConfirm(todayWorkout)}
+                  >
+                    <SkipForward className="mr-2 h-4 w-4" />
+                    Skip Workout
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="h-12"
+                    onClick={() => handleOpenReschedule(todayWorkout)}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Reschedule
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -201,6 +245,26 @@ export default function WorkoutToday() {
             </Card>
           )}
         </div>
+
+        {/* Dialogs */}
+        <RescheduleWorkoutDialog
+          open={showReschedule}
+          onOpenChange={setShowReschedule}
+          workout={workoutToReschedule}
+          onSuccess={handleRescheduleSuccess}
+        />
+        <SkipWorkoutConfirmDialog
+          open={showSkipConfirm}
+          onOpenChange={setShowSkipConfirm}
+          workoutName={workoutToSkip?.workout || ''}
+          workoutDuration={workoutToSkip?.duration}
+          coachTone={coachTone}
+          userWorkoutDays={workoutDays}
+          preferredTime={preferredTime}
+          onStart={handleSkipStart}
+          onReschedule={handleSkipReschedule}
+          onSkip={handleSkipConfirm}
+        />
       </AppLayout>
     );
   }
@@ -300,6 +364,26 @@ export default function WorkoutToday() {
             </Card>
           )}
         </div>
+
+        {/* Dialogs */}
+        <RescheduleWorkoutDialog
+          open={showReschedule}
+          onOpenChange={setShowReschedule}
+          workout={workoutToReschedule}
+          onSuccess={handleRescheduleSuccess}
+        />
+        <SkipWorkoutConfirmDialog
+          open={showSkipConfirm}
+          onOpenChange={setShowSkipConfirm}
+          workoutName={workoutToSkip?.workout || ''}
+          workoutDuration={workoutToSkip?.duration}
+          coachTone={coachTone}
+          userWorkoutDays={workoutDays}
+          preferredTime={preferredTime}
+          onStart={handleSkipStart}
+          onReschedule={handleSkipReschedule}
+          onSkip={handleSkipConfirm}
+        />
       </AppLayout>
     );
   }
