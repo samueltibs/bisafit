@@ -32,11 +32,8 @@ import {
   Crown,
   Loader2,
   Edit2,
-  Calendar,
   Dumbbell,
   Sparkles,
-  Clock,
-  FileText,
   User,
   Target,
   Ruler,
@@ -58,10 +55,9 @@ import {
   formatHeight,
   type UnitPreference,
 } from '@/lib/unitConversions';
-import { formatTimeDisplay } from '@/lib/calendarUtils';
-import { WorkoutDaysSelector } from '@/components/settings/WorkoutDaysSelector';
+import { parseTimePreferences, getDefaultTimePreferences } from '@/lib/calendarUtils';
+import { SchedulingSection } from '@/components/settings/SchedulingSection';
 import { EquipmentEditor, formatEquipmentName, normalizeEquipmentName } from '@/components/settings/EquipmentEditor';
-import { WorkoutTimeSettings } from '@/components/settings/WorkoutTimeSettings';
 import { CoachToneSelector } from '@/components/settings/CoachToneSelector';
 import { CoachVoiceSelector } from '@/components/settings/CoachVoiceSelector';
 import { APP_NAME, APP_VERSION, EMAIL_SUPPORT } from '@/lib/branding';
@@ -83,7 +79,6 @@ export default function Settings() {
   const [isEquipmentModalOpen, setIsEquipmentModalOpen] = useState(false);
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState('');
-  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isFAQOpen, setIsFAQOpen] = useState(false);
   const [isIntroTourOpen, setIsIntroTourOpen] = useState(false);
   
@@ -101,6 +96,7 @@ export default function Settings() {
   // Track original workout days to detect changes
   const originalWorkoutDaysRef = useRef<string[]>([]);
   
+  // Edit form state - now includes scheduling info
   const [editForm, setEditForm] = useState({
     fullName: '',
     unitPreference: 'metric' as UnitPreference,
@@ -110,6 +106,9 @@ export default function Settings() {
     heightCm: '',
     weight: '',
     workoutDays: ['Monday', 'Wednesday', 'Thursday', 'Friday'] as string[],
+    timePreferences: getDefaultTimePreferences(),
+    calendarSyncEnabled: false,
+    notificationsEnabled: false,
   });
   const [equipmentList, setEquipmentList] = useState<string[]>([]);
 
@@ -123,8 +122,9 @@ export default function Settings() {
       setIsEquipmentModalOpen(true);
       setSearchParams({});
     }
+    // Redirect schedule param to edit modal since it's consolidated now
     if (searchParams.get('schedule') === 'true' && !loading) {
-      setIsScheduleModalOpen(true);
+      setIsEditModalOpen(true);
       setSearchParams({});
     }
   }, [searchParams, loading, setSearchParams]);
@@ -145,15 +145,15 @@ export default function Settings() {
     }
   }, [profile]);
 
-  // Initialize calendar sync settings when schedule modal opens
+  // Initialize calendar sync settings when edit modal opens
   useEffect(() => {
-    if (isScheduleModalOpen && profile) {
+    if (isEditModalOpen && profile && user) {
       calendarSync.loadSettings(profile);
-      if (user && (profile as any).current_plan_id) {
+      if ((profile as any).current_plan_id) {
         calendarSync.loadCurrentPlanWorkouts(user.id, (profile as any).current_plan_id);
       }
     }
-  }, [isScheduleModalOpen, profile, user]);
+  }, [isEditModalOpen, profile, user]);
 
   // Initialize edit form when modal opens
   useEffect(() => {
@@ -186,6 +186,9 @@ export default function Settings() {
 
       const workoutDays = (profile as any).workout_days || ['Monday', 'Wednesday', 'Thursday', 'Friday'];
       const country = (profile as any).country || null;
+      const timePreferences = parseTimePreferences((profile as any).workout_time_preferences_json);
+      const calendarSyncEnabled = (profile as any).calendar_sync_enabled || false;
+      const notificationsEnabledVal = (profile as any).notifications_enabled ?? false;
 
       // Store original workout days to detect changes on save
       originalWorkoutDaysRef.current = [...workoutDays];
@@ -199,6 +202,9 @@ export default function Settings() {
         heightCm,
         weight,
         workoutDays,
+        timePreferences,
+        calendarSyncEnabled,
+        notificationsEnabled: notificationsEnabledVal,
       });
     }
   }, [isEditModalOpen, profile]);
@@ -309,6 +315,10 @@ export default function Settings() {
         country: editForm.country,
         workout_days: editForm.workoutDays,
         days_per_week: editForm.workoutDays.length,
+        workout_time_preferences_json: editForm.timePreferences,
+        calendar_sync_enabled: editForm.calendarSyncEnabled,
+        calendar_provider: editForm.calendarSyncEnabled ? 'ics' : null,
+        notifications_enabled: editForm.notificationsEnabled,
       } as any);
 
       if (success) {
@@ -494,22 +504,19 @@ export default function Settings() {
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
 
-              {/* Workout Schedule Preferences */}
+              {/* Workout Schedule - now opens Edit modal */}
               <button 
-                onClick={() => setIsScheduleModalOpen(true)}
+                onClick={() => setIsEditModalOpen(true)}
                 className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
               >
                 <div className="flex items-center gap-3">
-                  <Calendar className="h-5 w-5 text-muted-foreground" />
+                  <Bell className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <span className="block font-medium">Workout Schedule</span>
                     <span className="text-sm text-muted-foreground">
                       {(profile as any)?.workout_days 
                         ? `${((profile as any).workout_days as string[]).length} days/week`
                         : 'Not set'}
-                      {(profile as any)?.workout_time_preferences_json && (
-                        <> • {formatTimeDisplay(((profile as any).workout_time_preferences_json as any)?.default_time || '06:00')}</>
-                      )}
                     </span>
                   </div>
                 </div>
@@ -820,11 +827,21 @@ export default function Settings() {
               />
             </div>
 
-            {/* Workout Days */}
-            <WorkoutDaysSelector
-              workoutDays={editForm.workoutDays}
-              onWorkoutDaysChange={(days) => setEditForm({ ...editForm, workoutDays: days })}
-            />
+            {/* Consolidated Scheduling Section */}
+            <div className="pt-4 border-t border-border">
+              <SchedulingSection
+                workoutDays={editForm.workoutDays}
+                onWorkoutDaysChange={(days) => setEditForm({ ...editForm, workoutDays: days })}
+                preferences={editForm.timePreferences}
+                onPreferencesChange={(prefs) => setEditForm({ ...editForm, timePreferences: prefs })}
+                calendarSyncEnabled={editForm.calendarSyncEnabled}
+                onCalendarSyncChange={(enabled) => setEditForm({ ...editForm, calendarSyncEnabled: enabled })}
+                notificationsEnabled={editForm.notificationsEnabled}
+                onNotificationsChange={(enabled) => setEditForm({ ...editForm, notificationsEnabled: enabled })}
+                currentPlanWorkouts={calendarSync.currentPlanWorkouts}
+                currentPlan={calendarSync.currentPlan}
+              />
+            </div>
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
@@ -879,39 +896,6 @@ export default function Settings() {
               )}
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Schedule & Calendar Modal */}
-      <Dialog open={isScheduleModalOpen} onOpenChange={setIsScheduleModalOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Workout Time & Calendar</DialogTitle>
-            <DialogDescription>
-              Set your preferred workout time and sync workouts to your calendar.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4">
-            <WorkoutTimeSettings
-              preferences={calendarSync.preferences}
-              calendarSyncEnabled={calendarSync.calendarSyncEnabled}
-              calendarProvider={calendarSync.calendarProvider}
-              onPreferencesChange={calendarSync.setPreferences}
-              onCalendarSyncChange={calendarSync.setCalendarSyncEnabled}
-              onCalendarProviderChange={calendarSync.setCalendarProvider}
-              onSave={async () => {
-                const success = await calendarSync.saveSettings();
-                if (success) {
-                  await refetch();
-                  setIsScheduleModalOpen(false);
-                }
-              }}
-              isSaving={calendarSync.isSaving}
-              currentPlanWorkouts={calendarSync.currentPlanWorkouts}
-              currentPlan={calendarSync.currentPlan}
-            />
-          </div>
         </DialogContent>
       </Dialog>
 
