@@ -57,7 +57,9 @@ export function useWorkoutReschedule() {
       };
     }
 
-    // Rule 3: Check rest day (warning, not blocking)
+    // Rule 3: Check rest day (warning only - user can override via explicit reschedule)
+    // SCHEDULER RULE: The system never auto-places workouts on rest days.
+    // Manual rescheduling is the ONLY way to put a workout on a rest day.
     if (workoutDays && workoutDays.length > 0) {
       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const proposedDayName = dayNames[newDate.getDay()];
@@ -136,7 +138,6 @@ export function useWorkoutReschedule() {
       // (The schedule-notifications function will create new ones)
       
       // Toast is handled in the dialog after showing calendar download option
-      return { success: true };
       return { success: true };
     } catch (error) {
       console.error('Reschedule error:', error);
