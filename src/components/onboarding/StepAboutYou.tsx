@@ -2,6 +2,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { User } from 'lucide-react';
+import { CountrySelector } from '@/components/settings/CountrySelector';
+import { getUnitPreferenceForCountry, detectCountryFromDevice } from '@/lib/countryUtils';
+import { useEffect } from 'react';
 
 interface StepAboutYouProps {
   fullName: string;
@@ -9,11 +12,13 @@ interface StepAboutYouProps {
   heightCm: number | null;
   weightKg: number | null;
   unitPreference: string;
+  country: string | null;
   onFullNameChange: (value: string) => void;
   onGenderChange: (value: string) => void;
   onHeightChange: (value: number | null) => void;
   onWeightChange: (value: number | null) => void;
   onUnitPreferenceChange: (value: string) => void;
+  onCountryChange: (value: string | null) => void;
 }
 
 const genderOptions = [
@@ -29,13 +34,30 @@ export function StepAboutYou({
   heightCm,
   weightKg,
   unitPreference,
+  country,
   onFullNameChange,
   onGenderChange,
   onHeightChange,
   onWeightChange,
   onUnitPreferenceChange,
+  onCountryChange,
 }: StepAboutYouProps) {
   const isMetric = unitPreference === 'metric';
+
+  // Auto-detect country on mount if not set
+  useEffect(() => {
+    if (!country) {
+      const detectedCountry = detectCountryFromDevice();
+      if (detectedCountry) {
+        onCountryChange(detectedCountry);
+        // Also set unit preference based on country if not explicitly set
+        const suggestedUnit = getUnitPreferenceForCountry(detectedCountry);
+        if (suggestedUnit !== unitPreference) {
+          onUnitPreferenceChange(suggestedUnit);
+        }
+      }
+    }
+  }, []); // Only run on mount
 
   // Convert values for display
   const displayHeight = isMetric
@@ -113,6 +135,12 @@ export function StepAboutYou({
           ))}
         </RadioGroup>
       </div>
+
+      {/* Country / Region */}
+      <CountrySelector
+        value={country}
+        onChange={(v) => onCountryChange(v)}
+      />
 
       {/* Unit Preference */}
       <div className="space-y-3">
