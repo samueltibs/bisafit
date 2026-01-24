@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { sendTrialStartedEmail } from '@/lib/emailService';
 import type { SubscriptionStatus, SubscriptionPlan, SubscriptionState } from '@/types/subscription';
 
 export function useSubscription() {
@@ -120,6 +121,14 @@ export function useSubscription() {
         hasPremiumAccess: true,
         daysLeftInTrial: 7,
       }));
+
+      // Send trial started email (fire and forget)
+      sendTrialStartedEmail(
+        user.id,
+        user.email || '',
+        trialEnd,
+        plan
+      ).catch(err => console.error('Failed to send trial started email:', err));
 
       return true;
     } catch (error) {
