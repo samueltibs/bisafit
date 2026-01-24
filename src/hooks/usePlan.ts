@@ -413,11 +413,15 @@ export function usePlan(): UsePlanResult {
 
   const getWorkoutsForWeek = useCallback((weekStart: Date): DisplayWorkout[] => {
     const weekDays: DisplayWorkout[] = [];
-    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    
+    // CRITICAL: Use actual day names from the date, not hardcoded Monday-first array
+    // This ensures correct day mapping regardless of what day weekStart falls on
+    const dayNameArray = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     for (let i = 0; i < 7; i++) {
       const dayDate = addDays(weekStart, i);
-      const dayName = dayNames[i];
+      // Get the actual day name from the Date object (respects user's local timezone)
+      const dayName = dayNameArray[dayDate.getDay()];
       const dateStr = format(dayDate, 'yyyy-MM-dd');
 
       // Find workout for this date
@@ -523,14 +527,14 @@ export function usePlan(): UsePlanResult {
     // Only return workouts for the current plan
     if (plan?.id !== currentPlanId) return null;
     
-    const today = new Date();
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    // Use local timezone-safe today
+    const today = getLocalToday();
     
     for (let i = 1; i <= 7; i++) {
-      const checkDate = new Date(today);
-      checkDate.setDate(today.getDate() + i);
+      const checkDate = addDays(today, i);
       const dateStr = format(checkDate, 'yyyy-MM-dd');
-      const dayName = dayNames[checkDate.getDay()];
+      // Get day name from actual date's day of week
+      const dayName = getLocalDayName(checkDate);
       
       const workout = workouts.find(w => w.scheduled_date === dateStr);
       
