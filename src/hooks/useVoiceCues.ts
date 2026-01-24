@@ -1,12 +1,43 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 
-export function useVoiceCues() {
+export type CoachVoice = 'male' | 'female';
+
+interface VoiceCuesOptions {
+  preferredVoice?: CoachVoice;
+}
+
+export function useVoiceCues(options: VoiceCuesOptions = {}) {
+  const { preferredVoice = 'female' } = options;
   const [isEnabled, setIsEnabled] = useState(false);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
+  const [voicesLoaded, setVoicesLoaded] = useState(false);
 
   // Check if speech synthesis is available
   const isAvailable = typeof window !== 'undefined' && 'speechSynthesis' in window;
+
+  // Load voices when available
+  useEffect(() => {
+    if (!isAvailable) return;
+
+    const synth = window.speechSynthesis;
+    
+    const loadVoices = () => {
+      voicesRef.current = synth.getVoices();
+      setVoicesLoaded(voicesRef.current.length > 0);
+    };
+
+    // Load immediately if available
+    loadVoices();
+
+    // Chrome requires this event listener
+    synth.addEventListener('voiceschanged', loadVoices);
+
+    return () => {
+      synth.removeEventListener('voiceschanged', loadVoices);
+    };
+  }, [isAvailable]);
 
   // Initialize speech synthesis
   const initSynth = useCallback(() => {
@@ -16,6 +47,61 @@ export function useVoiceCues() {
     }
     return synthRef.current;
   }, [isAvailable]);
+
+  // Find the best matching voice based on preference and language
+  const findVoice = useCallback((voiceType: CoachVoice): SpeechSynthesisVoice | null => {
+    const voices = voicesRef.current;
+    if (!voices.length) return null;
+
+    // Get browser language (e.g., 'en-US', 'es-ES')
+    const browserLang = navigator.language || 'en-US';
+    const langPrefix = browserLang.split('-')[0]; // 'en', 'es', etc.
+
+    // Gender keywords to match voices
+    const maleKeywords = ['male', 'man', 'guy', 'david', 'james', 'daniel', 'google us english', 'microsoft david', 'microsoft mark'];
+    const femaleKeywords = ['female', 'woman', 'girl', 'samantha', 'victoria', 'zira', 'google us english female', 'microsoft zira', 'karen'];
+
+    const targetKeywords = voiceType === 'male' ? maleKeywords : femaleKeywords;
+
+    // First try: exact language match with gender preference
+    const exactMatch = voices.find(v => {
+      const voiceLang = v.lang.toLowerCase();
+      const voiceName = v.name.toLowerCase();
+      const matchesLang = voiceLang.startsWith(langPrefix.toLowerCase());
+      const matchesGender = targetKeywords.some(kw => voiceName.includes(kw));
+      return matchesLang && matchesGender;
+    });
+
+    if (exactMatch) return exactMatch;
+
+    // Second try: language match only (any gender)
+    const langMatch = voices.find(v => 
+      v.lang.toLowerCase().startsWith(langPrefix.toLowerCase()) && v.localService
+    );
+
+    if (langMatch) return langMatch;
+
+    // Third try: English fallback with gender preference
+    const englishGenderMatch = voices.find(v => {
+      const voiceLang = v.lang.toLowerCase();
+      const voiceName = v.name.toLowerCase();
+      const isEnglish = voiceLang.startsWith('en');
+      const matchesGender = targetKeywords.some(kw => voiceName.includes(kw));
+      return isEnglish && matchesGender;
+    });
+
+    if (englishGenderMatch) return englishGenderMatch;
+
+    // Fourth try: any English voice
+    const englishVoice = voices.find(v => 
+      v.lang.toLowerCase().startsWith('en') && v.localService
+    );
+
+    if (englishVoice) return englishVoice;
+
+    // Fallback: first available local voice
+    return voices.find(v => v.localService) || voices[0] || null;
+  }, []);
 
   // Speak a message
   const speak = useCallback((message: string, priority: 'high' | 'normal' = 'normal') => {
@@ -34,16 +120,16 @@ export function useVoiceCues() {
     utterance.pitch = 1.0;
     utterance.volume = 0.8;
     
-    // Use a clear voice if available
-    const voices = synth.getVoices();
-    const englishVoice = voices.find(v => v.lang.startsWith('en-') && v.localService);
-    if (englishVoice) {
-      utterance.voice = englishVoice;
+    // Use preferred voice type
+    const selectedVoice = findVoice(preferredVoice);
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+      utterance.lang = selectedVoice.lang;
     }
 
     utteranceRef.current = utterance;
     synth.speak(utterance);
-  }, [isEnabled, isAvailable, initSynth]);
+  }, [isEnabled, isAvailable, initSynth, findVoice, preferredVoice]);
 
   // Cancel current speech
   const cancel = useCallback(() => {
@@ -93,6 +179,7 @@ export function useVoiceCues() {
     isEnabled,
     setIsEnabled,
     isAvailable,
+    voicesLoaded,
     speak,
     cancel,
     // Workout-specific cues

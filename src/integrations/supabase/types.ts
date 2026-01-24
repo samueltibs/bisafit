@@ -531,6 +531,7 @@ export type Database = {
           calendar_provider: string | null
           calendar_sync_enabled: boolean | null
           coach_tone: string | null
+          coach_voice: string | null
           constraints_json: Json | null
           created_at: string | null
           current_plan_id: string | null
@@ -568,6 +569,7 @@ export type Database = {
           calendar_provider?: string | null
           calendar_sync_enabled?: boolean | null
           coach_tone?: string | null
+          coach_voice?: string | null
           constraints_json?: Json | null
           created_at?: string | null
           current_plan_id?: string | null
@@ -605,6 +607,7 @@ export type Database = {
           calendar_provider?: string | null
           calendar_sync_enabled?: boolean | null
           coach_tone?: string | null
+          coach_voice?: string | null
           constraints_json?: Json | null
           created_at?: string | null
           current_plan_id?: string | null

@@ -53,6 +53,7 @@ import { WorkoutTimeSettings } from '@/components/settings/WorkoutTimeSettings';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { EmailPreferences } from '@/components/settings/EmailPreferences';
 import { CoachToneSelector } from '@/components/settings/CoachToneSelector';
+import { CoachVoiceSelector } from '@/components/settings/CoachVoiceSelector';
 import { APP_NAME, APP_VERSION, EMAIL_SUPPORT, SUPPORT_MESSAGE } from '@/lib/branding';
 import { openExternalLink, openMailto, EXTERNAL_URLS } from '@/lib/externalLinks';
 import { type CoachTone, normalizeCoachTone } from '@/lib/coachTone';
@@ -538,6 +539,11 @@ export default function Settings() {
             currentTone={coachTone}
             onToneChange={setCoachTone}
           />
+        </div>
+
+        {/* Coach Voice */}
+        <div className="animate-slide-up">
+          <CoachVoiceSelector />
         </div>
 
         {/* Settings List */}

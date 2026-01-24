@@ -13,9 +13,10 @@ import {
   Loader2
 } from 'lucide-react';
 import { useWorkoutPlayer } from '@/hooks/useWorkoutPlayer';
-import { useVoiceCues } from '@/hooks/useVoiceCues';
+import { useVoiceCues, type CoachVoice } from '@/hooks/useVoiceCues';
 import { useWorkoutResume } from '@/hooks/useWorkoutResume';
 import { usePremiumFeature } from '@/hooks/usePremiumFeature';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { PremiumFeatureModal } from '@/components/subscription';
 import {
   WorkoutTimer,
@@ -62,7 +63,11 @@ export default function Workout() {
     currentItemIndex,
   } = useWorkoutPlayer(id);
 
-  const voiceCues = useVoiceCues();
+  // Get user's voice preference
+  const { profile } = useUserProfile();
+  const preferredVoice = (profile?.coach_voice as CoachVoice) || 'female';
+  
+  const voiceCues = useVoiceCues({ preferredVoice });
 
   const {
     incompleteSession,
