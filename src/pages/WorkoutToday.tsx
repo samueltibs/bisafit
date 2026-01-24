@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -14,8 +15,10 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { useWorkoutContext } from '@/hooks/useWorkoutContext';
+import { RescheduleWorkoutDialog } from '@/components/workout/RescheduleWorkoutDialog';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import type { DisplayWorkout } from '@/types/plan';
 
 export default function WorkoutToday() {
   const navigate = useNavigate();
@@ -24,8 +27,24 @@ export default function WorkoutToday() {
     todayWorkout, 
     missedWorkout, 
     nextWorkout,
-    loading 
+    loading,
+    refetch 
   } = useWorkoutContext();
+
+  // Reschedule dialog state
+  const [showReschedule, setShowReschedule] = useState(false);
+  const [workoutToReschedule, setWorkoutToReschedule] = useState<DisplayWorkout | null>(null);
+
+  const handleOpenReschedule = (workout: DisplayWorkout) => {
+    setWorkoutToReschedule(workout);
+    setShowReschedule(true);
+  };
+
+  const handleRescheduleSuccess = () => {
+    refetch();
+    setShowReschedule(false);
+    setWorkoutToReschedule(null);
+  };
 
   // Loading state
   if (loading) {
@@ -85,14 +104,24 @@ export default function WorkoutToday() {
                 </div>
               </div>
 
-              <Button 
-                size="lg" 
-                className="w-full h-14 text-lg"
-                onClick={() => navigate(`/workout/${todayWorkout.id}`)}
-              >
-                <Play className="mr-2 h-5 w-5" />
-                Start Workout
-              </Button>
+              <div className="space-y-3">
+                <Button 
+                  size="lg" 
+                  className="w-full h-14 text-lg"
+                  onClick={() => navigate(`/workout/${todayWorkout.id}`)}
+                >
+                  <Play className="mr-2 h-5 w-5" />
+                  Start Workout
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="w-full text-muted-foreground"
+                  onClick={() => handleOpenReschedule(todayWorkout)}
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Reschedule for another day
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
@@ -185,7 +214,7 @@ export default function WorkoutToday() {
               <Button 
                 variant="outline" 
                 className="h-12"
-                onClick={() => navigate('/plan')}
+                onClick={() => handleOpenReschedule(missedWorkout.workout)}
               >
                 <Calendar className="mr-2 h-4 w-4" />
                 Reschedule
@@ -278,6 +307,14 @@ export default function WorkoutToday() {
           </Card>
         )}
       </div>
+
+      {/* Reschedule Dialog */}
+      <RescheduleWorkoutDialog
+        open={showReschedule}
+        onOpenChange={setShowReschedule}
+        workout={workoutToReschedule}
+        onSuccess={handleRescheduleSuccess}
+      />
     </AppLayout>
   );
 }
