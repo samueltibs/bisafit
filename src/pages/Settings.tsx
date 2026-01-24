@@ -48,13 +48,13 @@ import { formatTimeDisplay } from '@/lib/calendarUtils';
 import { WorkoutDaysSelector } from '@/components/settings/WorkoutDaysSelector';
 import { EquipmentEditor, formatEquipmentName, normalizeEquipmentName } from '@/components/settings/EquipmentEditor';
 import { WorkoutTimeSettings } from '@/components/settings/WorkoutTimeSettings';
+import { NotificationSettings } from '@/components/settings/NotificationSettings';
 
 export default function Settings() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, signOut } = useAuth();
   const { profile, loading, update, refetch } = useUserProfile();
-  const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   
   // Profile editing modal state
@@ -505,22 +505,17 @@ export default function Settings() {
           </CardContent>
         </Card>
 
+        {/* Notification Settings */}
+        <div className="animate-slide-up">
+          <NotificationSettings />
+        </div>
+
         {/* Settings List */}
         <div className="space-y-4 animate-slide-up">
           <h3 className="text-sm font-medium text-muted-foreground">Preferences</h3>
           
           <Card className="border-border">
             <CardContent className="divide-y divide-border p-0">
-              <div className="flex items-center justify-between p-4">
-                <div className="flex items-center gap-3">
-                  <Bell className="h-5 w-5 text-muted-foreground" />
-                  <span>Push Notifications</span>
-                </div>
-                <Switch
-                  checked={notifications}
-                  onCheckedChange={setNotifications}
-                />
-              </div>
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
                   <Moon className="h-5 w-5 text-muted-foreground" />
