@@ -18,6 +18,7 @@ interface NextBlockSuccessDialogProps {
   startDate: string;
   workoutsCreated: number;
   progressionApplied?: string;
+  performanceBased?: boolean;
 }
 
 export function NextBlockSuccessDialog({
@@ -28,6 +29,7 @@ export function NextBlockSuccessDialog({
   startDate,
   workoutsCreated,
   progressionApplied,
+  performanceBased = false,
 }: NextBlockSuccessDialogProps) {
   const formattedDate = startDate ? format(parseISO(startDate), 'MMMM d, yyyy') : '';
 
@@ -57,7 +59,9 @@ export function NextBlockSuccessDialog({
           </div>
           <DialogTitle className="text-xl">Block {blockNumber} is Ready!</DialogTitle>
           <DialogDescription>
-            Your next training block has been created based on your performance.
+            {performanceBased
+              ? "Your next training block has been created based on your performance."
+              : "Your next training block has been created based on your plan."}
           </DialogDescription>
         </DialogHeader>
 
