@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner';
 import { IntroTour } from '@/components/onboarding/IntroTour';
+import { WhatsNew } from '@/components/onboarding/WhatsNew';
 import { Flame, Droplets, Footprints, Dumbbell, Apple, ChevronRight, Trophy, User, Bed } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -79,6 +80,9 @@ export default function Home() {
     <AppLayout>
       {/* Intro Tour - shown once after onboarding */}
       <IntroTour open={showIntroTour} onComplete={handleTourComplete} />
+      
+      {/* What's New - shown once per version update */}
+      <WhatsNew />
       
       <div className="container space-y-6 px-4 py-6">
         {/* Greeting Section */}
