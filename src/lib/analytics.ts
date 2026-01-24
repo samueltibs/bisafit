@@ -17,6 +17,9 @@ export type AnalyticsEventName =
   | 'nutrition_plan_generated'
   | 'ingredient_scan_used'
   | 'calendar_event_created'
+  // Notifications
+  | 'notification_scheduled'
+  | 'notification_opened'
   // Quality
   | 'generation_error'
   | 'scan_error';

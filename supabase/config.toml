@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.generate-meals-from-ingredients]
 verify_jwt = false
+
+[functions.schedule-notifications]
+verify_jwt = false
