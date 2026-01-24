@@ -16,7 +16,7 @@ export function BottomNav() {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 safe-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-card/95 backdrop-blur-xl supports-[backdrop-filter]:bg-card/90 safe-bottom">
       <div className="container flex h-16 items-center justify-around px-2">
         {navItems.map(({ path, icon: Icon, label }) => {
           const isActive = location.pathname.startsWith(path.split('/')[1] ? `/${path.split('/')[1]}` : path);
@@ -26,14 +26,27 @@ export function BottomNav() {
               key={path}
               to={path}
               className={cn(
-                "flex flex-col items-center gap-0.5 px-2 py-1 transition-colors",
+                "flex flex-col items-center gap-1 px-3 py-2 transition-all duration-200 rounded-xl min-w-[56px]",
                 isActive
                   ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground active:scale-95"
               )}
             >
-              <Icon className={cn("h-5 w-5", isActive && "animate-scale-in")} />
-              <span className="text-[10px] font-medium">{label}</span>
+              <Icon 
+                className={cn(
+                  "h-5 w-5 transition-transform duration-200",
+                  isActive && "scale-110"
+                )}
+                strokeWidth={isActive ? 2 : 1.75}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <span className={cn(
+                "text-[10px] font-medium transition-all duration-200",
+                isActive && "font-semibold"
+              )}>
+                {label}
+              </span>
             </Link>
           );
         })}
