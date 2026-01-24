@@ -41,6 +41,48 @@ export type Database = {
         }
         Relationships: []
       }
+      email_log: {
+        Row: {
+          created_at: string
+          email_type: string
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          recipient_email: string
+          resend_id: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_type: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          recipient_email: string
+          resend_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_type?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          recipient_email?: string
+          resend_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       health_uploads: {
         Row: {
           created_at: string | null
@@ -451,6 +493,7 @@ export type Database = {
           created_at: string | null
           current_plan_id: string | null
           days_per_week: number | null
+          email_consent: boolean | null
           equipment_json: Json | null
           experience_level: string | null
           full_name: string | null
@@ -474,6 +517,7 @@ export type Database = {
           unit_preference: string | null
           updated_at: string | null
           weight_kg: number | null
+          welcome_email_sent: boolean | null
           workout_days: Json | null
           workout_time_preferences_json: Json | null
         }
@@ -484,6 +528,7 @@ export type Database = {
           created_at?: string | null
           current_plan_id?: string | null
           days_per_week?: number | null
+          email_consent?: boolean | null
           equipment_json?: Json | null
           experience_level?: string | null
           full_name?: string | null
@@ -507,6 +552,7 @@ export type Database = {
           unit_preference?: string | null
           updated_at?: string | null
           weight_kg?: number | null
+          welcome_email_sent?: boolean | null
           workout_days?: Json | null
           workout_time_preferences_json?: Json | null
         }
@@ -517,6 +563,7 @@ export type Database = {
           created_at?: string | null
           current_plan_id?: string | null
           days_per_week?: number | null
+          email_consent?: boolean | null
           equipment_json?: Json | null
           experience_level?: string | null
           full_name?: string | null
@@ -540,6 +587,7 @@ export type Database = {
           unit_preference?: string | null
           updated_at?: string | null
           weight_kg?: number | null
+          welcome_email_sent?: boolean | null
           workout_days?: Json | null
           workout_time_preferences_json?: Json | null
         }

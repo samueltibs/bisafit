@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dumbbell, Mail, Lock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trackEvent } from '@/lib/analytics';
+import { sendWelcomeEmail } from '@/lib/emailService';
 import { APP_NAME, SUPPORT_MESSAGE_SHORT } from '@/lib/branding';
 
 export default function Auth() {
