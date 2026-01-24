@@ -21,6 +21,7 @@ interface UserProfile {
   } | null;
   equipment_json: string[] | null;
   full_name: string | null;
+  program_start_date: string | null;
 }
 
 interface WorkoutSession {
@@ -100,6 +101,7 @@ interface PerformanceAnalysis {
 }
 
 const ALL_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const BLOCK_DURATION_DAYS = 28; // 4 weeks
 
 function normalizeWorkoutDays(days: unknown): string[] {
   const defaultDays = ["Monday", "Wednesday", "Thursday", "Friday"];
@@ -128,25 +130,42 @@ function normalizeWorkoutDays(days: unknown): string[] {
   );
 }
 
-function calculateNextBlockStartDate(previousEndDate: string, workoutDays: string[]): Date {
-  // Start the day after the previous block ends
-  const nextStart = new Date(previousEndDate);
-  nextStart.setDate(nextStart.getDate() + 1);
-  nextStart.setHours(0, 0, 0, 0);
+/**
+ * Calculate timeline position based on program_start_date anchor.
+ * Returns the user's current block index and the next block number.
+ */
+function calculateTimelinePosition(programStartDate: string, currentDate: Date = new Date()): {
+  currentBlockIndex: number;
+  currentBlockNumber: number;
+  nextBlockNumber: number;
+  nextBlockStartDate: Date;
+} {
+  const start = new Date(programStartDate);
+  start.setHours(0, 0, 0, 0);
   
-  // Find the next workout day
-  for (let i = 0; i < 7; i++) {
-    const checkDate = new Date(nextStart);
-    checkDate.setDate(nextStart.getDate() + i);
-    const dayIndex = (checkDate.getDay() + 6) % 7;
-    const dayName = ALL_DAYS[dayIndex];
-    
-    if (workoutDays.includes(dayName)) {
-      return checkDate;
-    }
-  }
+  const current = new Date(currentDate);
+  current.setHours(0, 0, 0, 0);
   
-  return nextStart;
+  // Days since program start (enrollment day = day 0)
+  const diffTime = current.getTime() - start.getTime();
+  const daysSinceStart = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+  
+  // Current block index (0-indexed)
+  const currentBlockIndex = Math.floor(daysSinceStart / BLOCK_DURATION_DAYS);
+  
+  // Next block number (1-indexed)
+  const nextBlockNumber = currentBlockIndex + 2; // +1 to make 1-indexed, +1 for next
+  
+  // Next block start date = program_start_date + (nextBlockNumber - 1) * 28
+  const nextBlockStartDate = new Date(start);
+  nextBlockStartDate.setDate(start.getDate() + (nextBlockNumber - 1) * BLOCK_DURATION_DAYS);
+  
+  return {
+    currentBlockIndex,
+    currentBlockNumber: currentBlockIndex + 1,
+    nextBlockNumber,
+    nextBlockStartDate,
+  };
 }
 
 function getDayIndex(dayName: string): number {
@@ -292,8 +311,31 @@ serve(async (req) => {
 
     const userProfile = profile as UserProfile;
     const workoutDays = normalizeWorkoutDays(userProfile.workout_days);
+    const programStartDate = userProfile.program_start_date;
 
-    // Get the current/latest plan
+    // CRITICAL: Use program_start_date as the anchor for timeline
+    if (!programStartDate) {
+      return new Response(JSON.stringify({ 
+        error: "No program start date found. Please complete onboarding first." 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Calculate timeline position based on program_start_date
+    const timeline = calculateTimelinePosition(programStartDate);
+    const newBlockNumber = timeline.nextBlockNumber;
+    const newStartDate = timeline.nextBlockStartDate;
+    const newStartDateStr = newStartDate.toISOString().split("T")[0];
+
+    console.log("=== TIMELINE CALCULATION ===");
+    console.log("Program start date:", programStartDate);
+    console.log("Current block:", timeline.currentBlockNumber);
+    console.log("Next block number:", newBlockNumber);
+    console.log("Next block start date:", newStartDateStr);
+
+    // Get the current/latest plan for performance analysis
     const { data: currentPlan, error: planError } = await supabase
       .from("plans")
       .select("*")
@@ -310,36 +352,6 @@ serve(async (req) => {
     }
 
     const currentPlanJson = currentPlan.plan_json as PlanJson;
-    
-    // CRITICAL: Compute next block number from MAX of all plans, not just current
-    const { data: allPlans } = await supabase
-      .from("plans")
-      .select("plan_json")
-      .eq("user_id", userId);
-    
-    let maxBlockNumber = 0;
-    if (allPlans && allPlans.length > 0) {
-      for (const p of allPlans) {
-        const pJson = p.plan_json as PlanJson;
-        const blockNum = pJson?.block_number || 0;
-        if (blockNum > maxBlockNumber) {
-          maxBlockNumber = blockNum;
-        }
-      }
-    }
-    
-    const newBlockNumber = maxBlockNumber + 1;
-
-    // Calculate end date of current plan (4 weeks from start)
-    const currentStartDate = new Date(currentPlan.start_date);
-    const currentEndDate = new Date(currentStartDate);
-    currentEndDate.setDate(currentEndDate.getDate() + 27); // 4 weeks - 1 day
-    
-    const newStartDate = calculateNextBlockStartDate(
-      currentEndDate.toISOString().split("T")[0],
-      workoutDays
-    );
-    const newStartDateStr = newStartDate.toISOString().split("T")[0];
 
     // SERVER-SIDE GUARD: Check if a plan with this start_date already exists
     const { data: existingPlanForDate } = await supabase
@@ -370,7 +382,7 @@ serve(async (req) => {
       });
     }
 
-    // Get all workout IDs from the current plan
+    // Get all workout IDs from the current plan for performance analysis
     const workoutIds: string[] = [];
     for (const week of currentPlanJson.weeks) {
       for (const day of week.days) {
@@ -392,22 +404,34 @@ serve(async (req) => {
     
     // Analyze performance
     const analysis = analyzePerformance(workoutSessions, plannedWorkouts);
-    const currentBlockNumber = currentPlanJson.block_number || 1;
+    
+    // Determine if we have sufficient performance data
+    // Minimum: at least 1 week of workouts (25% of planned) or 4 completed workouts
+    const minimumWorkoutsForPerformance = Math.max(4, Math.floor(plannedWorkouts * 0.25));
+    const hasSufficientPerformanceData = analysis.completed_workouts >= minimumWorkoutsForPerformance;
 
     console.log("=== NEXT BLOCK GENERATION ===");
     console.log("User ID:", userId);
-    console.log("Current block:", currentBlockNumber);
+    console.log("Timeline current block:", timeline.currentBlockNumber);
     console.log("New block number:", newBlockNumber);
+    console.log("New block start date:", newStartDateStr);
     console.log("Adherence rate:", analysis.adherence_rate);
+    console.log("Completed workouts:", analysis.completed_workouts);
+    console.log("Has sufficient performance data:", hasSufficientPerformanceData);
     console.log("Progression recommendation:", analysis.progression_recommendation);
     console.log("User feedback:", userFeedback);
 
-    // Adjust recommendation based on user feedback
+    // Adjust recommendation based on user feedback (only if sufficient data)
     let finalRecommendation = analysis.progression_recommendation;
-    if (userFeedback === "too_hard") {
-      finalRecommendation = "decrease";
-    } else if (userFeedback === "too_easy" && analysis.adherence_rate >= 0.7) {
-      finalRecommendation = "increase";
+    if (hasSufficientPerformanceData) {
+      if (userFeedback === "too_hard") {
+        finalRecommendation = "decrease";
+      } else if (userFeedback === "too_easy" && analysis.adherence_rate >= 0.7) {
+        finalRecommendation = "increase";
+      }
+    } else {
+      // Insufficient data: default to "maintain" (neutral)
+      finalRecommendation = "maintain";
     }
 
     // Build prompts for AI
@@ -419,7 +443,8 @@ serve(async (req) => {
       finalRecommendation,
       userFeedback,
       newBlockNumber,
-      workoutDays
+      workoutDays,
+      hasSufficientPerformanceData
     );
 
     console.log("Calling AI for next block generation...");
@@ -776,14 +801,15 @@ function buildProgressionPrompt(
   recommendation: "increase" | "maintain" | "decrease",
   userFeedback: string | null,
   newBlockNumber: number,
-  workoutDays: string[]
+  workoutDays: string[],
+  hasSufficientPerformanceData: boolean = true
 ): string {
   const equipment = profile.equipment_json || ["bodyweight"];
   const constraints = profile.constraints_json || {};
   const injuries = constraints.injury_flags || [];
 
   let feedbackNote = "";
-  if (userFeedback) {
+  if (userFeedback && hasSufficientPerformanceData) {
     const feedbackMap: Record<string, string> = {
       too_easy: "User reported the previous block was TOO EASY - consider more aggressive progression",
       just_right: "User reported the previous block was JUST RIGHT - maintain progression pace",
@@ -807,15 +833,20 @@ ${injuries.map(i => `- ${i}`).join("\n")}`;
 
   const firstName = profile.full_name?.split(' ')[0] || 'there';
 
-  return `Create a new training block based on previous performance.
+  // Determine performance context for coach notes
+  let performanceContext = "";
+  if (hasSufficientPerformanceData) {
+    performanceContext = `Based on your performance in the previous block (${Math.round(analysis.adherence_rate * 100)}% adherence), we're ${
+      recommendation === "increase" ? "progressing your intensity" :
+      recommendation === "decrease" ? "implementing a recovery focus" :
+      "maintaining your current level with fresh exercise variations"
+    }.`;
+  } else {
+    performanceContext = "This block continues your training journey with progressive programming tailored to your goals.";
+  }
 
-USER FIRST NAME: ${firstName}
-- CRITICAL: Start coach_notes with "Welcome back, ${firstName}."
-
-PREVIOUS BLOCK SUMMARY:
-- Progression strategy used: ${previousPlan.progression_strategy}
-- Previous notes: ${previousPlan.progression_notes}
-
+  const performanceSection = hasSufficientPerformanceData 
+    ? `
 PERFORMANCE ANALYSIS:
 - Adherence rate: ${Math.round(analysis.adherence_rate * 100)}%
 - Completed workouts: ${analysis.completed_workouts} of ${analysis.planned_workouts}
@@ -824,7 +855,26 @@ PERFORMANCE ANALYSIS:
 ${feedbackNote ? `\nUSER FEEDBACK: ${feedbackNote}` : ""}
 
 TOP EXERCISES PERFORMED:
-${topExercises || "- No exercise data available"}
+${topExercises || "- No exercise data available"}`
+    : `
+PERFORMANCE DATA: INSUFFICIENT
+- Only ${analysis.completed_workouts} of ${analysis.planned_workouts} workouts completed
+- Not enough data for performance-based adjustments
+- Using neutral progression strategy (maintain intensity)
+- DO NOT claim "based on your performance" in coach_notes`;
+
+  return `Create a new training block ${hasSufficientPerformanceData ? "based on previous performance" : "continuing the training program"}.
+
+USER FIRST NAME: ${firstName}
+- CRITICAL: Start coach_notes with "Welcome back, ${firstName}."
+- IMPORTANT: ${hasSufficientPerformanceData 
+    ? "You may reference performance data." 
+    : "Do NOT claim 'based on your performance' - insufficient data exists."}
+
+PREVIOUS BLOCK SUMMARY:
+- Progression strategy used: ${previousPlan.progression_strategy}
+- Previous notes: ${previousPlan.progression_notes}
+${performanceSection}
 
 USER PROFILE:
 - Primary Goal: ${profile.goal_primary || "maintenance"}
