@@ -30,8 +30,7 @@ interface SkipWorkoutConfirmDialogProps {
 
 interface Suggestion {
   type: 'later_today' | 'next_day';
-  label: string;
-  description: string;
+  text: string;
 }
 
 /**
@@ -39,19 +38,14 @@ interface Suggestion {
  */
 const SKIP_MESSAGES = {
   title: {
-    gentle: 'Skip this workout?',
-    balanced: 'Skip workout?',
-    direct: 'Skip?',
+    gentle: 'Before you skip',
+    balanced: 'Skip this workout?',
+    direct: 'One more option',
   },
   description: {
-    gentle: "No worries if now isn't the right time. Here are some options that might work better for you.",
-    balanced: "You can start now, reschedule, or skip this workout.",
-    direct: "Start now, reschedule, or skip.",
-  },
-  suggestion_intro: {
-    gentle: "Here's an idea:",
-    balanced: "Suggestion:",
-    direct: "",
+    gentle: "That's okay — just checking in before you decide.",
+    balanced: "You can skip it, or fit it in later if that works better.",
+    direct: "You can skip this workout, or get it done later today.",
   },
   skip_button: {
     gentle: "Skip for now",
@@ -62,11 +56,16 @@ const SKIP_MESSAGES = {
 
 /**
  * Generate a contextual suggestion based on time of day and user preferences
+ * Returns tone-specific copy using the format:
+ * - Gentle: "You could do a [duration] workout on [suggested day/time] if you'd like."
+ * - Balanced: "A [duration] workout on [suggested day/time] could still work."
+ * - Direct: "A [duration] workout on [suggested day/time] is still available."
  */
 function generateSuggestion(
   workoutDuration: number,
   preferredTime: string | undefined,
-  userWorkoutDays: string[] | undefined
+  userWorkoutDays: string[] | undefined,
+  tone: CoachTone
 ): Suggestion | null {
   const now = new Date();
   const currentHour = now.getHours();
@@ -85,17 +84,23 @@ function generateSuggestion(
   // If it's early enough and preferred time is later today
   if (currentHour < preferredHour && preferredHour + hoursNeeded <= latestStartHour) {
     const suggestedTime = setMinutes(setHours(now, preferredHour), 0);
+    const timeLabel = format(suggestedTime, 'h:mm a');
+    
+    const text = {
+      gentle: `You could do a ${workoutDuration}-minute workout at ${timeLabel} if you'd like.`,
+      balanced: `A ${workoutDuration}-minute workout at ${timeLabel} could still work.`,
+      direct: `A ${workoutDuration}-minute workout at ${timeLabel} is still available.`,
+    };
+    
     return {
       type: 'later_today',
-      label: `Later today at ${format(suggestedTime, 'h:mm a')}`,
-      description: `You could fit this ${workoutDuration}-minute workout in later.`,
+      text: text[tone],
     };
   }
 
   // Suggest next workout day if available
   if (userWorkoutDays && userWorkoutDays.length > 0) {
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const todayIndex = now.getDay();
     
     // Find next workout day
     for (let i = 1; i <= 7; i++) {
@@ -103,10 +108,17 @@ function generateSuggestion(
       const checkDayName = dayNames[checkDate.getDay()];
       
       if (userWorkoutDays.includes(checkDayName)) {
+        const dayLabel = format(checkDate, 'EEEE');
+        
+        const text = {
+          gentle: `You could do a ${workoutDuration}-minute workout on ${dayLabel} if you'd like.`,
+          balanced: `A ${workoutDuration}-minute workout on ${dayLabel} could still work.`,
+          direct: `A ${workoutDuration}-minute workout on ${dayLabel} is still available.`,
+        };
+        
         return {
           type: 'next_day',
-          label: `Reschedule to ${format(checkDate, 'EEEE')}`,
-          description: `Your next scheduled workout day.`,
+          text: text[tone],
         };
       }
     }
@@ -130,8 +142,8 @@ export function SkipWorkoutConfirmDialog({
   const tone = normalizeCoachTone(coachTone);
   
   const suggestion = useMemo(() => {
-    return generateSuggestion(workoutDuration, preferredTime, userWorkoutDays);
-  }, [workoutDuration, preferredTime, userWorkoutDays]);
+    return generateSuggestion(workoutDuration, preferredTime, userWorkoutDays, tone);
+  }, [workoutDuration, preferredTime, userWorkoutDays, tone]);
 
   const handleStart = () => {
     onOpenChange(false);
@@ -169,17 +181,9 @@ export function SkipWorkoutConfirmDialog({
           {/* Contextual suggestion */}
           {suggestion && (
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-              {SKIP_MESSAGES.suggestion_intro[tone] && (
-                <p className="text-xs font-medium text-primary mb-1">
-                  {SKIP_MESSAGES.suggestion_intro[tone]}
-                </p>
-              )}
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-primary shrink-0" />
-                <div>
-                  <p className="text-sm font-medium">{suggestion.label}</p>
-                  <p className="text-xs text-muted-foreground">{suggestion.description}</p>
-                </div>
+                <p className="text-sm text-muted-foreground">{suggestion.text}</p>
               </div>
             </div>
           )}
