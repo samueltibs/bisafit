@@ -646,9 +646,18 @@ serve(async (req) => {
       .eq("id", newPlan.id);
 
     // Set this plan as the user's current plan
+    // Also set program_start_date if this is the first plan (Block 1)
+    const profileUpdate: Record<string, unknown> = { current_plan_id: newPlan.id };
+    
+    // If this is the first plan (block 1), also set program_start_date
+    if (blockNumber === 1) {
+      profileUpdate.program_start_date = startDateStr;
+      console.log("Setting program_start_date to:", startDateStr);
+    }
+    
     await supabase
       .from("users_profile")
-      .update({ current_plan_id: newPlan.id })
+      .update(profileUpdate)
       .eq("id", userId);
 
     console.log("=== PLAN GENERATION COMPLETE ===");
