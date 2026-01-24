@@ -111,6 +111,45 @@ export type Database = {
           },
         ]
       }
+      notifications_log: {
+        Row: {
+          body: string
+          created_at: string
+          failure_reason: string | null
+          id: string
+          scheduled_for: string | null
+          sent_at: string | null
+          status: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       nutrition_profiles: {
         Row: {
           budget_level: string | null
@@ -298,6 +337,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      push_devices: {
+        Row: {
+          created_at: string
+          device_token: string
+          id: string
+          is_active: boolean
+          platform: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_token: string
+          id?: string
+          is_active?: boolean
+          platform: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_token?: string
+          id?: string
+          is_active?: boolean
+          platform?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       store_interest: {
         Row: {
