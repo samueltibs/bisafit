@@ -19,6 +19,7 @@ export type AnalyticsEventName =
   | 'calendar_event_created'
   // Notifications
   | 'notification_scheduled'
+  | 'notification_delivered'
   | 'notification_opened'
   // Quality
   | 'generation_error'
