@@ -78,4 +78,7 @@ export const STORAGE_KEYS = {
   
   // Onboarding
   ONBOARDING_STEP: 'onboarding_step',
+  
+  // Version tracking
+  LAST_SEEN_VERSION: 'last_seen_version',
 } as const;
