@@ -135,7 +135,8 @@ export function useWorkoutReschedule() {
       // 4. Clear any existing notifications for the old date
       // (The schedule-notifications function will create new ones)
       
-      toast.success('Workout rescheduled successfully');
+      // Toast is handled in the dialog after showing calendar download option
+      return { success: true };
       return { success: true };
     } catch (error) {
       console.error('Reschedule error:', error);
