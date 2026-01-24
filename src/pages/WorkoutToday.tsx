@@ -15,13 +15,20 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { useWorkoutContext } from '@/hooks/useWorkoutContext';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { RescheduleWorkoutDialog } from '@/components/workout/RescheduleWorkoutDialog';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { DisplayWorkout } from '@/types/plan';
+import { 
+  getCoachMessage, 
+  normalizeCoachTone,
+  type CoachTone 
+} from '@/lib/coachTone';
 
 export default function WorkoutToday() {
   const navigate = useNavigate();
+  const { profile } = useUserProfile();
   const { 
     contextType, 
     todayWorkout, 
@@ -30,6 +37,9 @@ export default function WorkoutToday() {
     loading,
     refetch 
   } = useWorkoutContext();
+
+  // Get user's coach tone
+  const coachTone: CoachTone = normalizeCoachTone((profile as any)?.coach_tone);
 
   // Reschedule dialog state
   const [showReschedule, setShowReschedule] = useState(false);
@@ -68,7 +78,7 @@ export default function WorkoutToday() {
           <div className="space-y-2">
             <h1 className="text-2xl font-bold">No Training Plan</h1>
             <p className="text-muted-foreground">
-              Get started by creating your personalized training plan.
+              {getCoachMessage('no_plan', coachTone)}
             </p>
           </div>
           <Button size="lg" onClick={() => navigate('/plan')}>
@@ -104,6 +114,10 @@ export default function WorkoutToday() {
                 </div>
               </div>
 
+              <p className="text-sm text-muted-foreground">
+                {getCoachMessage('workout_ready', coachTone)}
+              </p>
+
               <div className="space-y-3">
                 <Button 
                   size="lg" 
@@ -111,7 +125,7 @@ export default function WorkoutToday() {
                   onClick={() => navigate(`/workout/${todayWorkout.id}`)}
                 >
                   <Play className="mr-2 h-5 w-5" />
-                  Start Workout
+                  {getCoachMessage('workout_start_cta', coachTone)}
                 </Button>
                 <Button 
                   variant="ghost" 
@@ -129,7 +143,9 @@ export default function WorkoutToday() {
           {nextWorkout && (
             <Card className="border-border/40 bg-muted/30">
               <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground mb-2">Coming Up</p>
+                <p className="text-xs text-muted-foreground mb-2">
+                  {getCoachMessage('next_workout_preview', coachTone)}
+                </p>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
@@ -166,7 +182,9 @@ export default function WorkoutToday() {
               <AlertCircle className="h-5 w-5" />
               <p className="text-sm font-medium">Missed Workout</p>
             </div>
-            <h1 className="text-2xl font-bold">You missed {missedDateLabel} workout</h1>
+            <h1 className="text-2xl font-bold">
+              {getCoachMessage('missed_workout', coachTone).replace("yesterday's", missedDateLabel)}
+            </h1>
           </div>
 
           <Card className="border-accent/30 bg-accent/5">
@@ -186,7 +204,7 @@ export default function WorkoutToday() {
               </div>
 
               <p className="text-sm text-muted-foreground">
-                Life happens! You can make it up now, skip it, or reschedule for another day.
+                {getCoachMessage('missed_workout_action', coachTone)}
               </p>
             </CardContent>
           </Card>
@@ -199,7 +217,7 @@ export default function WorkoutToday() {
               onClick={() => navigate(`/workout/${missedWorkout.workout.id}`)}
             >
               <Play className="mr-2 h-5 w-5" />
-              Start Workout Now
+              {getCoachMessage('workout_start_cta', coachTone)}
             </Button>
 
             <div className="grid grid-cols-2 gap-3">
@@ -265,9 +283,8 @@ export default function WorkoutToday() {
                 <Bed className="h-7 w-7 text-muted-foreground" />
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-lg">Today is a rest day</p>
-                <p className="text-sm text-muted-foreground">
-                  Recovery is just as important as training.
+                <p className="font-semibold text-lg">
+                  {getCoachMessage('rest_day', coachTone)}
                 </p>
               </div>
             </div>
@@ -279,7 +296,7 @@ export default function WorkoutToday() {
           <CardContent className="p-4">
             <p className="text-sm font-medium text-primary mb-1">Recovery Tip</p>
             <p className="text-sm text-muted-foreground">
-              Consider light stretching, foam rolling, or a gentle walk to aid recovery.
+              {getCoachMessage('rest_day_recovery', coachTone)}
             </p>
           </CardContent>
         </Card>
@@ -288,7 +305,9 @@ export default function WorkoutToday() {
         {nextWorkout && (
           <Card className="border-border/40 bg-muted/30" interactive onClick={() => navigate(`/workout/${nextWorkout.id}`)}>
             <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground mb-2">Next Workout</p>
+              <p className="text-xs text-muted-foreground mb-2">
+                {getCoachMessage('next_workout_preview', coachTone)}
+              </p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">

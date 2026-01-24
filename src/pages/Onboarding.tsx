@@ -11,6 +11,7 @@ import { Dumbbell, ChevronRight, ChevronLeft, Loader2, Sparkles, AlertCircle } f
 import { toast } from 'sonner';
 import { trackEvent } from '@/lib/analytics';
 import { SUPPORT_MESSAGE_SHORT, EMAIL_SUPPORT } from '@/lib/branding';
+import { type CoachTone, normalizeCoachTone } from '@/lib/coachTone';
 
 import { OnboardingProgress, StepAboutYou } from '@/components/onboarding';
 import { StepGoals } from '@/components/onboarding/StepGoals';
@@ -18,8 +19,9 @@ import { StepSchedule } from '@/components/onboarding/StepSchedule';
 import { StepEquipment } from '@/components/onboarding/StepEquipment';
 import { StepHealth } from '@/components/onboarding/StepHealth';
 import { StepNutrition } from '@/components/onboarding/StepNutrition';
+import { StepCoachTone } from '@/components/onboarding/StepCoachTone';
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 7;
 
 interface WorkoutTimePrefs {
   default_time: string;
@@ -58,6 +60,8 @@ interface FormData {
     allergies: string;
     protein_emphasis: string;
   };
+  // Step 7: Coach Tone
+  coachTone: CoachTone;
 }
 
 const initialFormData: FormData = {
@@ -85,6 +89,7 @@ const initialFormData: FormData = {
     allergies: '',
     protein_emphasis: 'medium',
   },
+  coachTone: 'balanced',
 };
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -140,6 +145,7 @@ export default function Onboarding() {
           preferences: constraintsJson?.preferences || [],
           notes: constraintsJson?.notes || '',
         },
+        coachTone: normalizeCoachTone((profile as any).coach_tone),
       }));
 
       // Load nutrition profile
@@ -183,6 +189,8 @@ export default function Onboarding() {
         return true; // Health constraints are optional
       case 6:
         return formData.nutritionPreferences.goal_style.length > 0;
+      case 7:
+        return true; // Coach tone always has a default
       default:
         return true;
     }
@@ -222,6 +230,7 @@ export default function Onboarding() {
         workout_days: formData.workoutDays,
         equipment_json: formData.equipment,
         constraints_json: formData.constraints,
+        coach_tone: formData.coachTone,
         // Only save workout time prefs if user set them
         ...(formData.workoutTimePrefs && {
           workout_time_preferences_json: formData.workoutTimePrefs,
@@ -357,6 +366,13 @@ export default function Onboarding() {
             <StepNutrition
               preferences={formData.nutritionPreferences}
               onPreferencesChange={(v) => setFormData({ ...formData, nutritionPreferences: v })}
+            />
+          )}
+
+          {currentStep === 7 && (
+            <StepCoachTone
+              coachTone={formData.coachTone}
+              onToneChange={(v) => setFormData({ ...formData, coachTone: v })}
             />
           )}
         </CardContent>

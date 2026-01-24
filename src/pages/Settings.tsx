@@ -52,8 +52,10 @@ import { EquipmentEditor, formatEquipmentName, normalizeEquipmentName } from '@/
 import { WorkoutTimeSettings } from '@/components/settings/WorkoutTimeSettings';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { EmailPreferences } from '@/components/settings/EmailPreferences';
+import { CoachToneSelector } from '@/components/settings/CoachToneSelector';
 import { APP_NAME, APP_VERSION, EMAIL_SUPPORT, SUPPORT_MESSAGE } from '@/lib/branding';
 import { openExternalLink, openMailto, EXTERNAL_URLS } from '@/lib/externalLinks';
+import { type CoachTone, normalizeCoachTone } from '@/lib/coachTone';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -66,6 +68,9 @@ export default function Settings() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isEquipmentModalOpen, setIsEquipmentModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  
+  // Coach tone state
+  const [coachTone, setCoachTone] = useState<CoachTone>('balanced');
   
   // Calendar sync hook
   const calendarSync = useCalendarSync();
@@ -105,6 +110,13 @@ export default function Settings() {
       setEquipmentList(Array.isArray(equipment) ? equipment : []);
     }
   }, [isEquipmentModalOpen, profile]);
+
+  // Load coach tone from profile
+  useEffect(() => {
+    if (profile) {
+      setCoachTone(normalizeCoachTone((profile as any).coach_tone));
+    }
+  }, [profile]);
 
   // Initialize calendar sync settings when schedule modal opens
   useEffect(() => {
@@ -518,6 +530,14 @@ export default function Settings() {
         {/* Email Preferences */}
         <div className="animate-slide-up">
           <EmailPreferences />
+        </div>
+
+        {/* Coach Tone */}
+        <div className="animate-slide-up">
+          <CoachToneSelector
+            currentTone={coachTone}
+            onToneChange={setCoachTone}
+          />
         </div>
 
         {/* Settings List */}
