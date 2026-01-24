@@ -50,7 +50,25 @@ export default function NotificationCenter() {
         .limit(50);
 
       if (error) throw error;
-      setNotifications(data || []);
+      
+      const notificationsList = data || [];
+      setNotifications(notificationsList);
+
+      // Track notification_delivered for scheduled notifications now visible
+      const scheduledToDeliver = notificationsList.filter(
+        n => n.status === 'scheduled' && new Date(n.scheduled_for || n.created_at) <= new Date()
+      );
+      
+      for (const n of scheduledToDeliver) {
+        // Mark as delivered in the background
+        supabase
+          .from('notifications_log')
+          .update({ status: 'delivered', sent_at: new Date().toISOString() })
+          .eq('id', n.id)
+          .then(() => {
+            trackEvent('notification_delivered', { notification_type: n.type });
+          });
+      }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
     } finally {
