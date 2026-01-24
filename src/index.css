@@ -43,7 +43,9 @@
     --input: 220 14% 18%;
     --ring: 145 52% 62%;
 
-    --radius: 0.75rem;
+    --radius: 1.25rem;
+    --radius-card: 1.25rem;
+    --radius-lg: 1.375rem;
 
     /* Custom fitness theme colors */
     --success: 145 52% 62%;
@@ -236,7 +238,59 @@
   .text-action {
     @apply text-base font-semibold;
     letter-spacing: -0.01em;
+
+
+  /* Premium card variants */
+  .card-elevated {
+    @apply rounded-[20px] border border-border/50 bg-card;
+    box-shadow: 
+      0 2px 8px rgba(0, 0, 0, 0.08),
+      0 8px 24px rgba(0, 0, 0, 0.12);
   }
+
+  .card-elevated-lg {
+    @apply rounded-[22px] border border-border/40 bg-card;
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.1),
+      0 12px 32px rgba(0, 0, 0, 0.15);
+  }
+
+  .card-subtle {
+    @apply rounded-[18px] border border-border/30 bg-card/80;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  .card-interactive {
+    @apply rounded-[20px] border border-border/50 bg-card cursor-pointer;
+    box-shadow: 
+      0 2px 8px rgba(0, 0, 0, 0.08),
+      0 8px 24px rgba(0, 0, 0, 0.12);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .card-interactive:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.1),
+      0 12px 32px rgba(0, 0, 0, 0.16);
+  }
+
+  .card-interactive:active {
+    transform: translateY(0);
+    box-shadow: 
+      0 2px 6px rgba(0, 0, 0, 0.08),
+      0 6px 20px rgba(0, 0, 0, 0.12);
+  }
+
+  /* Card spacing utility */
+  .card-stack > * + * {
+    @apply mt-4;
+  }
+
+  .card-stack-lg > * + * {
+    @apply mt-6;
+  }
+}
 }
 
 @layer utilities {
