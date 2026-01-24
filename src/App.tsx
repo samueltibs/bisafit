@@ -17,6 +17,7 @@ import PaywallPage from "./pages/PaywallPage";
 import Home from "./pages/Home";
 import Plan from "./pages/Plan";
 import Workout from "./pages/Workout";
+import WorkoutToday from "./pages/WorkoutToday";
 import Nutrition from "./pages/Nutrition";
 import Progress from "./pages/Progress";
 import Store from "./pages/Store";
@@ -24,7 +25,6 @@ import Settings from "./pages/Settings";
 import NotificationCenter from "./pages/NotificationCenter";
 import ManageSubscription from "./pages/ManageSubscription";
 import NotFound from "./pages/NotFound";
-
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -65,6 +65,13 @@ const App = () => (
               <ProtectedRoute>
                 <SubscriptionGate>
                   <Plan />
+                </SubscriptionGate>
+              </ProtectedRoute>
+            } />
+            <Route path="/workout/today" element={
+              <ProtectedRoute>
+                <SubscriptionGate>
+                  <WorkoutToday />
                 </SubscriptionGate>
               </ProtectedRoute>
             } />
