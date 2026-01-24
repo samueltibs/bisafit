@@ -60,7 +60,7 @@ const ProgressRing = React.forwardRef<HTMLDivElement, ProgressRingProps>(
           width={config.size}
           height={config.size}
         >
-          {/* Gradient definitions */}
+          {/* Gradient definitions - Refined, muted tones */}
           <defs>
             <linearGradient
               id={gradientIds.default}
@@ -69,8 +69,8 @@ const ProgressRing = React.forwardRef<HTMLDivElement, ProgressRingProps>(
               x2="100%"
               y2="0%"
             >
-              <stop offset="0%" stopColor="hsl(145 52% 55%)" />
-              <stop offset="100%" stopColor="hsl(145 52% 65%)" />
+              <stop offset="0%" stopColor="hsl(152 38% 45%)" />
+              <stop offset="100%" stopColor="hsl(152 38% 55%)" />
             </linearGradient>
             <linearGradient
               id={gradientIds.success}
@@ -79,8 +79,8 @@ const ProgressRing = React.forwardRef<HTMLDivElement, ProgressRingProps>(
               x2="100%"
               y2="0%"
             >
-              <stop offset="0%" stopColor="hsl(145 52% 50%)" />
-              <stop offset="100%" stopColor="hsl(145 60% 60%)" />
+              <stop offset="0%" stopColor="hsl(152 38% 42%)" />
+              <stop offset="100%" stopColor="hsl(152 38% 52%)" />
             </linearGradient>
             <linearGradient
               id={gradientIds.accent}
@@ -89,14 +89,14 @@ const ProgressRing = React.forwardRef<HTMLDivElement, ProgressRingProps>(
               x2="100%"
               y2="0%"
             >
-              <stop offset="0%" stopColor="hsl(42 70% 55%)" />
-              <stop offset="100%" stopColor="hsl(42 75% 63%)" />
+              <stop offset="0%" stopColor="hsl(35 40% 48%)" />
+              <stop offset="100%" stopColor="hsl(35 45% 55%)" />
             </linearGradient>
           </defs>
 
-          {/* Background circle */}
+          {/* Background circle - More subtle */}
           <circle
-            className="text-secondary/40"
+            className="text-secondary/30"
             strokeWidth={actualStroke}
             stroke="currentColor"
             fill="transparent"
