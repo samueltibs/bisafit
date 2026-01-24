@@ -58,6 +58,8 @@ export default function Plan() {
     markBlockComplete,
     repairPlanDates,
     reindexPlans,
+    programStartDate,
+    timelinePosition,
   } = usePlan();
 
   // Transform coach notes to use consistent greeting
@@ -439,6 +441,21 @@ export default function Plan() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Program Start Date Display */}
+        {programStartDate && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground animate-fade-in">
+            <Calendar className="h-4 w-4" />
+            <span>
+              Plan Start Date: <span className="font-medium text-foreground">{format(new Date(programStartDate), 'MMMM d, yyyy')}</span>
+              {timelinePosition && (
+                <span className="ml-2">
+                  • Day {timelinePosition.dayInBlock} of Week {timelinePosition.weekInBlock}
+                </span>
+              )}
+            </span>
+          </div>
         )}
 
         {/* Block Selector and Week Navigation */}
