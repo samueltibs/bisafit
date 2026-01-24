@@ -1,5 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { EMAIL_SUPPORT } from "@/lib/branding";
 
 const NotFound = () => {
   const location = useLocation();
@@ -16,6 +17,9 @@ const NotFound = () => {
         <a href="/" className="text-primary underline hover:text-primary/90">
           Return to Home
         </a>
+        <p className="mt-4 text-sm text-muted-foreground">
+          Need help? Contact <a href={`mailto:${EMAIL_SUPPORT}`} className="text-primary hover:underline">{EMAIL_SUPPORT}</a>
+        </p>
       </div>
     </div>
   );

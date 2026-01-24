@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dumbbell, Mail, Lock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trackEvent } from '@/lib/analytics';
+import { APP_NAME, SUPPORT_MESSAGE_SHORT } from '@/lib/branding';
 
 export default function Auth() {
   const { user, loading: authLoading } = useAuth();
@@ -66,7 +67,7 @@ export default function Auth() {
       toast.error(error.message);
     } else {
       trackEvent('signup_completed');
-      toast.success('Account created! Welcome to BisaFit!');
+      toast.success(`Account created! Welcome to ${APP_NAME}!`);
     }
     
     setIsLoading(false);
@@ -78,8 +79,9 @@ export default function Auth() {
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl gradient-primary shadow-lg">
           <Dumbbell className="h-8 w-8 text-primary-foreground" />
         </div>
-        <h1 className="text-3xl font-bold text-foreground">BisaFit</h1>
+        <h1 className="text-3xl font-bold text-foreground">{APP_NAME}</h1>
         <p className="text-muted-foreground">Your fitness journey starts here</p>
+        <p className="text-xs text-muted-foreground mt-1">{SUPPORT_MESSAGE_SHORT}</p>
       </div>
 
       <Card className="w-full max-w-sm animate-slide-up border-border shadow-xl">

@@ -33,6 +33,7 @@ import {
   Dumbbell,
   Sparkles,
   Clock,
+  Mail,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -49,6 +50,7 @@ import { WorkoutDaysSelector } from '@/components/settings/WorkoutDaysSelector';
 import { EquipmentEditor, formatEquipmentName, normalizeEquipmentName } from '@/components/settings/EquipmentEditor';
 import { WorkoutTimeSettings } from '@/components/settings/WorkoutTimeSettings';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
+import { APP_NAME, APP_VERSION, EMAIL_SUPPORT, SUPPORT_MESSAGE } from '@/lib/branding';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -533,6 +535,20 @@ export default function Settings() {
           
           <Card className="border-border">
             <CardContent className="divide-y divide-border p-0">
+              {/* Contact Support */}
+              <a 
+                href={`mailto:${EMAIL_SUPPORT}`}
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
+              >
+                <div className="flex items-center gap-3">
+                  <Mail className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <span className="block">Contact Support</span>
+                    <span className="text-sm text-muted-foreground">{EMAIL_SUPPORT}</span>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </a>
               <button className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50">
                 <div className="flex items-center gap-3">
                   <HelpCircle className="h-5 w-5 text-muted-foreground" />
@@ -562,7 +578,7 @@ export default function Settings() {
         </Button>
 
         <p className="text-center text-xs text-muted-foreground">
-          BisaFit v1.0.0
+          {APP_NAME} v{APP_VERSION}
         </p>
       </div>
 
