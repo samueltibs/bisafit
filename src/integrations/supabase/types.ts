@@ -551,6 +551,7 @@ export type Database = {
           is_pro: boolean | null
           notification_types_json: Json | null
           notifications_enabled: boolean | null
+          program_start_date: string | null
           rest_day: string | null
           session_minutes: number | null
           stripe_customer_id: string | null
@@ -591,6 +592,7 @@ export type Database = {
           is_pro?: boolean | null
           notification_types_json?: Json | null
           notifications_enabled?: boolean | null
+          program_start_date?: string | null
           rest_day?: string | null
           session_minutes?: number | null
           stripe_customer_id?: string | null
@@ -631,6 +633,7 @@ export type Database = {
           is_pro?: boolean | null
           notification_types_json?: Json | null
           notifications_enabled?: boolean | null
+          program_start_date?: string | null
           rest_day?: string | null
           session_minutes?: number | null
           stripe_customer_id?: string | null

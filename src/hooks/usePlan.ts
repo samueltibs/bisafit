@@ -7,7 +7,9 @@ import { format, addDays } from 'date-fns';
 import { 
   recomputeUserBlocks, 
   getWeekIndexInBlock,
+  calculateTimelinePosition,
   BLOCK_WEEKS,
+  TimelinePosition,
 } from '@/lib/blockEngine';
 
 // Helper to normalize workout days for comparison
@@ -88,6 +90,9 @@ interface UsePlanResult {
   // Date repair and reindexing
   repairPlanDates: () => Promise<number>;
   reindexPlans: () => Promise<{ updated: number; currentPlanChanged: boolean }>;
+  // Timeline position (anchored to program_start_date)
+  timelinePosition: TimelinePosition | null;
+  programStartDate: string | null;
 }
 
 export function usePlan(): UsePlanResult {
@@ -356,17 +361,36 @@ export function usePlan(): UsePlanResult {
 
   const planJson = plan?.plan_json as unknown as PlanJson | null;
 
-  // Calculate current week index using blockEngine
-  // IMPORTANT: Only use today's date for the CURRENT plan, not for historical blocks
+  // Get program_start_date from profile for timeline calculations
+  const programStartDate = (userProfile as UserProfile & { program_start_date?: string })?.program_start_date;
+
+  // Calculate timeline position using program_start_date (canonical source of truth)
+  const getTimelinePosition = (): TimelinePosition | null => {
+    // Use program_start_date if available, otherwise fall back to plan.start_date
+    const anchorDate = programStartDate || plan?.start_date;
+    if (!anchorDate) return null;
+    
+    return calculateTimelinePosition(anchorDate, new Date());
+  };
+
+  const timelinePosition = getTimelinePosition();
+
+  // Calculate current week index
+  // IMPORTANT: Only use timeline position for the CURRENT plan, not for historical blocks
   const getCurrentWeekIndex = (): number => {
-    if (!plan?.start_date) return 0;
-    
     // For non-current plans, default to week 0 (Week 1)
-    if (plan.id !== currentPlanId) return 0;
+    if (plan?.id !== currentPlanId) return 0;
     
-    // Use blockEngine for consistent week calculation
+    // Use timeline position if we have program_start_date
+    if (timelinePosition) {
+      // Get the week within the CURRENT block based on timeline
+      return Math.max(0, Math.min(BLOCK_WEEKS - 1, timelinePosition.weekInBlock - 1));
+    }
+    
+    // Fallback to plan.start_date calculation
+    if (!plan?.start_date) return 0;
     const weekIndex = getWeekIndexInBlock(plan.start_date, new Date());
-    return Math.max(0, Math.min(BLOCK_WEEKS - 1, weekIndex)); // Clamp between 0-3
+    return Math.max(0, Math.min(BLOCK_WEEKS - 1, weekIndex));
   };
 
   const currentWeekIndex = getCurrentWeekIndex();
@@ -610,6 +634,9 @@ export function usePlan(): UsePlanResult {
     // Date repair and reindexing
     repairPlanDates,
     reindexPlans,
+    // Timeline position (anchored to program_start_date)
+    timelinePosition,
+    programStartDate: programStartDate || null,
   };
 }
 
