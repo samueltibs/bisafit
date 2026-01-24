@@ -115,9 +115,127 @@
     @apply border-border;
   }
 
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.011em;
+    line-height: 1.5;
+  }
+
+  /* iOS-style heading hierarchy */
+  h1 {
+    @apply text-3xl font-bold tracking-tight leading-tight;
+    letter-spacing: -0.025em;
+  }
+
+  h2 {
+    @apply text-2xl font-semibold tracking-tight leading-snug;
+    letter-spacing: -0.02em;
+  }
+
+  h3 {
+    @apply text-xl font-semibold tracking-tight leading-snug;
+    letter-spacing: -0.015em;
+  }
+
+  h4 {
+    @apply text-lg font-medium leading-normal;
+    letter-spacing: -0.01em;
+  }
+
+  p {
+    @apply text-base font-normal leading-relaxed;
+  }
+}
+
+@layer components {
+  /* Large numeric displays - timers, calories, stats */
+  .text-display {
+    @apply text-5xl font-bold tracking-tighter;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+
+  .text-display-lg {
+    @apply text-6xl font-extrabold tracking-tighter;
+    letter-spacing: -0.035em;
+    line-height: 1;
+  }
+
+  .text-display-sm {
+    @apply text-4xl font-bold tracking-tight;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+  }
+
+  /* Stat values - prominent numbers */
+  .text-stat {
+    @apply text-3xl font-bold tracking-tight;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .text-stat-sm {
+    @apply text-2xl font-semibold tracking-tight;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+  }
+
+  /* Body text variants */
+  .text-body {
+    @apply text-base font-medium leading-relaxed;
+    letter-spacing: -0.011em;
+  }
+
+  .text-body-lg {
+    @apply text-lg font-medium leading-relaxed;
+    letter-spacing: -0.011em;
+  }
+
+  .text-body-sm {
+    @apply text-sm font-medium leading-relaxed;
+    letter-spacing: -0.006em;
+  }
+
+  /* Secondary/muted labels */
+  .text-label {
+    @apply text-sm font-medium text-muted-foreground;
+    letter-spacing: -0.006em;
+  }
+
+  .text-label-xs {
+    @apply text-xs font-medium text-muted-foreground uppercase tracking-wide;
+    letter-spacing: 0.05em;
+  }
+
+  /* Caption/helper text */
+  .text-caption {
+    @apply text-xs font-normal text-muted-foreground leading-normal;
+  }
+
+  /* Card title style */
+  .text-card-title {
+    @apply text-lg font-semibold tracking-tight leading-snug;
+    letter-spacing: -0.01em;
+  }
+
+  /* Section headers */
+  .text-section {
+    @apply text-xs font-semibold uppercase tracking-wider text-muted-foreground;
+    letter-spacing: 0.08em;
+  }
+
+  /* Prominent action text */
+  .text-action {
+    @apply text-base font-semibold;
+    letter-spacing: -0.01em;
   }
 }
 
@@ -136,6 +254,19 @@
 
   .safe-bottom {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  /* Text utilities for fine-tuning */
+  .tracking-tighter-ios {
+    letter-spacing: -0.03em;
+  }
+
+  .tracking-tight-ios {
+    letter-spacing: -0.02em;
+  }
+
+  .tracking-normal-ios {
+    letter-spacing: -0.011em;
   }
 
   .animate-fade-in {
