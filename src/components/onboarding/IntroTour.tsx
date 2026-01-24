@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, Calendar, Play, Mic2, Settings } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Calendar, Dumbbell, Utensils, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogOverlay, DialogPortal } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
@@ -18,28 +18,28 @@ interface Slide {
 const slides: Slide[] = [
   {
     icon: <span className="text-5xl">👋</span>,
-    title: 'Welcome to BisaFit',
-    description: "Your personal AI-powered fitness companion. Let's take a quick tour.",
+    title: 'Welcome to Bisafit',
+    description: 'Fitness and nutrition designed to fit your real life.',
+  },
+  {
+    icon: <Dumbbell className="h-12 w-12 text-primary" />,
+    title: 'Work Out Your Way',
+    description: 'Train with your equipment, or just your body — at home or anywhere.',
+  },
+  {
+    icon: <Utensils className="h-12 w-12 text-primary" />,
+    title: 'Meals Made for You',
+    description: 'Personalized meal plans based on what you enjoy and what you have.',
   },
   {
     icon: <Calendar className="h-12 w-12 text-primary" />,
-    title: 'Your Weekly Schedule',
-    description: 'Check your Plan tab to see your personalized workout schedule. Tap any day to start.',
-  },
-  {
-    icon: <Play className="h-12 w-12 text-primary" />,
-    title: 'Follow Along Workouts',
-    description: "Press Start, follow the timer, and complete each exercise. We'll guide you through.",
-  },
-  {
-    icon: <Mic2 className="h-12 w-12 text-primary" />,
-    title: 'Personalize Your Coach',
-    description: 'Choose your coach tone and voice in Settings. Make it feel like your own.',
+    title: 'We Handle the Plan',
+    description: "We schedule your workouts. When it's time, just press Start.",
   },
   {
     icon: <Settings className="h-12 w-12 text-primary" />,
-    title: "You're in Control",
-    description: 'Update your goals, equipment, and preferences anytime in Settings.',
+    title: 'Make It Yours',
+    description: 'Adjust your plan, coach, and schedule anytime in Settings.',
   },
 ];
 
