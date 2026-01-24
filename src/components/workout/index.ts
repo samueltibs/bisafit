@@ -8,3 +8,4 @@ export { WorkoutComplete } from './WorkoutComplete';
 export { ResumeWorkoutDialog } from './ResumeWorkoutDialog';
 export { WorkoutControls } from './WorkoutControls';
 export { ProgressIndicator } from './ProgressIndicator';
+export { RescheduleWorkoutDialog } from './RescheduleWorkoutDialog';
