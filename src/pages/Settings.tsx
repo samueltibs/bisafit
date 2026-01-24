@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useCalendarSync } from '@/hooks/useCalendarSync';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { IntroTour } from '@/components/onboarding/IntroTour';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -43,6 +44,7 @@ import {
   MapPin,
   Mail,
   Info,
+  Compass,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -76,6 +78,7 @@ export default function Settings() {
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isIntroTourOpen, setIsIntroTourOpen] = useState(false);
   
   // Coach tone state
   const [coachTone, setCoachTone] = useState<CoachTone>('balanced');
@@ -620,6 +623,18 @@ export default function Settings() {
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
 
+              {/* App Tour */}
+              <button 
+                onClick={() => setIsIntroTourOpen(true)}
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
+              >
+                <div className="flex items-center gap-3">
+                  <Compass className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">App Tour</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+
               {/* App Version */}
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
@@ -631,6 +646,9 @@ export default function Settings() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Intro Tour Modal - Replay from Settings */}
+        <IntroTour open={isIntroTourOpen} onComplete={() => setIsIntroTourOpen(false)} />
       </div>
 
       {/* Edit Profile Modal */}
