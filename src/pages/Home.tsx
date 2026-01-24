@@ -2,19 +2,17 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { usePlan } from '@/hooks/usePlan';
-import { useSubscription } from '@/hooks/useSubscription';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { TrialPromptBanner } from '@/components/subscription/TrialPromptBanner';
+import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner';
 import { Flame, Droplets, Footprints, Dumbbell, Apple, ChevronRight, Trophy, User, Bed } from 'lucide-react';
 
 export default function Home() {
   const navigate = useNavigate();
   const { profile, loading, refetch } = useUserProfile();
   const { getTodayWorkout, getNextUpcomingWorkout, plan } = usePlan();
-  const { status: subscriptionStatus } = useSubscription();
   const [greeting, setGreeting] = useState('');
 
   useEffect(() => {
@@ -79,8 +77,8 @@ export default function Home() {
           </Card>
         )}
 
-        {/* Trial Prompt Banner - shown if status is 'preview' */}
-        {subscriptionStatus === 'preview' && <TrialPromptBanner />}
+        {/* Subscription Banner - handles all subscription states */}
+        <SubscriptionBanner />
 
         {/* Daily Progress Card */}
         <Card className="gradient-primary text-primary-foreground animate-slide-up">
