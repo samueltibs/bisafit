@@ -481,29 +481,6 @@ export default function Settings() {
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
 
-              {/* Weight & Height */}
-              <button 
-                onClick={() => setIsEditModalOpen(true)}
-                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
-              >
-                <div className="flex items-center gap-3">
-                  <Ruler className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <span className="block font-medium">Weight & Height</span>
-                    <span className="text-sm text-muted-foreground">
-                      {profile?.weight_kg || profile?.height_cm ? (
-                        <>
-                          {profile?.weight_kg && `${displayUnit === 'metric' ? Number(profile.weight_kg) : kgToLb(Number(profile.weight_kg))} ${displayUnit === 'metric' ? 'kg' : 'lb'}`}
-                          {profile?.weight_kg && profile?.height_cm && ' • '}
-                          {profile?.height_cm && formatHeight(profile.height_cm, displayUnit)}
-                        </>
-                      ) : 'Not set'}
-                    </span>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </button>
-
               {/* Available Equipment */}
               <button 
                 onClick={() => setIsEquipmentModalOpen(true)}
