@@ -504,25 +504,6 @@ export default function Settings() {
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
 
-              {/* Workout Schedule - now opens Edit modal */}
-              <button 
-                onClick={() => setIsEditModalOpen(true)}
-                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
-              >
-                <div className="flex items-center gap-3">
-                  <Bell className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <span className="block font-medium">Workout Schedule</span>
-                    <span className="text-sm text-muted-foreground">
-                      {(profile as any)?.workout_days 
-                        ? `${((profile as any).workout_days as string[]).length} days/week`
-                        : 'Not set'}
-                    </span>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </button>
-
               {/* Available Equipment */}
               <button 
                 onClick={() => setIsEquipmentModalOpen(true)}
