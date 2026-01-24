@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useCalendarSync } from '@/hooks/useCalendarSync';
+import { useScheduleRealignment } from '@/hooks/useScheduleRealignment';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { IntroTour } from '@/components/onboarding/IntroTour';
 import { Card, CardContent } from '@/components/ui/card';
@@ -75,6 +76,7 @@ export default function Settings() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, signOut } = useAuth();
   const { profile, loading, update, refetch } = useUserProfile();
+  const { realignSchedule, haveWorkoutDaysChanged, isRealigning } = useScheduleRealignment();
   
   // Modal states
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -95,6 +97,10 @@ export default function Settings() {
   const calendarSync = useCalendarSync();
   const [isSaving, setIsSaving] = useState(false);
   const [showEquipmentBanner, setShowEquipmentBanner] = useState(false);
+  
+  // Track original workout days to detect changes
+  const originalWorkoutDaysRef = useRef<string[]>([]);
+  
   const [editForm, setEditForm] = useState({
     fullName: '',
     unitPreference: 'metric' as UnitPreference,
@@ -180,6 +186,9 @@ export default function Settings() {
 
       const workoutDays = (profile as any).workout_days || ['Monday', 'Wednesday', 'Thursday', 'Friday'];
       const country = (profile as any).country || null;
+
+      // Store original workout days to detect changes on save
+      originalWorkoutDaysRef.current = [...workoutDays];
 
       setEditForm({
         fullName: profile.full_name || '',
@@ -286,6 +295,12 @@ export default function Settings() {
         }
       }
 
+      // Check if workout days have changed
+      const workoutDaysChanged = haveWorkoutDaysChanged(
+        originalWorkoutDaysRef.current,
+        editForm.workoutDays
+      );
+
       const success = await update({
         full_name: editForm.fullName.trim(),
         height_cm: heightCm,
@@ -298,7 +313,31 @@ export default function Settings() {
 
       if (success) {
         await refetch();
-        toast.success('Profile updated successfully!');
+        
+        // If workout days changed, realign the schedule
+        if (workoutDaysChanged) {
+          const currentPlanId = (profile as any)?.current_plan_id || null;
+          const result = await realignSchedule(editForm.workoutDays, currentPlanId);
+          
+          if (result.success) {
+            if (result.workoutsRescheduled > 0) {
+              toast.success(
+                `Schedule updated. ${result.workoutsRescheduled} workout${result.workoutsRescheduled > 1 ? 's have' : ' has'} been adjusted to your new workout days.`,
+                { duration: 5000 }
+              );
+            } else {
+              toast.success('Profile updated. Your schedule is already aligned with your workout days.');
+            }
+          } else {
+            toast.success('Profile updated!');
+            if (result.error) {
+              console.warn('Schedule realignment issue:', result.error);
+            }
+          }
+        } else {
+          toast.success('Profile updated successfully!');
+        }
+        
         setIsEditModalOpen(false);
       } else {
         toast.error('Failed to update profile');
@@ -783,14 +822,14 @@ export default function Settings() {
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setIsEditModalOpen(false)} disabled={isSaving}>
+            <Button variant="outline" onClick={() => setIsEditModalOpen(false)} disabled={isSaving || isRealigning}>
               Cancel
             </Button>
-            <Button onClick={handleSaveProfile} disabled={isSaving}>
-              {isSaving ? (
+            <Button onClick={handleSaveProfile} disabled={isSaving || isRealigning}>
+              {isSaving || isRealigning ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  {isRealigning ? 'Updating schedule...' : 'Saving...'}
                 </>
               ) : (
                 'Save Changes'
