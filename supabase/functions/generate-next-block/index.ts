@@ -741,6 +741,7 @@ serve(async (req) => {
         analysis: {
           adherence_rate: analysis.adherence_rate,
           progression_applied: finalRecommendation,
+          performance_based: hasSufficientPerformanceData,
         },
         message: `Block ${newBlockNumber} created (Queued). Start it when you're ready.`,
       }),

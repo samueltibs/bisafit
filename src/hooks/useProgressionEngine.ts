@@ -23,6 +23,7 @@ interface GenerateNextBlockResult {
   analysis?: {
     adherence_rate: number;
     progression_applied: string;
+    performance_based?: boolean;
   };
 }
 

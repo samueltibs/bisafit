@@ -701,6 +701,7 @@ export default function Plan() {
           startDate={generationResult.start_date || ''}
           workoutsCreated={16}
           progressionApplied={generationResult.analysis?.progression_applied}
+          performanceBased={generationResult.analysis?.performance_based ?? false}
         />
       )}
 
