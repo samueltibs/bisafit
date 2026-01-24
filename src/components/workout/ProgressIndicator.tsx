@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { ProgressRing } from '@/components/ui/progress-ring';
 
 interface ProgressIndicatorProps {
   currentExercise: number;
@@ -17,45 +18,56 @@ export function ProgressIndicator({
   bigMode = false,
   className,
 }: ProgressIndicatorProps) {
+  const exerciseProgress = (currentExercise / totalExercises) * 100;
+  const setProgress = totalSets ? ((currentSet || 0) / totalSets) * 100 : 0;
+  const isComplete = currentExercise === totalExercises && (!totalSets || currentSet === totalSets);
+
   return (
     <div className={cn(
-      "flex items-center justify-center gap-4",
-      bigMode ? "text-lg" : "text-sm",
+      "flex items-center gap-6",
       className
     )}>
-      <div className="flex items-center gap-1.5">
-        <span className={cn(
-          "font-bold",
-          bigMode ? "text-2xl" : "text-base"
-        )}>
-          {currentExercise}
-        </span>
-        <span className="text-muted-foreground">
-          / {totalExercises}
-        </span>
-        <span className="text-muted-foreground ml-1">
-          exercises
-        </span>
-      </div>
+      {/* Circular progress ring */}
+      <ProgressRing
+        value={exerciseProgress}
+        size={bigMode ? "lg" : "md"}
+        variant={isComplete ? "success" : "default"}
+        showValue={false}
+      >
+        <div className="flex flex-col items-center">
+          <span className={cn(
+            "font-bold tracking-tight transition-all duration-300 progress-value",
+            bigMode ? "text-xl" : "text-sm",
+            isComplete && "text-primary"
+          )}>
+            {currentExercise}/{totalExercises}
+          </span>
+          <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide">
+            exercises
+          </span>
+        </div>
+      </ProgressRing>
       
+      {/* Set progress */}
       {currentSet !== undefined && totalSets !== undefined && totalSets > 1 && (
-        <>
-          <span className="text-muted-foreground">•</span>
-          <div className="flex items-center gap-1.5">
+        <ProgressRing
+          value={setProgress}
+          size={bigMode ? "md" : "sm"}
+          variant="accent"
+          showValue={false}
+        >
+          <div className="flex flex-col items-center">
             <span className={cn(
-              "font-bold",
-              bigMode ? "text-2xl" : "text-base"  
+              "font-bold tracking-tight transition-all duration-300 progress-value",
+              bigMode ? "text-lg" : "text-xs"
             )}>
-              {currentSet}
+              {currentSet}/{totalSets}
             </span>
-            <span className="text-muted-foreground">
-              / {totalSets}
-            </span>
-            <span className="text-muted-foreground ml-1">
+            <span className="text-[8px] text-muted-foreground font-medium uppercase tracking-wide">
               sets
             </span>
           </div>
-        </>
+        </ProgressRing>
       )}
     </div>
   );
