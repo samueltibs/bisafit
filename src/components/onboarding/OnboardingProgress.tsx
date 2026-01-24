@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { User, Target, Calendar, Dumbbell, Heart, Utensils } from 'lucide-react';
+import { User, Target, Calendar, Dumbbell, Heart, Utensils, MessageSquare } from 'lucide-react';
 
 const steps = [
   { id: 1, title: 'About You', icon: User },
@@ -8,6 +8,7 @@ const steps = [
   { id: 4, title: 'Equipment', icon: Dumbbell },
   { id: 5, title: 'Health', icon: Heart },
   { id: 6, title: 'Nutrition', icon: Utensils },
+  { id: 7, title: 'Coach Style', icon: MessageSquare },
 ];
 
 interface OnboardingProgressProps {

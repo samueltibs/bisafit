@@ -530,6 +530,7 @@ export type Database = {
         Row: {
           calendar_provider: string | null
           calendar_sync_enabled: boolean | null
+          coach_tone: string | null
           constraints_json: Json | null
           created_at: string | null
           current_plan_id: string | null
@@ -566,6 +567,7 @@ export type Database = {
         Insert: {
           calendar_provider?: string | null
           calendar_sync_enabled?: boolean | null
+          coach_tone?: string | null
           constraints_json?: Json | null
           created_at?: string | null
           current_plan_id?: string | null
@@ -602,6 +604,7 @@ export type Database = {
         Update: {
           calendar_provider?: string | null
           calendar_sync_enabled?: boolean | null
+          coach_tone?: string | null
           constraints_json?: Json | null
           created_at?: string | null
           current_plan_id?: string | null
