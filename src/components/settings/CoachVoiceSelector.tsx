@@ -5,15 +5,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { User, UserRound, Loader2 } from 'lucide-react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 export type CoachVoice = 'male' | 'female';
 
 const VOICE_OPTIONS: { value: CoachVoice; label: string; icon: typeof User }[] = [
-  { value: 'female', label: 'Female voice', icon: UserRound },
-  { value: 'male', label: 'Male voice', icon: User },
+  { value: 'female', label: 'Female', icon: UserRound },
+  { value: 'male', label: 'Male', icon: User },
 ];
 
-export function CoachVoiceSelector() {
+interface CoachVoiceSelectorProps {
+  compact?: boolean;
+}
+
+export function CoachVoiceSelector({ compact = false }: CoachVoiceSelectorProps) {
   const { profile, update, loading } = useUserProfile();
   const [selectedVoice, setSelectedVoice] = useState<CoachVoice>('female');
   const [isSaving, setIsSaving] = useState(false);
@@ -34,7 +39,6 @@ export function CoachVoiceSelector() {
         toast.success('Voice preference updated');
       } else {
         toast.error('Failed to update voice preference');
-        // Revert on failure
         setSelectedVoice(profile?.coach_voice as CoachVoice || 'female');
       }
     } catch (error) {
@@ -47,14 +51,53 @@ export function CoachVoiceSelector() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-4">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
+  // Compact inline version for main settings
+  if (compact) {
+    return (
+      <RadioGroup
+        value={selectedVoice}
+        onValueChange={(value) => handleVoiceChange(value as CoachVoice)}
+        disabled={isSaving}
+        className="flex gap-2"
+      >
+        {VOICE_OPTIONS.map((option) => {
+          const Icon = option.icon;
+          return (
+            <div key={option.value}>
+              <RadioGroupItem
+                value={option.value}
+                id={`voice-compact-${option.value}`}
+                className="peer sr-only"
+              />
+              <Label
+                htmlFor={`voice-compact-${option.value}`}
+                className={cn(
+                  'flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors',
+                  selectedVoice === option.value
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border hover:bg-muted/50'
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{option.label}</span>
+                {isSaving && selectedVoice === option.value && (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                )}
+              </Label>
+            </div>
+          );
+        })}
+      </RadioGroup>
+    );
+  }
+
+  // Full card version
   return (
     <Card>
       <CardHeader>
@@ -80,7 +123,7 @@ export function CoachVoiceSelector() {
                   className="flex flex-1 cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50"
                 >
                   <Icon className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">{option.label}</span>
+                  <span className="font-medium">{option.label} voice</span>
                 </Label>
               </div>
             );

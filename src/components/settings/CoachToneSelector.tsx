@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 interface CoachToneSelectorProps {
   currentTone: CoachTone;
   onToneChange: (tone: CoachTone) => void;
+  compact?: boolean;
 }
 
 const TONE_ICONS: Record<CoachTone, React.ReactNode> = {
@@ -20,10 +21,14 @@ const TONE_ICONS: Record<CoachTone, React.ReactNode> = {
   direct: <Zap className="h-4 w-4" />,
 };
 
-export function CoachToneSelector({ currentTone, onToneChange }: CoachToneSelectorProps) {
+export function CoachToneSelector({ currentTone, onToneChange, compact = false }: CoachToneSelectorProps) {
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [selectedTone, setSelectedTone] = useState<CoachTone>(currentTone);
+
+  useEffect(() => {
+    setSelectedTone(currentTone);
+  }, [currentTone]);
 
   const handleToneChange = async (value: string) => {
     if (!user) return;
@@ -45,12 +50,50 @@ export function CoachToneSelector({ currentTone, onToneChange }: CoachToneSelect
     } catch (error) {
       console.error('Failed to update coach tone:', error);
       toast.error('Failed to update coach tone');
-      setSelectedTone(currentTone); // Revert on error
+      setSelectedTone(currentTone);
     } finally {
       setSaving(false);
     }
   };
 
+  // Compact inline version for main settings
+  if (compact) {
+    return (
+      <RadioGroup
+        value={selectedTone}
+        onValueChange={handleToneChange}
+        className="flex flex-wrap gap-2"
+        disabled={saving}
+      >
+        {TONE_OPTIONS.map((option) => (
+          <div key={option.value}>
+            <RadioGroupItem
+              value={option.value}
+              id={`tone-compact-${option.value}`}
+              className="peer sr-only"
+            />
+            <Label
+              htmlFor={`tone-compact-${option.value}`}
+              className={cn(
+                'flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors',
+                selectedTone === option.value
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border hover:bg-muted/50'
+              )}
+            >
+              {TONE_ICONS[option.value]}
+              <span>{option.label}</span>
+              {saving && selectedTone === option.value && (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              )}
+            </Label>
+          </div>
+        ))}
+      </RadioGroup>
+    );
+  }
+
+  // Full card version for advanced settings
   return (
     <Card className="border-border">
       <CardHeader className="pb-3">
