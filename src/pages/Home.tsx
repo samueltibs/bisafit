@@ -1,16 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { usePlan } from '@/hooks/usePlan';
+import { useRefreshOnResume } from '@/hooks/useAppLifecycle';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner';
 import { Flame, Droplets, Footprints, Dumbbell, Apple, ChevronRight, Trophy, User, Bed } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Home() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { profile, loading, refetch } = useUserProfile();
   const { getTodayWorkout, getNextUpcomingWorkout, plan } = usePlan();
   const [greeting, setGreeting] = useState('');
@@ -22,14 +26,21 @@ export default function Home() {
     else setGreeting('Good evening');
   }, []);
 
-  // Refetch profile on page focus to get latest data
-  useEffect(() => {
-    const handleFocus = () => {
-      refetch();
-    };
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [refetch]);
+  // Refresh data on app resume (Capacitor lifecycle)
+  const handleAppResume = useCallback(async () => {
+    refetch();
+    // Sync scheduled notifications by calling the edge function
+    if (user) {
+      try {
+        await supabase.functions.invoke('schedule-notifications');
+      } catch (error) {
+        console.error('Failed to sync notifications on resume:', error);
+      }
+    }
+  }, [refetch, user]);
+
+  // Use Capacitor-aware lifecycle hook
+  useRefreshOnResume(handleAppResume);
 
   const fullName = profile?.full_name?.trim() || '';
   const hasName = fullName.length > 0;

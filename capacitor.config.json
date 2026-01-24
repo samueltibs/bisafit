@@ -1,0 +1,9 @@
+{
+  "appId": "app.lovable.39fd7487dde54303a60a0333cc0641e1",
+  "appName": "BisaFit",
+  "webDir": "dist",
+  "server": {
+    "url": "https://39fd7487-dde5-4303-a60a-0333cc0641e1.lovableproject.com?forceHideBadge=true",
+    "cleartext": true
+  }
+}

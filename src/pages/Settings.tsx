@@ -34,6 +34,7 @@ import {
   Sparkles,
   Clock,
   Mail,
+  FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -52,6 +53,7 @@ import { WorkoutTimeSettings } from '@/components/settings/WorkoutTimeSettings';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { EmailPreferences } from '@/components/settings/EmailPreferences';
 import { APP_NAME, APP_VERSION, EMAIL_SUPPORT, SUPPORT_MESSAGE } from '@/lib/branding';
+import { openExternalLink, openMailto, EXTERNAL_URLS } from '@/lib/externalLinks';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -542,8 +544,8 @@ export default function Settings() {
           <Card className="border-border">
             <CardContent className="divide-y divide-border p-0">
               {/* Need Help? */}
-              <a 
-                href={`mailto:${EMAIL_SUPPORT}`}
+              <button 
+                onClick={() => openMailto(EMAIL_SUPPORT)}
                 className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
               >
                 <div className="flex items-center gap-3">
@@ -554,12 +556,10 @@ export default function Settings() {
                   </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </a>
+              </button>
               {/* Privacy Policy */}
-              <a 
-                href="https://bisafit.com/privacy"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button 
+                onClick={() => openExternalLink(EXTERNAL_URLS.privacyPolicy)}
                 className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
               >
                 <div className="flex items-center gap-3">
@@ -567,20 +567,18 @@ export default function Settings() {
                   <span>Privacy Policy</span>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </a>
+              </button>
               {/* Terms of Service */}
-              <a 
-                href="https://bisafit.com/terms"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button 
+                onClick={() => openExternalLink(EXTERNAL_URLS.termsOfService)}
                 className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
               >
                 <div className="flex items-center gap-3">
-                  <Shield className="h-5 w-5 text-muted-foreground" />
+                  <FileText className="h-5 w-5 text-muted-foreground" />
                   <span>Terms of Service</span>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </a>
+              </button>
             </CardContent>
           </Card>
         </div>
