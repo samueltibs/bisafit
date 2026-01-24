@@ -4,14 +4,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useCalendarSync } from '@/hooks/useCalendarSync';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+
 import {
   Dialog,
   DialogContent,
@@ -26,7 +27,6 @@ import {
   HelpCircle, 
   LogOut,
   ChevronRight,
-  ChevronDown,
   Crown,
   Loader2,
   Edit2,
@@ -35,9 +35,14 @@ import {
   Sparkles,
   Clock,
   FileText,
-  Settings2,
-  Globe,
   User,
+  Target,
+  Ruler,
+  MessageSquare,
+  CreditCard,
+  MapPin,
+  Mail,
+  Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -53,8 +58,6 @@ import { formatTimeDisplay } from '@/lib/calendarUtils';
 import { WorkoutDaysSelector } from '@/components/settings/WorkoutDaysSelector';
 import { EquipmentEditor, formatEquipmentName, normalizeEquipmentName } from '@/components/settings/EquipmentEditor';
 import { WorkoutTimeSettings } from '@/components/settings/WorkoutTimeSettings';
-import { NotificationSettings } from '@/components/settings/NotificationSettings';
-import { EmailPreferences } from '@/components/settings/EmailPreferences';
 import { CoachToneSelector } from '@/components/settings/CoachToneSelector';
 import { CoachVoiceSelector } from '@/components/settings/CoachVoiceSelector';
 import { APP_NAME, APP_VERSION, EMAIL_SUPPORT } from '@/lib/branding';
@@ -70,10 +73,9 @@ export default function Settings() {
   // Modal states
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isEquipmentModalOpen, setIsEquipmentModalOpen] = useState(false);
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState('');
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-  
-  // Advanced settings expanded state
-  const [advancedOpen, setAdvancedOpen] = useState(false);
   
   // Coach tone state
   const [coachTone, setCoachTone] = useState<CoachTone>('balanced');
@@ -372,25 +374,94 @@ export default function Settings() {
           </CardContent>
         </Card>
 
-        {/* Main Settings - Clean & Minimal */}
+        {/* Section 1: You & Your Plan */}
         <div className="space-y-4 animate-slide-up">
-          <h3 className="text-sm font-medium text-muted-foreground">Settings</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">You & Your Plan</h3>
           
           <Card className="border-border">
             <CardContent className="divide-y divide-border p-0">
-              {/* Language */}
-              <div className="flex items-center justify-between p-4">
+              {/* Goals */}
+              <button 
+                onClick={() => setIsEditModalOpen(true)}
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
+              >
                 <div className="flex items-center gap-3">
-                  <Globe className="h-5 w-5 text-muted-foreground" />
+                  <Target className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <span className="block font-medium">Language</span>
-                    <span className="text-sm text-muted-foreground">English</span>
+                    <span className="block font-medium">Goals</span>
+                    <span className="text-sm text-muted-foreground">
+                      {profile?.goal_primary ? goalLabels[profile.goal_primary] || profile.goal_primary : 'Not set'}
+                    </span>
                   </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </div>
+              </button>
 
-              {/* Coach Tone - Inline */}
+              {/* Weight & Height */}
+              <button 
+                onClick={() => setIsEditModalOpen(true)}
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
+              >
+                <div className="flex items-center gap-3">
+                  <Ruler className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <span className="block font-medium">Weight & Height</span>
+                    <span className="text-sm text-muted-foreground">
+                      {profile?.weight_kg || profile?.height_cm ? (
+                        <>
+                          {profile?.weight_kg && `${displayUnit === 'metric' ? Number(profile.weight_kg) : kgToLb(Number(profile.weight_kg))} ${displayUnit === 'metric' ? 'kg' : 'lb'}`}
+                          {profile?.weight_kg && profile?.height_cm && ' • '}
+                          {profile?.height_cm && formatHeight(profile.height_cm, displayUnit)}
+                        </>
+                      ) : 'Not set'}
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+
+              {/* Workout Schedule Preferences */}
+              <button 
+                onClick={() => setIsScheduleModalOpen(true)}
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
+              >
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <span className="block font-medium">Workout Schedule</span>
+                    <span className="text-sm text-muted-foreground">
+                      {(profile as any)?.workout_days 
+                        ? `${((profile as any).workout_days as string[]).length} days/week`
+                        : 'Not set'}
+                      {(profile as any)?.workout_time_preferences_json && (
+                        <> • {formatTimeDisplay(((profile as any).workout_time_preferences_json as any)?.default_time || '06:00')}</>
+                      )}
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+
+              {/* Available Equipment */}
+              <button 
+                onClick={() => setIsEquipmentModalOpen(true)}
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
+              >
+                <div className="flex items-center gap-3">
+                  <Dumbbell className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <span className="block font-medium">Equipment</span>
+                    <span className="text-sm text-muted-foreground">
+                      {(profile as any)?.equipment_json && ((profile as any).equipment_json as string[]).length > 0 
+                        ? `${((profile as any).equipment_json as string[]).length} items`
+                        : 'None added'}
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+
+              {/* Coach Tone */}
               <div className="p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <Sparkles className="h-5 w-5 text-muted-foreground" />
@@ -403,7 +474,7 @@ export default function Settings() {
                 />
               </div>
 
-              {/* Coach Voice - Inline */}
+              {/* Coach Voice */}
               <div className="p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <User className="h-5 w-5 text-muted-foreground" />
@@ -411,29 +482,72 @@ export default function Settings() {
                 </div>
                 <CoachVoiceSelector compact />
               </div>
-
-              {/* Notifications - Master Toggle */}
-              <div className="flex items-center justify-between p-4">
-                <div className="flex items-center gap-3">
-                  <Bell className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">Notifications</span>
-                </div>
-                <Switch
-                  checked={notificationsEnabled}
-                  onCheckedChange={handleNotificationsToggle}
-                />
-              </div>
             </CardContent>
           </Card>
+
+          {/* Equipment Update Banner */}
+          {showEquipmentBanner && (
+            <Alert className="border-primary/30 bg-primary/5">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <AlertDescription className="flex items-center justify-between">
+                <span>Equipment updated. Regenerate your plan to use it.</span>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowEquipmentBanner(false);
+                    navigate('/plan');
+                  }}
+                >
+                  Go to Plan
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
 
-        {/* Account & Support */}
+        {/* Section 2: Account */}
         <div className="space-y-4 animate-slide-up">
-          <h3 className="text-sm font-medium text-muted-foreground">Account & Support</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">Account</h3>
           
           <Card className="border-border">
             <CardContent className="divide-y divide-border p-0">
-              {/* Subscription */}
+              {/* Contact Information (Email) */}
+              <div className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-3">
+                  <Mail className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <span className="block font-medium">Contact Information</span>
+                    <span className="text-sm text-muted-foreground truncate">{user?.email}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Address - Placeholder */}
+              <div className="flex items-center justify-between p-4 opacity-50">
+                <div className="flex items-center gap-3">
+                  <MapPin className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <span className="block font-medium">Address</span>
+                    <span className="text-sm text-muted-foreground">Not set</span>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+
+              {/* Payment Method - Placeholder */}
+              <div className="flex items-center justify-between p-4 opacity-50">
+                <div className="flex items-center gap-3">
+                  <CreditCard className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <span className="block font-medium">Payment Method</span>
+                    <span className="text-sm text-muted-foreground">Not set</span>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+
+              {/* Subscription / Billing */}
               <button 
                 onClick={() => navigate('/paywall')}
                 className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
@@ -441,207 +555,82 @@ export default function Settings() {
                 <div className="flex items-center gap-3">
                   <Crown className="h-5 w-5 text-primary" />
                   <div>
-                    <span className="block font-medium">{profile?.is_pro ? 'Pro Plan' : 'Free Plan'}</span>
+                    <span className="block font-medium">Subscription</span>
                     <span className="text-sm text-muted-foreground">
-                      {profile?.is_pro ? 'Full access' : 'Start your free trial'}
+                      {profile?.is_pro ? 'Pro Plan • Full access' : 'Free Plan'}
                     </span>
                   </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
 
-              {/* Help */}
+              {/* Sign Out */}
               <button 
-                onClick={() => openMailto(EMAIL_SUPPORT)}
-                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
+                onClick={handleSignOut}
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50 text-destructive"
               >
                 <div className="flex items-center gap-3">
-                  <HelpCircle className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">Need help?</span>
+                  <LogOut className="h-5 w-5" />
+                  <span className="font-medium">Sign Out</span>
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </button>
-
-              {/* Privacy */}
-              <button 
-                onClick={() => openExternalLink(EXTERNAL_URLS.privacyPolicy)}
-                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
-              >
-                <div className="flex items-center gap-3">
-                  <Shield className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">Privacy Policy</span>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </button>
-
-              {/* Terms */}
-              <button 
-                onClick={() => openExternalLink(EXTERNAL_URLS.termsOfService)}
-                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
-              >
-                <div className="flex items-center gap-3">
-                  <FileText className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">Terms of Service</span>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Advanced Settings - Collapsible */}
-        <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-          <CollapsibleTrigger asChild>
-            <Button 
-              variant="ghost" 
-              className="w-full justify-between text-muted-foreground hover:text-foreground"
-            >
-              <div className="flex items-center gap-2">
-                <Settings2 className="h-4 w-4" />
-                <span>Advanced Settings</span>
-              </div>
-              <ChevronDown className={`h-4 w-4 transition-transform ${advancedOpen ? 'rotate-180' : ''}`} />
-            </Button>
-          </CollapsibleTrigger>
+        {/* Section 3: Help & Support */}
+        <div className="space-y-4 animate-slide-up">
+          <h3 className="text-sm font-medium text-muted-foreground">Help & Support</h3>
           
-          <CollapsibleContent className="space-y-4 pt-4">
-            {/* Profile Stats */}
-            {(profile?.height_cm || profile?.weight_kg) && (
-              <div className="grid grid-cols-2 gap-3">
-                {profile.height_cm && (
-                  <Card className="border-border">
-                    <CardContent className="p-3 text-center">
-                      <p className="text-xl font-bold">{formatHeight(profile.height_cm, displayUnit).replace(/ cm| lb/, '')}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Height {displayUnit === 'metric' ? '(cm)' : '(ft/in)'}
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
-                {profile.weight_kg && (
-                  <Card className="border-border">
-                    <CardContent className="p-3 text-center">
-                      <p className="text-xl font-bold">
-                        {displayUnit === 'metric' ? Number(profile.weight_kg) : kgToLb(Number(profile.weight_kg))}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Weight ({displayUnit === 'metric' ? 'kg' : 'lb'})
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
+          <Card className="border-border">
+            <CardContent className="divide-y divide-border p-0">
+              {/* Help / FAQ */}
+              <button 
+                onClick={() => openExternalLink(EXTERNAL_URLS.termsOfService)}
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
+              >
+                <div className="flex items-center gap-3">
+                  <HelpCircle className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">Help / FAQ</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+
+              {/* Contact Support */}
+              <button 
+                onClick={() => openMailto(EMAIL_SUPPORT)}
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
+              >
+                <div className="flex items-center gap-3">
+                  <Mail className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">Contact Support</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+
+              {/* Send Feedback */}
+              <button 
+                onClick={() => setIsFeedbackModalOpen(true)}
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
+              >
+                <div className="flex items-center gap-3">
+                  <MessageSquare className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">Send Feedback</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+
+              {/* App Version */}
+              <div className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-3">
+                  <Info className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">App Version</span>
+                </div>
+                <span className="text-sm text-muted-foreground">{APP_VERSION}</span>
               </div>
-            )}
-
-            {/* Workout Schedule */}
-            {(profile as any)?.workout_days && (
-              <Card className="border-border">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Calendar className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">Workout Schedule</p>
-                        <p className="text-sm text-muted-foreground">
-                          {((profile as any).workout_days as string[]).join(', ')}
-                        </p>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => setIsEditModalOpen(true)}>
-                      <Edit2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Workout Time & Calendar */}
-            <Card className="border-border">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Clock className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">Workout Time & Calendar</p>
-                      <p className="text-sm text-muted-foreground">
-                        {(profile as any)?.workout_time_preferences_json 
-                          ? formatTimeDisplay(((profile as any).workout_time_preferences_json as any)?.default_time || '06:00')
-                          : 'Not set'}
-                        {(profile as any)?.calendar_sync_enabled && ' • Synced'}
-                      </p>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => setIsScheduleModalOpen(true)}>
-                    <Edit2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Equipment */}
-            <Card className="border-border">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Dumbbell className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">My Equipment</p>
-                      <p className="text-sm text-muted-foreground">
-                        {(profile as any)?.equipment_json && ((profile as any).equipment_json as string[]).length > 0 
-                          ? ((profile as any).equipment_json as string[]).slice(0, 3).map(formatEquipmentName).join(', ')
-                          : 'None added'}
-                        {((profile as any)?.equipment_json as string[])?.length > 3 && ` +${((profile as any).equipment_json as string[]).length - 3}`}
-                      </p>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => setIsEquipmentModalOpen(true)}>
-                    <Edit2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Equipment Update Banner */}
-            {showEquipmentBanner && (
-              <Alert className="border-primary/30 bg-primary/5">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <AlertDescription className="flex items-center justify-between">
-                  <span>Equipment updated. Regenerate your plan to use it.</span>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={() => {
-                      setShowEquipmentBanner(false);
-                      navigate('/plan');
-                    }}
-                  >
-                    Go to Plan
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Email Preferences */}
-            <EmailPreferences />
-
-            {/* Detailed Notification Settings */}
-            <NotificationSettings />
-          </CollapsibleContent>
-        </Collapsible>
-
-        {/* Sign Out */}
-        <Button
-          variant="outline"
-          className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive animate-slide-up"
-          onClick={handleSignOut}
-        >
-          <LogOut className="mr-2 h-4 w-4" />
-          Sign Out
-        </Button>
-
-        <p className="text-center text-xs text-muted-foreground">
-          {APP_NAME} v{APP_VERSION}
-        </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Edit Profile Modal */}
@@ -824,6 +813,52 @@ export default function Settings() {
               currentPlan={calendarSync.currentPlan}
             />
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Feedback Modal */}
+      <Dialog open={isFeedbackModalOpen} onOpenChange={setIsFeedbackModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send Feedback</DialogTitle>
+            <DialogDescription>
+              Let us know how we can improve your experience.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <Textarea
+              placeholder="What would you like to share with us?"
+              value={feedbackMessage}
+              onChange={(e) => setFeedbackMessage(e.target.value)}
+              rows={4}
+              className="resize-none"
+            />
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => {
+              setIsFeedbackModalOpen(false);
+              setFeedbackMessage('');
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (feedbackMessage.trim()) {
+                  openMailto(EMAIL_SUPPORT, `${APP_NAME} Feedback`);
+                  setIsFeedbackModalOpen(false);
+                  setFeedbackMessage('');
+                  toast.success('Opening email to send feedback');
+                } else {
+                  toast.error('Please enter your feedback');
+                }
+              }}
+              disabled={!feedbackMessage.trim()}
+            >
+              Send Feedback
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </AppLayout>
