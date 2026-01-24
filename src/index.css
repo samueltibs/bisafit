@@ -476,4 +476,47 @@
       transform: scale(1);
     }
   }
+
+  /* Progress animations */
+  @keyframes progressPulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.85;
+    }
+  }
+
+  @keyframes progressComplete {
+    0% {
+      transform: scale(1);
+      filter: drop-shadow(0 0 0 transparent);
+    }
+    50% {
+      transform: scale(1.02);
+      filter: drop-shadow(0 0 8px hsl(145 52% 55% / 0.4));
+    }
+    100% {
+      transform: scale(1);
+      filter: drop-shadow(0 0 4px hsl(145 52% 55% / 0.3));
+    }
+  }
+
+  .animate-progress-pulse {
+    animation: progressPulse 2s ease-in-out infinite;
+  }
+
+  .animate-progress-complete {
+    animation: progressComplete 0.6s ease-out forwards;
+  }
+
+  /* Smooth number transitions */
+  .progress-value {
+    @apply tabular-nums font-bold;
+    transition: color 0.3s ease, transform 0.2s ease;
+  }
+
+  .progress-value-update {
+    animation: scaleIn 0.2s ease-out;
+  }
 }
