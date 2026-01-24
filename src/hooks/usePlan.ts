@@ -11,6 +11,7 @@ import {
   BLOCK_WEEKS,
   TimelinePosition,
 } from '@/lib/blockEngine';
+import { parseLocalDate, getLocalToday, getLocalTodayStr, getLocalDayName } from '@/lib/dateUtils';
 
 // Helper to normalize workout days for comparison
 export function normalizeWorkoutDays(days: unknown): string[] {
@@ -370,7 +371,8 @@ export function usePlan(): UsePlanResult {
     const anchorDate = programStartDate || plan?.start_date;
     if (!anchorDate) return null;
     
-    return calculateTimelinePosition(anchorDate, new Date());
+    // Use getLocalToday() for timezone-safe current date
+    return calculateTimelinePosition(anchorDate, getLocalToday());
   };
 
   const timelinePosition = getTimelinePosition();
@@ -389,7 +391,8 @@ export function usePlan(): UsePlanResult {
     
     // Fallback to plan.start_date calculation
     if (!plan?.start_date) return 0;
-    const weekIndex = getWeekIndexInBlock(plan.start_date, new Date());
+    // Use getLocalToday() for timezone-safe calculation
+    const weekIndex = getWeekIndexInBlock(plan.start_date, getLocalToday());
     return Math.max(0, Math.min(BLOCK_WEEKS - 1, weekIndex));
   };
 
@@ -472,10 +475,10 @@ export function usePlan(): UsePlanResult {
     // Only return workouts for the current plan
     if (!plan?.start_date || plan.id !== currentPlanId) return null;
     
-    const today = new Date();
-    const todayStr = format(today, 'yyyy-MM-dd');
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const todayName = dayNames[today.getDay()];
+    // Use timezone-safe local date utilities
+    const today = getLocalToday();
+    const todayStr = getLocalTodayStr();
+    const todayName = getLocalDayName(today);
     
     // Check if there's a workout scheduled for today
     const workout = workouts.find(w => w.scheduled_date === todayStr);
@@ -557,8 +560,8 @@ export function usePlan(): UsePlanResult {
     const anchorDate = programStartDate || plan?.start_date;
     if (!anchorDate) return null;
     
-    const startDate = new Date(anchorDate);
-    startDate.setHours(0, 0, 0, 0);
+    // Parse date as local date to avoid timezone issues
+    const startDate = parseLocalDate(anchorDate);
     // Return the actual program start date - NO calendar week adjustment
     // Week 1 starts on program_start_date, not the Monday of that calendar week
     return startDate;

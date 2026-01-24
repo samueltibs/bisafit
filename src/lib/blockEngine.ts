@@ -10,6 +10,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { addDays, format } from 'date-fns';
+import { parseLocalDate, getLocalToday } from './dateUtils';
 
 // Constants
 export const BLOCK_DURATION_DAYS = 28;
@@ -39,12 +40,13 @@ export interface TimelinePosition {
  */
 export function calculateTimelinePosition(
   programStartDate: string,
-  currentDate: Date = new Date(),
+  currentDate: Date = getLocalToday(),
   blockLengthWeeks: number = BLOCK_WEEKS
 ): TimelinePosition {
-  const start = new Date(programStartDate);
-  start.setHours(0, 0, 0, 0);
+  // Parse program start date as local date to avoid timezone issues
+  const start = parseLocalDate(programStartDate);
   
+  // Normalize current date to local midnight
   const current = new Date(currentDate);
   current.setHours(0, 0, 0, 0);
   

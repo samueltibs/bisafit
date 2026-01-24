@@ -4,6 +4,7 @@ import { usePlan } from './usePlan';
 import { supabase } from '@/integrations/supabase/client';
 import type { DisplayWorkout, WorkoutJson } from '@/types/plan';
 import { format, subDays } from 'date-fns';
+import { getLocalToday, getLocalDayName } from '@/lib/dateUtils';
 
 export type WorkoutContextType = 
   | 'today_workout'      // Today is a workout day with a scheduled workout
@@ -55,8 +56,8 @@ export function useWorkoutContext(): WorkoutContextResult {
 
     try {
       setCheckingMissed(true);
-      const today = new Date();
-      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      // Use timezone-safe local date for "today"
+      const today = getLocalToday();
       
       // Check past 3 days for missed workouts
       for (let daysAgo = 1; daysAgo <= 3; daysAgo++) {
@@ -79,7 +80,8 @@ export function useWorkoutContext(): WorkoutContextResult {
           if (!hasCompletedSession) {
             // Found a missed workout
             const workoutJson = scheduledWorkout.workout_json as unknown as WorkoutJson;
-            const dayName = dayNames[checkDate.getDay()];
+            // Use timezone-safe day name from local date
+            const dayName = getLocalDayName(checkDate);
             
             setMissedWorkout({
               workout: {
