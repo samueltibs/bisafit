@@ -17,6 +17,7 @@ import {
 import { useWorkoutContext } from '@/hooks/useWorkoutContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { RescheduleWorkoutDialog } from '@/components/workout/RescheduleWorkoutDialog';
+import { SkipWorkoutConfirmDialog } from '@/components/workout/SkipWorkoutConfirmDialog';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { DisplayWorkout } from '@/types/plan';
@@ -45,6 +46,17 @@ export default function WorkoutToday() {
   const [showReschedule, setShowReschedule] = useState(false);
   const [workoutToReschedule, setWorkoutToReschedule] = useState<DisplayWorkout | null>(null);
 
+  // Skip confirmation dialog state
+  const [showSkipConfirm, setShowSkipConfirm] = useState(false);
+  const [workoutToSkip, setWorkoutToSkip] = useState<DisplayWorkout | null>(null);
+
+  // Extract user preferences for suggestions
+  const workoutDays = Array.isArray((profile as any)?.workout_days) 
+    ? (profile as any).workout_days as string[] 
+    : [];
+  const timePrefs = (profile as any)?.workout_time_preferences_json as { default_time?: string } | null;
+  const preferredTime = timePrefs?.default_time;
+
   const handleOpenReschedule = (workout: DisplayWorkout) => {
     setWorkoutToReschedule(workout);
     setShowReschedule(true);
@@ -54,6 +66,31 @@ export default function WorkoutToday() {
     refetch();
     setShowReschedule(false);
     setWorkoutToReschedule(null);
+  };
+
+  const handleOpenSkipConfirm = (workout: DisplayWorkout) => {
+    setWorkoutToSkip(workout);
+    setShowSkipConfirm(true);
+  };
+
+  const handleSkipStart = () => {
+    if (workoutToSkip) {
+      navigate(`/workout/${workoutToSkip.id}`);
+    }
+  };
+
+  const handleSkipReschedule = () => {
+    if (workoutToSkip) {
+      setShowSkipConfirm(false);
+      handleOpenReschedule(workoutToSkip);
+    }
+  };
+
+  const handleSkipConfirm = () => {
+    // Navigate to plan page when skipping
+    setShowSkipConfirm(false);
+    setWorkoutToSkip(null);
+    navigate('/plan');
   };
 
   // Loading state
@@ -224,7 +261,7 @@ export default function WorkoutToday() {
               <Button 
                 variant="outline" 
                 className="h-12"
-                onClick={() => navigate('/plan')}
+                onClick={() => handleOpenSkipConfirm(missedWorkout.workout)}
               >
                 <SkipForward className="mr-2 h-4 w-4" />
                 Skip Workout
@@ -333,6 +370,20 @@ export default function WorkoutToday() {
         onOpenChange={setShowReschedule}
         workout={workoutToReschedule}
         onSuccess={handleRescheduleSuccess}
+      />
+
+      {/* Skip Workout Confirmation Dialog */}
+      <SkipWorkoutConfirmDialog
+        open={showSkipConfirm}
+        onOpenChange={setShowSkipConfirm}
+        workoutName={workoutToSkip?.workout || ''}
+        workoutDuration={workoutToSkip?.duration}
+        coachTone={coachTone}
+        userWorkoutDays={workoutDays}
+        preferredTime={preferredTime}
+        onStart={handleSkipStart}
+        onReschedule={handleSkipReschedule}
+        onSkip={handleSkipConfirm}
       />
     </AppLayout>
   );

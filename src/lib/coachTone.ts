@@ -37,6 +37,7 @@ export type MessageKey =
   | 'keep_going'
   | 'great_job'
   | 'skip_confirmation'
+  | 'skip_exercise_confirmation'
   | 'reschedule_prompt';
 
 interface MessageVariants {
@@ -110,6 +111,11 @@ const MESSAGES: Record<MessageKey, MessageVariants> = {
     gentle: "It's okay to skip sometimes. Your body knows best.",
     balanced: "Are you sure you want to skip this workout?",
     direct: "Skip this workout?",
+  },
+  skip_exercise_confirmation: {
+    gentle: "It's fine to skip this exercise if you need to.",
+    balanced: "Skip this exercise?",
+    direct: "Skip exercise?",
   },
   reschedule_prompt: {
     gentle: "No problem! Let's find a better time that works for you.",
