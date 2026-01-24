@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useWorkoutReschedule, RescheduleValidation } from '@/hooks/useWorkoutReschedule';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import type { DisplayWorkout } from '@/types/plan';
 
@@ -94,6 +95,12 @@ export function RescheduleWorkoutDialog({
     const result = await rescheduleWorkout(workout.id, selectedDate, selectedTime);
     
     if (result.success) {
+      // Trigger notification refresh via edge function
+      try {
+        await supabase.functions.invoke('schedule-notifications');
+      } catch (e) {
+        console.warn('Failed to refresh notifications:', e);
+      }
       setShowCalendarDownload(true);
     }
   };
@@ -235,16 +242,16 @@ export function RescheduleWorkoutDialog({
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-lg font-semibold">Workout Rescheduled!</h3>
+              <h3 className="text-lg font-semibold">Rescheduled</h3>
               <p className="text-sm text-muted-foreground">
-                Your workout is now scheduled for{' '}
+                Your workout is set for{' '}
                 <span className="font-medium text-foreground">
-                  {selectedDate && format(selectedDate, 'EEEE, MMMM d')}
+                  {selectedDate && format(selectedDate, 'EEEE')}
                 </span>{' '}
                 at{' '}
                 <span className="font-medium text-foreground">
                   {format(new Date(`2000-01-01T${selectedTime}`), 'h:mm a')}
-                </span>
+                </span>.
               </p>
             </div>
 
