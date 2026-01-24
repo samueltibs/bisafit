@@ -434,16 +434,56 @@
     letter-spacing: -0.011em;
   }
 
+  /* Page transition animations */
+  .animate-page-enter {
+    animation: pageEnter 0.25s ease-out forwards;
+  }
+
+  .animate-page-exit {
+    animation: pageExit 0.2s ease-in forwards;
+  }
+
+  @keyframes pageEnter {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pageExit {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+
+  /* Subtle fade animations */
   .animate-fade-in {
-    animation: fadeIn 0.3s ease-out;
+    animation: fadeIn 0.2s ease-out forwards;
+  }
+
+  .animate-fade-in-slow {
+    animation: fadeIn 0.35s ease-out forwards;
   }
 
   .animate-slide-up {
-    animation: slideUp 0.4s ease-out;
+    animation: slideUp 0.3s ease-out forwards;
+  }
+
+  .animate-slide-up-subtle {
+    animation: slideUpSubtle 0.25s ease-out forwards;
   }
 
   .animate-scale-in {
-    animation: scaleIn 0.2s ease-out;
+    animation: scaleIn 0.15s ease-out forwards;
   }
 
   @keyframes fadeIn {
@@ -458,7 +498,18 @@
   @keyframes slideUp {
     from {
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideUpSubtle {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
     }
     to {
       opacity: 1;
@@ -469,13 +520,69 @@
   @keyframes scaleIn {
     from {
       opacity: 0;
-      transform: scale(0.95);
+      transform: scale(0.97);
     }
     to {
       opacity: 1;
       transform: scale(1);
     }
   }
+
+  /* Micro-interaction: Gentle tap scale */
+  .tap-scale {
+    @apply transition-transform duration-150 ease-out active:scale-[0.97];
+  }
+
+  .tap-scale-sm {
+    @apply transition-transform duration-100 ease-out active:scale-[0.98];
+  }
+
+  .tap-scale-lg {
+    @apply transition-transform duration-150 ease-out active:scale-[0.95];
+  }
+
+  /* Hover lift effect */
+  .hover-lift {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-2px);
+  }
+
+  .hover-lift:active {
+    transform: translateY(0);
+  }
+
+  /* Smooth opacity transitions */
+  .fade-hover {
+    @apply transition-opacity duration-200 ease-out;
+  }
+
+  .fade-hover:hover {
+    opacity: 0.85;
+  }
+
+  /* Interactive element base */
+  .interactive {
+    @apply transition-all duration-200 ease-out cursor-pointer;
+  }
+
+  .interactive:hover {
+    @apply opacity-90;
+  }
+
+  .interactive:active {
+    @apply scale-[0.98] opacity-100;
+  }
+
+  /* Staggered animation delays for lists */
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+  .stagger-5 { animation-delay: 0.25s; }
+  .stagger-6 { animation-delay: 0.3s; }
 
   /* Progress animations */
   @keyframes progressPulse {
