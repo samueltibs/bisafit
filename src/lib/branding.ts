@@ -36,9 +36,11 @@ Need help? Contact ${EMAIL_SUPPORT}
 
 // Error messages with support reference
 export const ERROR_MESSAGES = {
-  generic: `Something went wrong. Please try again or contact ${EMAIL_SUPPORT} for assistance.`,
+  generic: 'Something went wrong. Please try again.',
+  genericWithSupport: `Something went wrong. Please try again or contact ${EMAIL_SUPPORT} for assistance.`,
   trialStart: `Unable to start your trial. Please try again or contact ${EMAIL_SUPPORT}.`,
-  planGeneration: `Failed to generate your plan. Please try again or contact ${EMAIL_SUPPORT}.`,
+  planGeneration: 'Failed to generate your plan. Please try again.',
+  planGenerationPersistent: `Failed to generate your plan. Please contact ${EMAIL_SUPPORT}.`,
   aiCredits: `AI credits exhausted. Please contact ${EMAIL_SUPPORT}.`,
-  network: `Connection error. Please check your internet and try again, or contact ${EMAIL_SUPPORT}.`,
+  network: 'Connection error. Please check your internet and try again.',
 };

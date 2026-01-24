@@ -176,9 +176,17 @@ export default function NotificationCenter() {
                 <Bell className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-medium">No notifications yet</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                You'll see workout reminders, meal alerts, and updates here.
+              <p className="mt-1 mb-4 text-sm text-muted-foreground max-w-xs">
+                Enable reminders to stay on track with your workouts and nutrition.
               </p>
+              <Button 
+                variant="default" 
+                onClick={() => window.location.href = '/settings?notifications=true'}
+                className="gap-2"
+              >
+                <Bell className="h-4 w-4" />
+                Enable Notifications
+              </Button>
             </CardContent>
           </Card>
         ) : (

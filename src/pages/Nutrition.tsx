@@ -323,10 +323,10 @@ export default function Nutrition() {
       }, 500);
     } catch (err) {
       console.error('Generate from ingredients error:', err);
-      trackEvent('generation_error', { feature: 'nutrition', reason: err instanceof Error ? err.message : 'unknown' });
+      trackEvent('generation_error', { feature: 'nutrition_ingredients', reason: err instanceof Error ? err.message : 'unknown' });
       // Restore status to ready on failure
       updateStatus('ready');
-      toast.error("Couldn't generate plan right now. Try again.");
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setGeneratingFromIngredients(false);
     }
@@ -384,8 +384,8 @@ export default function Nutrition() {
       toast.success('Meal plan generated!');
     } catch (err) {
       console.error('Generate meal plan error:', err);
-      trackEvent('generation_error', { feature: 'nutrition', reason: err instanceof Error ? err.message : 'unknown' });
-      toast.error("Couldn't generate plan right now. Try again.");
+      trackEvent('generation_error', { feature: 'nutrition_generic', reason: err instanceof Error ? err.message : 'unknown' });
+      toast.error("Something went wrong. Please try again.");
     }
   }, [refetch, weekCuisineTheme, updateLastPlanMode, checkPremiumAccess]);
 
@@ -724,11 +724,16 @@ export default function Nutrition() {
                   className="gap-2"
                 >
                   {(generatingMealPlan || generatingFromIngredients) ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="hidden sm:inline">Generating…</span>
+                    </>
                   ) : (
-                    <Sparkles className="h-4 w-4" />
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      {mealPlan ? 'Regenerate' : 'Generate Plan'}
+                    </>
                   )}
-                  {mealPlan ? 'Regenerate' : 'Generate Plan'}
                 </Button>
               </div>
             </div>
@@ -742,9 +747,9 @@ export default function Nutrition() {
                     </div>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg">Generate Your Meal Plan</h3>
+                    <h3 className="font-semibold text-lg">No Meal Plan Yet</h3>
                     <p className="text-muted-foreground text-sm mt-1">
-                      Get a personalized 7-day meal plan with recipes and a grocery list.
+                      Generate one to match your goals — includes recipes and a grocery list.
                     </p>
                   </div>
                   <div className="flex flex-col gap-3 max-w-sm mx-auto">
@@ -754,19 +759,28 @@ export default function Nutrition() {
                     />
                     <Button 
                       onClick={() => handleGenerateMealPlan(7)} 
-                      disabled={generatingMealPlan}
+                      disabled={generatingMealPlan || generatingFromIngredients}
                       className="gap-2"
                     >
                       {generatingMealPlan ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Generating your plan… this can take a moment
+                        </>
                       ) : (
-                        <Sparkles className="h-4 w-4" />
+                        <>
+                          <Sparkles className="h-4 w-4" />
+                          Generate Generic Plan
+                        </>
                       )}
-                      Generate Plan
                     </Button>
                     <Button 
                       variant="outline" 
-                      onClick={() => setFridgeScanOpen(true)}
+                      onClick={() => {
+                        if (!checkPremiumAccess()) return;
+                        setFridgeScanOpen(true);
+                      }}
+                      disabled={generatingMealPlan || generatingFromIngredients}
                       className="gap-2"
                     >
                       <Camera className="h-4 w-4" />

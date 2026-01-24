@@ -194,8 +194,8 @@ async function scheduleTrialReminders(supabase: any, user: UserProfile, now: Dat
   let scheduledCount = 0;
 
   const reminders = [
-    { hours: 48, title: "2 days left on your trial ⏰", body: "Your BisaFit trial ends in 2 days. Subscribe to keep access." },
-    { hours: 24, title: "Last day of your trial! 🏃", body: "Your trial ends tomorrow. Don't lose your workout plans!" },
+    { hours: 48, title: "2 days left on your trial ⏰", body: "Your BisaFit trial ends in 2 days. Continue your free trial to keep access." },
+    { hours: 24, title: "Last day of your trial! 🏃", body: "Your trial ends tomorrow. Keep your personalized workout plans!" },
   ];
 
   for (const reminder of reminders) {

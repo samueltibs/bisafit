@@ -497,12 +497,12 @@ export default function Settings() {
             <div className="flex-1">
               <p className="font-semibold">{profile?.is_pro ? 'Pro Plan' : 'Free Plan'}</p>
               <p className="text-sm opacity-90">
-                {profile?.is_pro ? 'Full access to all features' : 'Upgrade to unlock all features'}
+                {profile?.is_pro ? 'Full access to all features' : 'Start your free trial to unlock everything'}
               </p>
             </div>
             {!profile?.is_pro && (
-              <Button variant="secondary" size="sm">
-                Upgrade
+              <Button variant="secondary" size="sm" onClick={() => navigate('/paywall')}>
+                Start Free Trial
               </Button>
             )}
           </CardContent>
@@ -541,34 +541,46 @@ export default function Settings() {
           
           <Card className="border-border">
             <CardContent className="divide-y divide-border p-0">
-              {/* Contact Support */}
+              {/* Need Help? */}
               <a 
                 href={`mailto:${EMAIL_SUPPORT}`}
                 className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
               >
                 <div className="flex items-center gap-3">
-                  <Mail className="h-5 w-5 text-muted-foreground" />
+                  <HelpCircle className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <span className="block">Contact Support</span>
+                    <span className="block">Need help?</span>
                     <span className="text-sm text-muted-foreground">{EMAIL_SUPPORT}</span>
                   </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </a>
-              <button className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50">
-                <div className="flex items-center gap-3">
-                  <HelpCircle className="h-5 w-5 text-muted-foreground" />
-                  <span>Help & FAQ</span>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </button>
-              <button className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50">
+              {/* Privacy Policy */}
+              <a 
+                href="https://bisafit.com/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
+              >
                 <div className="flex items-center gap-3">
                   <Shield className="h-5 w-5 text-muted-foreground" />
                   <span>Privacy Policy</span>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </button>
+              </a>
+              {/* Terms of Service */}
+              <a 
+                href="https://bisafit.com/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
+              >
+                <div className="flex items-center gap-3">
+                  <Shield className="h-5 w-5 text-muted-foreground" />
+                  <span>Terms of Service</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </a>
             </CardContent>
           </Card>
         </div>

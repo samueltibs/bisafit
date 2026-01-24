@@ -390,7 +390,7 @@ export default function Onboarding() {
             {isLoading || isGenerating ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                {isGenerating ? 'Creating Your Plan...' : 'Saving...'}
+                {isGenerating ? 'Generating your plan… this can take a moment' : 'Saving...'}
               </>
             ) : (
               <>
