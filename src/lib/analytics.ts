@@ -29,8 +29,9 @@ export interface AnalyticsEventProperties {
   // Optional common properties
   plan_type?: 'monthly' | 'annual';
   cuisine_theme?: string;
-  feature?: 'workout' | 'nutrition';
+  feature?: string;
   reason?: string;
+  notification_type?: string;
   // Allow additional custom properties
   [key: string]: string | number | boolean | undefined;
 }

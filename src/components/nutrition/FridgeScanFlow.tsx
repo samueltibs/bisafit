@@ -625,7 +625,7 @@ export function FridgeScanFlow({
                   {generatingPlan ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Generating Plan...
+                      Generating your plan… this can take a moment
                     </>
                   ) : (
                     <>

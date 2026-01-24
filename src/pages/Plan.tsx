@@ -262,26 +262,26 @@ export default function Plan() {
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
               <Calendar className="h-8 w-8 text-primary" />
             </div>
-            <h2 className="mb-2 text-xl font-semibold">No Training Plan Yet</h2>
+            <h2 className="mb-2 text-xl font-semibold">Your Plan Isn't Ready Yet</h2>
             <p className="mb-6 max-w-sm text-muted-foreground">
-              Complete your profile to get a personalized 4-week progressive training plan.
+              Generate your first plan to begin your personalized 4-week training journey.
             </p>
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => navigate('/onboarding')}>
-                Complete Profile
-              </Button>
-              <Button onClick={handleGeneratePlan} disabled={isGenerating}>
+            <div className="flex flex-col gap-3 w-full max-w-xs">
+              <Button onClick={handleGeneratePlan} disabled={isGenerating} className="w-full">
                 {isGenerating ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
+                    Generating your plan… this can take a moment
                   </>
                 ) : (
                   <>
                     <Sparkles className="mr-2 h-4 w-4" />
-                    Generate Plan
+                    Generate My Plan
                   </>
                 )}
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/onboarding')} className="w-full">
+                Complete Profile First
               </Button>
             </div>
           </div>
@@ -347,7 +347,7 @@ export default function Plan() {
                       {isGeneratingNextBlock ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Analyzing your workouts...
+                          Generating your plan… this can take a moment
                         </>
                       ) : (
                         <>
@@ -366,7 +366,7 @@ export default function Plan() {
                       {isGeneratingNextBlock ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Analyzing your workouts...
+                          Generating your plan… this can take a moment
                         </>
                       ) : (
                         <>

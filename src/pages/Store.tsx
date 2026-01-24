@@ -67,7 +67,7 @@ export default function Store() {
       console.error('Failed to save interest:', error);
       toast({
         title: 'Something went wrong',
-        description: 'Please try again later.',
+        description: 'Please try again. If the issue persists, contact support@bisafit.com',
         variant: 'destructive',
       });
     } finally {
