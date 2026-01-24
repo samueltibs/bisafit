@@ -41,6 +41,11 @@ export function WorkoutDaysSelector({
         <Label className="text-base font-medium">Workout Days</Label>
         <span className="text-sm font-medium text-primary">{workoutDays.length} days/week</span>
       </div>
+
+      {/* Helper text about automatic updates */}
+      <p className="text-sm text-muted-foreground">
+        Changing your workout days will automatically update your plan.
+      </p>
       
       {/* Quick Presets */}
       <div className="flex gap-2">

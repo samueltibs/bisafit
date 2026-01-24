@@ -320,9 +320,15 @@ export default function Settings() {
           const result = await realignSchedule(editForm.workoutDays, currentPlanId);
           
           if (result.success) {
-            if (result.workoutsRescheduled > 0) {
+            // Check if some workouts couldn't fit
+            if (result.workoutsCouldNotFit > 0) {
+              toast.warning(
+                "We couldn't fit all workouts into your selected days. Please choose an alternate day or adjust your schedule.",
+                { duration: 6000 }
+              );
+            } else if (result.workoutsRescheduled > 0) {
               toast.success(
-                `Schedule updated. ${result.workoutsRescheduled} workout${result.workoutsRescheduled > 1 ? 's have' : ' has'} been adjusted to your new workout days.`,
+                'Schedule updated. Your plan has been adjusted to your new workout days.',
                 { duration: 5000 }
               );
             } else {
