@@ -4,13 +4,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useCalendarSync } from '@/hooks/useCalendarSync';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   Dialog,
   DialogContent,
@@ -21,11 +22,11 @@ import {
 } from '@/components/ui/dialog';
 import { 
   Bell, 
-  Moon, 
   Shield, 
   HelpCircle, 
   LogOut,
   ChevronRight,
+  ChevronDown,
   Crown,
   Loader2,
   Edit2,
@@ -33,8 +34,10 @@ import {
   Dumbbell,
   Sparkles,
   Clock,
-  Mail,
   FileText,
+  Settings2,
+  Globe,
+  User,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -54,7 +57,7 @@ import { NotificationSettings } from '@/components/settings/NotificationSettings
 import { EmailPreferences } from '@/components/settings/EmailPreferences';
 import { CoachToneSelector } from '@/components/settings/CoachToneSelector';
 import { CoachVoiceSelector } from '@/components/settings/CoachVoiceSelector';
-import { APP_NAME, APP_VERSION, EMAIL_SUPPORT, SUPPORT_MESSAGE } from '@/lib/branding';
+import { APP_NAME, APP_VERSION, EMAIL_SUPPORT } from '@/lib/branding';
 import { openExternalLink, openMailto, EXTERNAL_URLS } from '@/lib/externalLinks';
 import { type CoachTone, normalizeCoachTone } from '@/lib/coachTone';
 
@@ -63,15 +66,20 @@ export default function Settings() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, signOut } = useAuth();
   const { profile, loading, update, refetch } = useUserProfile();
-  const [darkMode, setDarkMode] = useState(false);
   
-  // Profile editing modal state
+  // Modal states
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isEquipmentModalOpen, setIsEquipmentModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   
+  // Advanced settings expanded state
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  
   // Coach tone state
   const [coachTone, setCoachTone] = useState<CoachTone>('balanced');
+  
+  // Notifications master toggle
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   
   // Calendar sync hook
   const calendarSync = useCalendarSync();
@@ -112,10 +120,11 @@ export default function Settings() {
     }
   }, [isEquipmentModalOpen, profile]);
 
-  // Load coach tone from profile
+  // Load coach tone and notifications from profile
   useEffect(() => {
     if (profile) {
       setCoachTone(normalizeCoachTone((profile as any).coach_tone));
+      setNotificationsEnabled((profile as any).notifications_enabled ?? true);
     }
   }, [profile]);
 
@@ -123,7 +132,6 @@ export default function Settings() {
   useEffect(() => {
     if (isScheduleModalOpen && profile) {
       calendarSync.loadSettings(profile);
-      // Load current plan workouts
       if (user && (profile as any).current_plan_id) {
         calendarSync.loadCurrentPlanWorkouts(user.id, (profile as any).current_plan_id);
       }
@@ -133,11 +141,9 @@ export default function Settings() {
   // Initialize edit form when modal opens
   useEffect(() => {
     if (isEditModalOpen && profile) {
-      // Determine unit preference: use saved, or infer from locale
       const savedUnit = profile.unit_preference as UnitPreference | null;
       const unitPref = savedUnit || getDefaultUnitPreference();
       
-      // Convert stored values to display values
       let heightFeet = '';
       let heightInches = '';
       let heightCm = '';
@@ -161,7 +167,6 @@ export default function Settings() {
         }
       }
 
-      // Load workout days
       const workoutDays = (profile as any).workout_days || ['Monday', 'Wednesday', 'Thursday', 'Friday'];
 
       setEditForm({
@@ -176,7 +181,7 @@ export default function Settings() {
     }
   }, [isEditModalOpen, profile]);
 
-  // Handle unit toggle - convert values when switching units
+  // Handle unit toggle
   const handleUnitChange = (checked: boolean) => {
     const newUnit: UnitPreference = checked ? 'metric' : 'imperial';
     const oldUnit = editForm.unitPreference;
@@ -185,15 +190,12 @@ export default function Settings() {
 
     let newForm = { ...editForm, unitPreference: newUnit };
 
-    // Convert height
     if (oldUnit === 'imperial' && newUnit === 'metric') {
-      // Imperial -> Metric
       const feet = parseInt(editForm.heightFeet) || 0;
       const inches = parseInt(editForm.heightInches) || 0;
       if (feet > 0 || inches > 0) {
         newForm.heightCm = String(ftInToCm(feet, inches));
       }
-      // Convert weight lb -> kg
       if (editForm.weight) {
         const lb = parseFloat(editForm.weight);
         if (!isNaN(lb)) {
@@ -201,7 +203,6 @@ export default function Settings() {
         }
       }
     } else if (oldUnit === 'metric' && newUnit === 'imperial') {
-      // Metric -> Imperial
       if (editForm.heightCm) {
         const cm = parseInt(editForm.heightCm);
         if (!isNaN(cm)) {
@@ -210,7 +211,6 @@ export default function Settings() {
           newForm.heightInches = String(inches);
         }
       }
-      // Convert weight kg -> lb
       if (editForm.weight) {
         const kg = parseFloat(editForm.weight);
         if (!isNaN(kg)) {
@@ -228,12 +228,15 @@ export default function Settings() {
     navigate('/auth');
   };
 
-  const handleOpenEditModal = () => {
-    setIsEditModalOpen(true);
-  };
-
-  const handleCloseEditModal = () => {
-    setIsEditModalOpen(false);
+  const handleNotificationsToggle = async (enabled: boolean) => {
+    setNotificationsEnabled(enabled);
+    try {
+      await update({ notifications_enabled: enabled } as any);
+      toast.success(enabled ? 'Notifications enabled' : 'Notifications disabled');
+    } catch (error) {
+      toast.error('Failed to update notification settings');
+      setNotificationsEnabled(!enabled);
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -244,7 +247,6 @@ export default function Settings() {
 
     setIsSaving(true);
     try {
-      // Convert to storage units (cm, kg)
       let heightCm: number | null = null;
       let weightKg: number | null = null;
 
@@ -298,9 +300,7 @@ export default function Settings() {
   const handleSaveEquipment = async () => {
     setIsSaving(true);
     try {
-      // Normalize all equipment names
       const normalizedEquipment = equipmentList.map(normalizeEquipmentName);
-      // Deduplicate
       const uniqueEquipment = [...new Set(normalizedEquipment)];
 
       const success = await update({
@@ -311,7 +311,6 @@ export default function Settings() {
         await refetch();
         toast.success('Equipment updated');
         setIsEquipmentModalOpen(false);
-        // Show banner about plan regeneration
         setShowEquipmentBanner(true);
       } else {
         toast.error('Failed to update equipment');
@@ -338,7 +337,6 @@ export default function Settings() {
     maintenance: 'Maintenance',
   };
 
-  // Get effective unit preference for display
   const displayUnit: UnitPreference = (profile?.unit_preference as UnitPreference) || getDefaultUnitPreference();
 
   if (loading) {
@@ -354,260 +352,282 @@ export default function Settings() {
   return (
     <AppLayout>
       <div className="container space-y-6 px-4 py-6">
-        {/* Profile Header */}
+        {/* Profile Header - Compact */}
         <Card className="border-border animate-fade-in">
-          <CardContent className="flex items-center gap-4 p-6">
-            <Avatar className="h-16 w-16">
-              <AvatarFallback className="bg-primary text-lg text-primary-foreground">
+          <CardContent className="flex items-center gap-4 p-4">
+            <Avatar className="h-12 w-12">
+              <AvatarFallback className="bg-primary text-primary-foreground">
                 {getInitials()}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1">
-              <h2 className="text-xl font-bold">
+            <div className="flex-1 min-w-0">
+              <h2 className="font-semibold truncate">
                 {profile?.full_name?.trim() || 'BisaFit User'}
               </h2>
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
-              {profile?.goal_primary && (
-                <p className="mt-1 text-sm text-primary">
-                  Goal: {goalLabels[profile.goal_primary] || profile.goal_primary}
-                </p>
-              )}
+              <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
             </div>
-            <Button variant="outline" size="sm" onClick={handleOpenEditModal}>
-              <Edit2 className="h-4 w-4 mr-1" />
-              Edit
+            <Button variant="ghost" size="icon" onClick={() => setIsEditModalOpen(true)}>
+              <Edit2 className="h-4 w-4" />
             </Button>
           </CardContent>
         </Card>
 
-        {/* Stats Summary */}
-        {(profile?.height_cm || profile?.weight_kg) && (
-          <div className="grid grid-cols-2 gap-3 animate-slide-up">
-            {profile.height_cm && (
-              <Card className="border-border">
-                <CardContent className="p-4 text-center">
-                  <p className="text-2xl font-bold">{formatHeight(profile.height_cm, displayUnit).replace(/ cm| lb/, '')}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Height {displayUnit === 'metric' ? '(cm)' : '(ft/in)'}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-            {profile.weight_kg && (
-              <Card className="border-border">
-                <CardContent className="p-4 text-center">
-                  <p className="text-2xl font-bold">
-                    {displayUnit === 'metric' ? Number(profile.weight_kg) : kgToLb(Number(profile.weight_kg))}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Weight ({displayUnit === 'metric' ? 'kg' : 'lb'})
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
-
-        {/* Workout Schedule Summary */}
-        {(profile as any)?.workout_days && (
-          <Card className="border-border animate-slide-up">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Calendar className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">Workout Schedule</p>
-                    <p className="text-sm text-muted-foreground">
-                      {((profile as any).workout_days as string[]).join(', ')} ({((profile as any).workout_days as string[]).length} days/week)
-                    </p>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)}>
-                  <Edit2 className="h-3 w-3 mr-1" />
-                  Edit
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Workout Time & Calendar Section */}
-        <Card className="border-border animate-slide-up">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Clock className="h-5 w-5 text-muted-foreground" />
-                <div className="flex-1">
-                  <p className="font-medium">Workout Time & Calendar</p>
-                  {(profile as any)?.workout_time_preferences_json ? (
-                    <p className="text-sm text-muted-foreground">
-                      {formatTimeDisplay(((profile as any).workout_time_preferences_json as any)?.default_time || '06:00')}
-                      {(profile as any)?.calendar_sync_enabled && ' • Calendar sync on'}
-                    </p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Set your preferred workout time</p>
-                  )}
-                </div>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => setIsScheduleModalOpen(true)}>
-                <Edit2 className="h-3 w-3 mr-1" />
-                Edit
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Equipment Section */}
-        <Card className="border-border animate-slide-up">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Dumbbell className="h-5 w-5 text-muted-foreground" />
-                <div className="flex-1">
-                  <p className="font-medium">My Equipment</p>
-                  {(profile as any)?.equipment_json && ((profile as any).equipment_json as string[]).length > 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      {((profile as any).equipment_json as string[]).slice(0, 3).map(formatEquipmentName).join(', ')}
-                      {((profile as any).equipment_json as string[]).length > 3 && ` +${((profile as any).equipment_json as string[]).length - 3} more`}
-                    </p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No equipment added</p>
-                  )}
-                </div>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => setIsEquipmentModalOpen(true)}>
-                <Edit2 className="h-3 w-3 mr-1" />
-                Edit
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Equipment Update Banner */}
-        {showEquipmentBanner && (
-          <Alert className="border-primary/30 bg-primary/5 animate-fade-in">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <AlertDescription className="flex items-center justify-between">
-              <span>New equipment added. Regenerate your plan to include it.</span>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={() => {
-                  setShowEquipmentBanner(false);
-                  navigate('/plan');
-                }}
-              >
-                Regenerate Plan
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Subscription */}
-        <Card className="gradient-primary text-primary-foreground animate-slide-up">
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-foreground/20">
-              <Crown className="h-6 w-6" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold">{profile?.is_pro ? 'Pro Plan' : 'Free Plan'}</p>
-              <p className="text-sm opacity-90">
-                {profile?.is_pro ? 'Full access to all features' : 'Start your free trial to unlock everything'}
-              </p>
-            </div>
-            {!profile?.is_pro && (
-              <Button variant="secondary" size="sm" onClick={() => navigate('/paywall')}>
-                Start Free Trial
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Notification Settings */}
-        <div className="animate-slide-up">
-          <NotificationSettings />
-        </div>
-
-        {/* Email Preferences */}
-        <div className="animate-slide-up">
-          <EmailPreferences />
-        </div>
-
-        {/* Coach Tone */}
-        <div className="animate-slide-up">
-          <CoachToneSelector
-            currentTone={coachTone}
-            onToneChange={setCoachTone}
-          />
-        </div>
-
-        {/* Coach Voice */}
-        <div className="animate-slide-up">
-          <CoachVoiceSelector />
-        </div>
-
-        {/* Settings List */}
+        {/* Main Settings - Clean & Minimal */}
         <div className="space-y-4 animate-slide-up">
-          <h3 className="text-sm font-medium text-muted-foreground">Preferences</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">Settings</h3>
           
           <Card className="border-border">
             <CardContent className="divide-y divide-border p-0">
+              {/* Language */}
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
-                  <Moon className="h-5 w-5 text-muted-foreground" />
-                  <span>Dark Mode</span>
+                  <Globe className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <span className="block font-medium">Language</span>
+                    <span className="text-sm text-muted-foreground">English</span>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+
+              {/* Coach Tone - Inline */}
+              <div className="p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <Sparkles className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">Coach Tone</span>
+                </div>
+                <CoachToneSelector
+                  currentTone={coachTone}
+                  onToneChange={setCoachTone}
+                  compact
+                />
+              </div>
+
+              {/* Coach Voice - Inline */}
+              <div className="p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <User className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">Coach Voice</span>
+                </div>
+                <CoachVoiceSelector compact />
+              </div>
+
+              {/* Notifications - Master Toggle */}
+              <div className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-3">
+                  <Bell className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">Notifications</span>
                 </div>
                 <Switch
-                  checked={darkMode}
-                  onCheckedChange={setDarkMode}
+                  checked={notificationsEnabled}
+                  onCheckedChange={handleNotificationsToggle}
                 />
               </div>
             </CardContent>
           </Card>
+        </div>
 
-          <h3 className="text-sm font-medium text-muted-foreground">Support</h3>
+        {/* Account & Support */}
+        <div className="space-y-4 animate-slide-up">
+          <h3 className="text-sm font-medium text-muted-foreground">Account & Support</h3>
           
           <Card className="border-border">
             <CardContent className="divide-y divide-border p-0">
-              {/* Need Help? */}
+              {/* Subscription */}
+              <button 
+                onClick={() => navigate('/paywall')}
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
+              >
+                <div className="flex items-center gap-3">
+                  <Crown className="h-5 w-5 text-primary" />
+                  <div>
+                    <span className="block font-medium">{profile?.is_pro ? 'Pro Plan' : 'Free Plan'}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {profile?.is_pro ? 'Full access' : 'Start your free trial'}
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+
+              {/* Help */}
               <button 
                 onClick={() => openMailto(EMAIL_SUPPORT)}
                 className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
               >
                 <div className="flex items-center gap-3">
                   <HelpCircle className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <span className="block">Need help?</span>
-                    <span className="text-sm text-muted-foreground">{EMAIL_SUPPORT}</span>
-                  </div>
+                  <span className="font-medium">Need help?</span>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
-              {/* Privacy Policy */}
+
+              {/* Privacy */}
               <button 
                 onClick={() => openExternalLink(EXTERNAL_URLS.privacyPolicy)}
                 className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
               >
                 <div className="flex items-center gap-3">
                   <Shield className="h-5 w-5 text-muted-foreground" />
-                  <span>Privacy Policy</span>
+                  <span className="font-medium">Privacy Policy</span>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
-              {/* Terms of Service */}
+
+              {/* Terms */}
               <button 
                 onClick={() => openExternalLink(EXTERNAL_URLS.termsOfService)}
                 className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
               >
                 <div className="flex items-center gap-3">
                   <FileText className="h-5 w-5 text-muted-foreground" />
-                  <span>Terms of Service</span>
+                  <span className="font-medium">Terms of Service</span>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
             </CardContent>
           </Card>
         </div>
+
+        {/* Advanced Settings - Collapsible */}
+        <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
+          <CollapsibleTrigger asChild>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-between text-muted-foreground hover:text-foreground"
+            >
+              <div className="flex items-center gap-2">
+                <Settings2 className="h-4 w-4" />
+                <span>Advanced Settings</span>
+              </div>
+              <ChevronDown className={`h-4 w-4 transition-transform ${advancedOpen ? 'rotate-180' : ''}`} />
+            </Button>
+          </CollapsibleTrigger>
+          
+          <CollapsibleContent className="space-y-4 pt-4">
+            {/* Profile Stats */}
+            {(profile?.height_cm || profile?.weight_kg) && (
+              <div className="grid grid-cols-2 gap-3">
+                {profile.height_cm && (
+                  <Card className="border-border">
+                    <CardContent className="p-3 text-center">
+                      <p className="text-xl font-bold">{formatHeight(profile.height_cm, displayUnit).replace(/ cm| lb/, '')}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Height {displayUnit === 'metric' ? '(cm)' : '(ft/in)'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+                {profile.weight_kg && (
+                  <Card className="border-border">
+                    <CardContent className="p-3 text-center">
+                      <p className="text-xl font-bold">
+                        {displayUnit === 'metric' ? Number(profile.weight_kg) : kgToLb(Number(profile.weight_kg))}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Weight ({displayUnit === 'metric' ? 'kg' : 'lb'})
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {/* Workout Schedule */}
+            {(profile as any)?.workout_days && (
+              <Card className="border-border">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Calendar className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">Workout Schedule</p>
+                        <p className="text-sm text-muted-foreground">
+                          {((profile as any).workout_days as string[]).join(', ')}
+                        </p>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => setIsEditModalOpen(true)}>
+                      <Edit2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Workout Time & Calendar */}
+            <Card className="border-border">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Clock className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">Workout Time & Calendar</p>
+                      <p className="text-sm text-muted-foreground">
+                        {(profile as any)?.workout_time_preferences_json 
+                          ? formatTimeDisplay(((profile as any).workout_time_preferences_json as any)?.default_time || '06:00')
+                          : 'Not set'}
+                        {(profile as any)?.calendar_sync_enabled && ' • Synced'}
+                      </p>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setIsScheduleModalOpen(true)}>
+                    <Edit2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Equipment */}
+            <Card className="border-border">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Dumbbell className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">My Equipment</p>
+                      <p className="text-sm text-muted-foreground">
+                        {(profile as any)?.equipment_json && ((profile as any).equipment_json as string[]).length > 0 
+                          ? ((profile as any).equipment_json as string[]).slice(0, 3).map(formatEquipmentName).join(', ')
+                          : 'None added'}
+                        {((profile as any)?.equipment_json as string[])?.length > 3 && ` +${((profile as any).equipment_json as string[]).length - 3}`}
+                      </p>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setIsEquipmentModalOpen(true)}>
+                    <Edit2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Equipment Update Banner */}
+            {showEquipmentBanner && (
+              <Alert className="border-primary/30 bg-primary/5">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <AlertDescription className="flex items-center justify-between">
+                  <span>Equipment updated. Regenerate your plan to use it.</span>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowEquipmentBanner(false);
+                      navigate('/plan');
+                    }}
+                  >
+                    Go to Plan
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Email Preferences */}
+            <EmailPreferences />
+
+            {/* Detailed Notification Settings */}
+            <NotificationSettings />
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Sign Out */}
         <Button
@@ -720,7 +740,7 @@ export default function Settings() {
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={handleCloseEditModal} disabled={isSaving}>
+            <Button variant="outline" onClick={() => setIsEditModalOpen(false)} disabled={isSaving}>
               Cancel
             </Button>
             <Button onClick={handleSaveProfile} disabled={isSaving}>
