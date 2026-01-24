@@ -550,18 +550,19 @@ export function usePlan(): UsePlanResult {
     return null;
   }, [workouts, plan?.id, currentPlanId]);
 
-  // Get the start date for a specific plan week (0-indexed)
+  // Get the start date for plan Week 1 (anchored to program_start_date)
+  // CRITICAL: Do NOT use calendar week logic - program_start_date IS the anchor
   const getPlanWeekStart = useCallback((): Date | null => {
-    if (!plan?.start_date) return null;
-    const startDate = new Date(plan.start_date);
+    // Use program_start_date as the single source of truth for week anchoring
+    const anchorDate = programStartDate || plan?.start_date;
+    if (!anchorDate) return null;
+    
+    const startDate = new Date(anchorDate);
     startDate.setHours(0, 0, 0, 0);
-    // Find the Monday of the week containing the start date
-    const dayOfWeek = startDate.getDay();
-    const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const weekStart = new Date(startDate);
-    weekStart.setDate(startDate.getDate() + daysToMonday);
-    return weekStart;
-  }, [plan?.start_date]);
+    // Return the actual program start date - NO calendar week adjustment
+    // Week 1 starts on program_start_date, not the Monday of that calendar week
+    return startDate;
+  }, [programStartDate, plan?.start_date]);
 
   // Calculate scheduling debug info
   const schedulingDebug: SchedulingDebugInfo | null = (() => {
