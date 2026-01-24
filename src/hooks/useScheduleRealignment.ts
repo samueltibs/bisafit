@@ -16,6 +16,7 @@ const ALL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Satur
 interface RealignmentResult {
   success: boolean;
   workoutsRescheduled: number;
+  workoutsCouldNotFit: number;
   error?: string;
 }
 
@@ -77,11 +78,11 @@ export function useScheduleRealignment() {
     currentPlanId: string | null
   ): Promise<RealignmentResult> => {
     if (!user) {
-      return { success: false, workoutsRescheduled: 0, error: 'Not authenticated' };
+      return { success: false, workoutsRescheduled: 0, workoutsCouldNotFit: 0, error: 'Not authenticated' };
     }
 
     if (!newWorkoutDays || newWorkoutDays.length === 0) {
-      return { success: false, workoutsRescheduled: 0, error: 'No workout days specified' };
+      return { success: false, workoutsRescheduled: 0, workoutsCouldNotFit: 0, error: 'No workout days specified' };
     }
 
     setIsRealigning(true);
@@ -108,7 +109,7 @@ export function useScheduleRealignment() {
       }
 
       if (!futureWorkouts || futureWorkouts.length === 0) {
-        return { success: true, workoutsRescheduled: 0 };
+        return { success: true, workoutsRescheduled: 0, workoutsCouldNotFit: 0 };
       }
 
       // 2. Check which workouts have been completed (don't move those)
@@ -144,7 +145,7 @@ export function useScheduleRealignment() {
       }
 
       if (workoutsToRealign.length === 0) {
-        return { success: true, workoutsRescheduled: 0 };
+        return { success: true, workoutsRescheduled: 0, workoutsCouldNotFit: 0 };
       }
 
       // 4. Build a set of already-used dates (from correct workouts)
@@ -155,6 +156,7 @@ export function useScheduleRealignment() {
 
       // 5. Realign each workout that needs to be moved
       const updates: { id: string; newDate: string }[] = [];
+      const couldNotFit: FutureWorkout[] = [];
       let searchStartDate = addDays(today, 1); // Start searching from tomorrow
 
       for (const workout of workoutsToRealign) {
@@ -176,7 +178,8 @@ export function useScheduleRealignment() {
           // Move the search start to maintain ordering
           searchStartDate = addDays(newDate, 1);
         } else {
-          // No valid slot found within the window - log but continue
+          // No valid slot found within the window - track for feedback
+          couldNotFit.push(workout);
           console.warn(`Could not find valid slot for workout ${workout.id} (${workout.title})`);
         }
       }
@@ -210,13 +213,15 @@ export function useScheduleRealignment() {
 
       return { 
         success: true, 
-        workoutsRescheduled: updates.length 
+        workoutsRescheduled: updates.length,
+        workoutsCouldNotFit: couldNotFit.length
       };
     } catch (error) {
       console.error('Schedule realignment error:', error);
       return { 
         success: false, 
         workoutsRescheduled: 0, 
+        workoutsCouldNotFit: 0,
         error: error instanceof Error ? error.message : 'Unknown error' 
       };
     } finally {
