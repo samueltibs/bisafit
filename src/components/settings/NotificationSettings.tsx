@@ -144,7 +144,10 @@ export function NotificationSettings() {
         <Alert className="border-primary/20 bg-primary/5">
           <Smartphone className="h-4 w-4 text-primary" />
           <AlertDescription className="text-sm">
-            Notifications are available on the mobile app. You can change these anytime.
+            {enabled 
+              ? "Push notifications will arrive on the mobile app. You can still view reminders in Notification Center."
+              : "Notifications are available on the mobile app. You can change these anytime."
+            }
           </AlertDescription>
         </Alert>
 

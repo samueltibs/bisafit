@@ -122,16 +122,29 @@ async function scheduleWorkoutReminder(supabase: any, user: UserProfile, now: Da
     const reminderTime = new Date(workoutTime.getTime() - 30 * 60 * 1000);
 
     if (reminderTime > now && reminderTime.getTime() - now.getTime() < 48 * 60 * 60 * 1000) {
+      const windowStart = new Date(reminderTime.getTime() - 60000);
+      const windowEnd = new Date(reminderTime.getTime() + 60000);
+      
       const { data: existing } = await supabase
         .from("notifications_log")
         .select("id")
         .eq("user_id", user.id)
         .eq("type", "workout_reminders")
-        .gte("scheduled_for", reminderTime.toISOString())
-        .lt("scheduled_for", new Date(reminderTime.getTime() + 60000).toISOString())
+        .gte("scheduled_for", windowStart.toISOString())
+        .lt("scheduled_for", windowEnd.toISOString())
         .maybeSingle();
 
-      if (!existing) {
+      if (existing) {
+        // Update existing notification instead of creating duplicate
+        await supabase.from("notifications_log")
+          .update({
+            title: "Time to get ready! 💪",
+            body: `Your ${checkDay.name} workout starts in 30 minutes.`,
+            scheduled_for: reminderTime.toISOString(),
+            status: "scheduled",
+          })
+          .eq("id", existing.id);
+      } else {
         await supabase.from("notifications_log").insert({
           user_id: user.id,
           type: "workout_reminders",
@@ -173,7 +186,17 @@ async function scheduleMealReminder(supabase: any, user: UserProfile, now: Date)
       .lte("scheduled_for", windowEnd.toISOString())
       .maybeSingle();
 
-    if (!existing) {
+    if (existing) {
+      // Update existing notification instead of creating duplicate
+      await supabase.from("notifications_log")
+        .update({
+          title: "Plan your meals today 🥗",
+          body: "Check your personalized meal plan and stay on track with your nutrition goals.",
+          scheduled_for: reminderTime.toISOString(),
+          status: "scheduled",
+        })
+        .eq("id", existing.id);
+    } else {
       await supabase.from("notifications_log").insert({
         user_id: user.id,
         type: "meal_reminders",
@@ -214,7 +237,17 @@ async function scheduleTrialReminders(supabase: any, user: UserProfile, now: Dat
         .lte("scheduled_for", windowEnd.toISOString())
         .maybeSingle();
 
-      if (!existing) {
+      if (existing) {
+        // Update existing notification instead of creating duplicate
+        await supabase.from("notifications_log")
+          .update({
+            title: reminder.title,
+            body: reminder.body,
+            scheduled_for: reminderTime.toISOString(),
+            status: "scheduled",
+          })
+          .eq("id", existing.id);
+      } else {
         await supabase.from("notifications_log").insert({
           user_id: user.id,
           type: "trial_reminders",
