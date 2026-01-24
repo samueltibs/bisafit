@@ -65,6 +65,7 @@ import { CoachVoiceSelector } from '@/components/settings/CoachVoiceSelector';
 import { APP_NAME, APP_VERSION, EMAIL_SUPPORT } from '@/lib/branding';
 import { openExternalLink, openMailto, EXTERNAL_URLS } from '@/lib/externalLinks';
 import { type CoachTone, normalizeCoachTone } from '@/lib/coachTone';
+import { FAQScreen } from '@/components/settings/FAQScreen';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -78,6 +79,7 @@ export default function Settings() {
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isFAQOpen, setIsFAQOpen] = useState(false);
   const [isIntroTourOpen, setIsIntroTourOpen] = useState(false);
   
   // Coach tone state
@@ -589,7 +591,7 @@ export default function Settings() {
             <CardContent className="divide-y divide-border p-0">
               {/* Help / FAQ */}
               <button 
-                onClick={() => openExternalLink(EXTERNAL_URLS.termsOfService)}
+                onClick={() => setIsFAQOpen(true)}
                 className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
               >
                 <div className="flex items-center gap-3">
@@ -649,6 +651,9 @@ export default function Settings() {
 
         {/* Intro Tour Modal - Replay from Settings */}
         <IntroTour open={isIntroTourOpen} onComplete={() => setIsIntroTourOpen(false)} />
+
+        {/* FAQ Screen */}
+        <FAQScreen open={isFAQOpen} onOpenChange={setIsFAQOpen} />
       </div>
 
       {/* Edit Profile Modal */}
