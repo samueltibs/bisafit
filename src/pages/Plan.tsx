@@ -15,7 +15,8 @@ import {
 } from '@/components/ui/dialog';
 import { ChevronLeft, ChevronRight, Dumbbell, Timer, Check, Sparkles, Calendar, Loader2, AlertTriangle, Bed, RefreshCw, Rocket, Lock, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, addDays, startOfWeek, isToday } from 'date-fns';
+import { format, addDays, startOfWeek } from 'date-fns';
+import { isLocalToday } from '@/lib/dateUtils';
 import { usePlan } from '@/hooks/usePlan';
 import { usePlanGeneration } from '@/hooks/usePlanGeneration';
 import { useProgressionEngine, type BlockFeedback } from '@/hooks/useProgressionEngine';
@@ -531,14 +532,14 @@ export default function Plan() {
                 key={i}
                 className={cn(
                   "flex flex-1 flex-col items-center gap-1 rounded-lg p-2 transition-all",
-                  isToday(day) && "bg-primary/10"
+                  isLocalToday(day) && "bg-primary/10"
                 )}
               >
                 <span className="text-xs text-muted-foreground">{format(day, 'EEE')}</span>
                 <span
                   className={cn(
                     "flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium",
-                    isToday(day) ? "bg-primary text-primary-foreground" : ""
+                    isLocalToday(day) ? "bg-primary text-primary-foreground" : ""
                   )}
                 >
                   {format(day, 'd')}
@@ -762,7 +763,7 @@ function WorkoutDayCard({ workout }: WorkoutDayCardProps) {
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <p className="font-medium text-muted-foreground">Rest Day</p>
-              {isToday(workout.dayDate) && (
+              {isLocalToday(workout.dayDate) && (
                 <Badge variant="secondary" className="text-xs">Today</Badge>
               )}
             </div>
@@ -800,7 +801,7 @@ function WorkoutDayCard({ workout }: WorkoutDayCardProps) {
               <p className={cn("font-medium", workout.completed && "line-through")}>
                 {workout.workout}
               </p>
-              {isToday(workout.dayDate) && (
+              {isLocalToday(workout.dayDate) && (
                 <Badge variant="secondary" className="text-xs">Today</Badge>
               )}
             </div>
