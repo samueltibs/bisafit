@@ -533,6 +533,7 @@ export type Database = {
           coach_tone: string | null
           coach_voice: string | null
           constraints_json: Json | null
+          country: string | null
           created_at: string | null
           current_plan_id: string | null
           days_per_week: number | null
@@ -572,6 +573,7 @@ export type Database = {
           coach_tone?: string | null
           coach_voice?: string | null
           constraints_json?: Json | null
+          country?: string | null
           created_at?: string | null
           current_plan_id?: string | null
           days_per_week?: number | null
@@ -611,6 +613,7 @@ export type Database = {
           coach_tone?: string | null
           coach_voice?: string | null
           constraints_json?: Json | null
+          country?: string | null
           created_at?: string | null
           current_plan_id?: string | null
           days_per_week?: number | null

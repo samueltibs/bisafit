@@ -36,7 +36,7 @@ interface FormData {
   heightCm: number | null;
   weightKg: number | null;
   unitPreference: string;
-  // Step 2: Goals
+  country: string | null;
   goalPrimary: string;
   goalSecondary: string;
   experienceLevel: string;
@@ -70,6 +70,8 @@ const initialFormData: FormData = {
   heightCm: null,
   weightKg: null,
   unitPreference: 'metric',
+  country: null,
+  // Step 2: Goals
   goalPrimary: '',
   goalSecondary: '',
   experienceLevel: '',
@@ -128,6 +130,7 @@ export default function Onboarding() {
         heightCm: profile.height_cm || null,
         weightKg: profile.weight_kg ? Number(profile.weight_kg) : null,
         unitPreference: (profile as any).unit_preference || 'metric',
+        country: (profile as any).country || null,
         goalPrimary: profile.goal_primary || '',
         goalSecondary: (profile as any).goal_secondary || '',
         experienceLevel: profile.experience_level || '',
@@ -222,6 +225,7 @@ export default function Onboarding() {
         height_cm: formData.heightCm,
         weight_kg: formData.weightKg,
         unit_preference: formData.unitPreference,
+        country: formData.country,
         goal_primary: formData.goalPrimary,
         goal_secondary: formData.goalSecondary || null,
         experience_level: formData.experienceLevel,
@@ -316,11 +320,13 @@ export default function Onboarding() {
               heightCm={formData.heightCm}
               weightKg={formData.weightKg}
               unitPreference={formData.unitPreference}
+              country={formData.country}
               onFullNameChange={(v) => setFormData({ ...formData, fullName: v })}
               onGenderChange={(v) => setFormData({ ...formData, gender: v })}
               onHeightChange={(v) => setFormData({ ...formData, heightCm: v })}
               onWeightChange={(v) => setFormData({ ...formData, weightKg: v })}
               onUnitPreferenceChange={(v) => setFormData({ ...formData, unitPreference: v })}
+              onCountryChange={(v) => setFormData({ ...formData, country: v })}
             />
           )}
 

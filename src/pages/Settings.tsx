@@ -45,6 +45,7 @@ import {
   Mail,
   Info,
   Compass,
+  Globe,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -66,6 +67,8 @@ import { APP_NAME, APP_VERSION, EMAIL_SUPPORT } from '@/lib/branding';
 import { openExternalLink, openMailto, EXTERNAL_URLS } from '@/lib/externalLinks';
 import { type CoachTone, normalizeCoachTone } from '@/lib/coachTone';
 import { FAQScreen } from '@/components/settings/FAQScreen';
+import { getCountryName } from '@/lib/countryUtils';
+import { CountrySelector } from '@/components/settings/CountrySelector';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -95,6 +98,7 @@ export default function Settings() {
   const [editForm, setEditForm] = useState({
     fullName: '',
     unitPreference: 'metric' as UnitPreference,
+    country: null as string | null,
     heightFeet: '',
     heightInches: '',
     heightCm: '',
@@ -175,10 +179,12 @@ export default function Settings() {
       }
 
       const workoutDays = (profile as any).workout_days || ['Monday', 'Wednesday', 'Thursday', 'Friday'];
+      const country = (profile as any).country || null;
 
       setEditForm({
         fullName: profile.full_name || '',
         unitPreference: unitPref,
+        country,
         heightFeet,
         heightInches,
         heightCm,
@@ -285,6 +291,7 @@ export default function Settings() {
         height_cm: heightCm,
         weight_kg: weightKg,
         unit_preference: editForm.unitPreference,
+        country: editForm.country,
         workout_days: editForm.workoutDays,
         days_per_week: editForm.workoutDays.length,
       } as any);
@@ -396,6 +403,23 @@ export default function Settings() {
                     <span className="block font-medium">Goals</span>
                     <span className="text-sm text-muted-foreground">
                       {profile?.goal_primary ? goalLabels[profile.goal_primary] || profile.goal_primary : 'Not set'}
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+
+              {/* Country / Region */}
+              <button 
+                onClick={() => setIsEditModalOpen(true)}
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
+              >
+                <div className="flex items-center gap-3">
+                  <Globe className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <span className="block font-medium">Country / Region</span>
+                    <span className="text-sm text-muted-foreground">
+                      {getCountryName((profile as any)?.country)}
                     </span>
                   </div>
                 </div>
@@ -678,6 +702,13 @@ export default function Settings() {
                 onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
               />
             </div>
+
+            {/* Country / Region */}
+            <CountrySelector
+              value={editForm.country}
+              onChange={(v) => setEditForm({ ...editForm, country: v })}
+              compact
+            />
 
             {/* Unit Toggle */}
             <div className="flex items-center justify-between py-2">
