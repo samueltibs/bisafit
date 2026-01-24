@@ -9,11 +9,10 @@
 
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Sparkles, Crown, Settings } from 'lucide-react';
+import { Sparkles, Crown, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useSubscription } from '@/hooks/useSubscription';
-import { toast } from 'sonner';
 
 export function SubscriptionBanner() {
   const navigate = useNavigate();
@@ -24,8 +23,30 @@ export function SubscriptionBanner() {
     return null;
   }
 
-  // Preview or expired state - prompt to start trial
-  if (status === 'preview' || status === 'expired') {
+  // Expired state - prompt to restart trial
+  if (status === 'expired') {
+    return (
+      <Card className="border-destructive/30 bg-destructive/5 animate-fade-in">
+        <CardContent className="flex items-center gap-3 p-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10">
+            <AlertCircle className="h-5 w-5 text-destructive" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium">Your trial ended</p>
+            <p className="text-xs text-muted-foreground">
+              Start again to unlock workouts and nutrition.
+            </p>
+          </div>
+          <Button size="sm" onClick={() => navigate('/paywall')}>
+            Start Free Trial
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Preview state - prompt to start trial
+  if (status === 'preview') {
     return (
       <Card className="border-primary/30 bg-primary/5 animate-fade-in">
         <CardContent className="flex items-center gap-3 p-4">
@@ -46,14 +67,9 @@ export function SubscriptionBanner() {
     );
   }
 
-  // Trialing state - show trial end date
+  // Trialing state - show trial end date with manage link
   if (status === 'trialing' && trialEndDate) {
     const formattedDate = format(new Date(trialEndDate), 'MMM d');
-
-    const handleManage = () => {
-      // Placeholder for future subscription management
-      toast.info('Subscription management coming soon!');
-    };
 
     return (
       <Card className="border-primary/20 bg-primary/5 animate-fade-in">
@@ -69,10 +85,9 @@ export function SubscriptionBanner() {
           <Button 
             variant="ghost" 
             size="sm" 
-            className="text-xs text-muted-foreground hover:text-foreground gap-1"
-            onClick={handleManage}
+            className="text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => navigate('/manage-subscription')}
           >
-            <Settings className="h-3 w-3" />
             Manage
           </Button>
         </CardContent>

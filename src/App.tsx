@@ -21,6 +21,7 @@ import Progress from "./pages/Progress";
 import Store from "./pages/Store";
 import Settings from "./pages/Settings";
 import NotificationCenter from "./pages/NotificationCenter";
+import ManageSubscription from "./pages/ManageSubscription";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -100,6 +101,11 @@ const App = () => (
             <Route path="/notifications" element={
               <ProtectedRoute>
                 <NotificationCenter />
+              </ProtectedRoute>
+            } />
+            <Route path="/manage-subscription" element={
+              <ProtectedRoute>
+                <ManageSubscription />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
