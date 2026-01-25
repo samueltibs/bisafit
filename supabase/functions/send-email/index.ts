@@ -32,21 +32,30 @@ const OPTIONAL_EMAILS: string[] = [
   "feature_announcement",
 ];
 
-// Generate unsubscribe token (must match unsubscribe function)
-function generateUnsubscribeToken(userId: string, secret: string): string {
+// Cryptographically secure token generation using HMAC-SHA256 (must match unsubscribe function)
+async function generateUnsubscribeToken(userId: string, secret: string): Promise<string> {
   const encoder = new TextEncoder();
-  const data = encoder.encode(userId + secret);
-  let hash = 0;
-  for (let i = 0; i < data.length; i++) {
-    hash = ((hash << 5) - hash) + data[i];
-    hash = hash & hash;
-  }
-  return Math.abs(hash).toString(36);
+  const keyData = encoder.encode(secret);
+  const messageData = encoder.encode(userId);
+  
+  const key = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  
+  const signature = await crypto.subtle.sign('HMAC', key, messageData);
+  return Array.from(new Uint8Array(signature))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+    .substring(0, 32); // 128-bit token
 }
 
 // Generate unsubscribe URL for optional emails
-function getUnsubscribeUrl(userId: string, secret: string): string {
-  const token = generateUnsubscribeToken(userId, secret);
+async function getUnsubscribeUrl(userId: string, secret: string): Promise<string> {
+  const token = await generateUnsubscribeToken(userId, secret);
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   return `${supabaseUrl}/functions/v1/unsubscribe?uid=${userId}&token=${token}`;
 }

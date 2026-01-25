@@ -6,21 +6,37 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Simple token generation/validation using user ID + timestamp hash
-function generateUnsubscribeToken(userId: string, secret: string): string {
+// Cryptographically secure token generation using HMAC-SHA256
+async function generateUnsubscribeToken(userId: string, secret: string): Promise<string> {
   const encoder = new TextEncoder();
-  const data = encoder.encode(userId + secret);
-  let hash = 0;
-  for (let i = 0; i < data.length; i++) {
-    hash = ((hash << 5) - hash) + data[i];
-    hash = hash & hash;
-  }
-  return Math.abs(hash).toString(36);
+  const keyData = encoder.encode(secret);
+  const messageData = encoder.encode(userId);
+  
+  const key = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  
+  const signature = await crypto.subtle.sign('HMAC', key, messageData);
+  return Array.from(new Uint8Array(signature))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+    .substring(0, 32); // 128-bit token
 }
 
-function validateToken(userId: string, token: string, secret: string): boolean {
-  const expectedToken = generateUnsubscribeToken(userId, secret);
-  return token === expectedToken;
+// Timing-safe token validation
+async function validateToken(userId: string, token: string, secret: string): Promise<boolean> {
+  const expectedToken = await generateUnsubscribeToken(userId, secret);
+  // Timing-safe comparison
+  if (token.length !== expectedToken.length) return false;
+  let diff = 0;
+  for (let i = 0; i < token.length; i++) {
+    diff |= token.charCodeAt(i) ^ expectedToken.charCodeAt(i);
+  }
+  return diff === 0;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -47,7 +63,8 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Validate token
-    if (!validateToken(userId, token, unsubscribeSecret)) {
+    const isValid = await validateToken(userId, token, unsubscribeSecret);
+    if (!isValid) {
       return new Response(
         generateHtmlPage("Invalid Link", "This unsubscribe link is invalid or has expired.", false),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "text/html" } }
