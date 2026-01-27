@@ -45,6 +45,7 @@ import {
   Info,
   Compass,
   Globe,
+  Languages,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -67,6 +68,8 @@ import { type CoachTone, normalizeCoachTone } from '@/lib/coachTone';
 import { FAQScreen } from '@/components/settings/FAQScreen';
 import { getCountryName } from '@/lib/countryUtils';
 import { CountrySelector } from '@/components/settings/CountrySelector';
+import { LanguageSelector } from '@/components/settings/LanguageSelector';
+import { getLanguageName } from '@/lib/languageUtils';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -128,6 +131,7 @@ export default function Settings() {
     fullName: '',
     unitPreference: 'metric' as UnitPreference,
     country: null as string | null,
+    language: 'auto' as string,
     heightFeet: '',
     heightInches: '',
     heightCm: '',
@@ -213,6 +217,7 @@ export default function Settings() {
 
       const workoutDays = (profile as any).workout_days || ['Monday', 'Wednesday', 'Thursday', 'Friday'];
       const country = (profile as any).country || null;
+      const language = (profile as any).language || 'auto';
       const timePreferences = parseTimePreferences((profile as any).workout_time_preferences_json);
       const calendarSyncEnabled = (profile as any).calendar_sync_enabled || false;
       const notificationsEnabledVal = (profile as any).notifications_enabled ?? false;
@@ -224,6 +229,7 @@ export default function Settings() {
         fullName: profile.full_name || '',
         unitPreference: unitPref,
         country,
+        language,
         heightFeet,
         heightInches,
         heightCm,
@@ -340,6 +346,7 @@ export default function Settings() {
         weight_kg: weightKg,
         unit_preference: editForm.unitPreference,
         country: editForm.country,
+        language: editForm.language,
         workout_days: editForm.workoutDays,
         days_per_week: editForm.workoutDays.length,
         workout_time_preferences_json: editForm.timePreferences,
@@ -508,7 +515,23 @@ export default function Settings() {
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
 
-              {/* Available Equipment */}
+              {/* Language */}
+              <button 
+                onClick={() => setIsEditModalOpen(true)}
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
+              >
+                <div className="flex items-center gap-3">
+                  <Languages className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <span className="block font-medium">Language</span>
+                    <span className="text-sm text-muted-foreground">
+                      {getLanguageName((profile as any)?.language)}
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+
               <button 
                 onClick={() => setIsEquipmentModalOpen(true)}
                 className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
@@ -747,7 +770,13 @@ export default function Settings() {
               compact
             />
 
-            {/* Unit Toggle */}
+            {/* Language */}
+            <LanguageSelector
+              value={editForm.language}
+              onChange={(v) => setEditForm({ ...editForm, language: v })}
+              compact
+            />
+
             <div className="flex items-center justify-between py-2">
               <Label>Units</Label>
               <div className="flex items-center gap-2">

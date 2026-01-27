@@ -3,6 +3,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { User } from 'lucide-react';
 import { CountrySelector } from '@/components/settings/CountrySelector';
+import { LanguageSelector } from '@/components/settings/LanguageSelector';
 import { getUnitPreferenceForCountry, detectCountryFromDevice } from '@/lib/countryUtils';
 import { useEffect } from 'react';
 
@@ -13,12 +14,14 @@ interface StepAboutYouProps {
   weightKg: number | null;
   unitPreference: string;
   country: string | null;
+  language: string | null;
   onFullNameChange: (value: string) => void;
   onGenderChange: (value: string) => void;
   onHeightChange: (value: number | null) => void;
   onWeightChange: (value: number | null) => void;
   onUnitPreferenceChange: (value: string) => void;
   onCountryChange: (value: string | null) => void;
+  onLanguageChange: (value: string) => void;
 }
 
 const genderOptions = [
@@ -35,12 +38,14 @@ export function StepAboutYou({
   weightKg,
   unitPreference,
   country,
+  language,
   onFullNameChange,
   onGenderChange,
   onHeightChange,
   onWeightChange,
   onUnitPreferenceChange,
   onCountryChange,
+  onLanguageChange,
 }: StepAboutYouProps) {
   const isMetric = unitPreference === 'metric';
 
@@ -140,6 +145,12 @@ export function StepAboutYou({
       <CountrySelector
         value={country}
         onChange={(v) => onCountryChange(v)}
+      />
+
+      {/* Language */}
+      <LanguageSelector
+        value={language}
+        onChange={onLanguageChange}
       />
 
       {/* Unit Preference */}
