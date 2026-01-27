@@ -2,18 +2,19 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 import { Flame, Dumbbell, Zap, Scale } from 'lucide-react';
+import { useTranslation, type TranslationKey } from '@/lib/i18n';
 
-const goals = [
-  { value: 'fat_loss', label: 'Fat Loss', description: 'Burn fat and get lean', icon: Flame },
-  { value: 'muscle_gain', label: 'Build Muscle', description: 'Gain strength and size', icon: Dumbbell },
-  { value: 'endurance', label: 'Endurance', description: 'Improve stamina & cardio', icon: Zap },
-  { value: 'maintenance', label: 'Maintenance', description: 'Maintain current fitness', icon: Scale },
+const goals: { value: string; labelKey: TranslationKey; descKey: TranslationKey; icon: typeof Flame }[] = [
+  { value: 'fat_loss', labelKey: 'goal.fatLoss', descKey: 'goal.fatLoss.desc', icon: Flame },
+  { value: 'muscle_gain', labelKey: 'goal.muscleGain', descKey: 'goal.muscleGain.desc', icon: Dumbbell },
+  { value: 'endurance', labelKey: 'goal.endurance', descKey: 'goal.endurance.desc', icon: Zap },
+  { value: 'maintenance', labelKey: 'goal.maintenance', descKey: 'goal.maintenance.desc', icon: Scale },
 ];
 
-const experienceLevels = [
-  { value: 'beginner', label: 'Beginner', description: 'New to fitness or returning after a break' },
-  { value: 'intermediate', label: 'Intermediate', description: '1-3 years of consistent training' },
-  { value: 'advanced', label: 'Advanced', description: '3+ years of serious training' },
+const experienceLevels: { value: string; labelKey: TranslationKey; descKey: TranslationKey }[] = [
+  { value: 'beginner', labelKey: 'experience.beginner', descKey: 'experience.beginner.desc' },
+  { value: 'intermediate', labelKey: 'experience.intermediate', descKey: 'experience.intermediate.desc' },
+  { value: 'advanced', labelKey: 'experience.advanced', descKey: 'experience.advanced.desc' },
 ];
 
 interface StepGoalsProps {
@@ -33,6 +34,8 @@ export function StepGoals({
   onSecondaryGoalChange,
   onExperienceChange 
 }: StepGoalsProps) {
+  const { t } = useTranslation();
+  
   // Filter out primary goal from secondary options
   const secondaryGoalOptions = goals.filter(g => g.value !== goalPrimary);
 
@@ -40,7 +43,7 @@ export function StepGoals({
     <div className="space-y-6">
       {/* Primary Goal */}
       <div className="space-y-3">
-        <Label className="text-base font-medium">What's your primary goal?</Label>
+        <Label className="text-base font-medium">{t('onboarding.primaryGoal')}</Label>
         <RadioGroup value={goalPrimary} onValueChange={onGoalChange} className="grid grid-cols-2 gap-3">
           {goals.map((goal) => (
             <div
@@ -59,9 +62,9 @@ export function StepGoals({
                 goalPrimary === goal.value ? "text-primary" : "text-muted-foreground"
               )} />
               <Label htmlFor={goal.value} className="cursor-pointer font-medium">
-                {goal.label}
+                {t(goal.labelKey)}
               </Label>
-              <p className="text-xs text-muted-foreground">{goal.description}</p>
+              <p className="text-xs text-muted-foreground">{t(goal.descKey)}</p>
             </div>
           ))}
         </RadioGroup>
@@ -71,7 +74,7 @@ export function StepGoals({
       {goalPrimary && (
         <div className="space-y-3 animate-fade-in">
           <div>
-            <Label className="text-base font-medium">Secondary goal (optional)</Label>
+            <Label className="text-base font-medium">{t('onboarding.secondaryGoal')} ({t('common.optional')})</Label>
             <p className="text-xs text-muted-foreground mt-1">
               Helps tailor your conditioning and exercise variety
             </p>
@@ -90,7 +93,7 @@ export function StepGoals({
                 )}
               >
                 <goal.icon className="h-4 w-4" />
-                {goal.label}
+                {t(goal.labelKey)}
               </button>
             ))}
           </div>
@@ -99,7 +102,7 @@ export function StepGoals({
 
       {/* Experience Level */}
       <div className="space-y-3">
-        <Label className="text-base font-medium">What's your experience level?</Label>
+        <Label className="text-base font-medium">{t('onboarding.experienceLevel')}</Label>
         <RadioGroup value={experienceLevel} onValueChange={onExperienceChange} className="space-y-2">
           {experienceLevels.map((level) => (
             <div
@@ -115,9 +118,9 @@ export function StepGoals({
               <RadioGroupItem value={level.value} id={level.value} />
               <div>
                 <Label htmlFor={level.value} className="cursor-pointer font-medium">
-                  {level.label}
+                  {t(level.labelKey)}
                 </Label>
-                <p className="text-sm text-muted-foreground">{level.description}</p>
+                <p className="text-sm text-muted-foreground">{t(level.descKey)}</p>
               </div>
             </div>
           ))}
