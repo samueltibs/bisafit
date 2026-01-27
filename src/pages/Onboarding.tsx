@@ -38,6 +38,7 @@ interface FormData {
   weightKg: number | null;
   unitPreference: string;
   country: string | null;
+  language: string;
   goalPrimary: string;
   goalSecondary: string;
   experienceLevel: string;
@@ -72,6 +73,7 @@ const initialFormData: FormData = {
   weightKg: null,
   unitPreference: 'metric',
   country: null,
+  language: 'auto',
   // Step 2: Goals
   goalPrimary: '',
   goalSecondary: '',
@@ -137,6 +139,7 @@ export default function Onboarding() {
         weightKg: profile.weight_kg ? Number(profile.weight_kg) : null,
         unitPreference: (profile as any).unit_preference || 'metric',
         country: (profile as any).country || null,
+        language: (profile as any).language || 'auto',
         goalPrimary: profile.goal_primary || '',
         goalSecondary: (profile as any).goal_secondary || '',
         experienceLevel: profile.experience_level || '',
@@ -236,6 +239,7 @@ export default function Onboarding() {
         weight_kg: formData.weightKg,
         unit_preference: formData.unitPreference,
         country: formData.country,
+        language: formData.language,
         goal_primary: formData.goalPrimary,
         goal_secondary: formData.goalSecondary || null,
         experience_level: formData.experienceLevel,
@@ -336,12 +340,14 @@ export default function Onboarding() {
               weightKg={formData.weightKg}
               unitPreference={formData.unitPreference}
               country={formData.country}
+              language={formData.language}
               onFullNameChange={(v) => setFormData({ ...formData, fullName: v })}
               onGenderChange={(v) => setFormData({ ...formData, gender: v })}
               onHeightChange={(v) => setFormData({ ...formData, heightCm: v })}
               onWeightChange={(v) => setFormData({ ...formData, weightKg: v })}
               onUnitPreferenceChange={(v) => setFormData({ ...formData, unitPreference: v })}
               onCountryChange={(v) => setFormData({ ...formData, country: v })}
+              onLanguageChange={(v) => setFormData({ ...formData, language: v })}
             />
           )}
 
