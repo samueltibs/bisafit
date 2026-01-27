@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { trackEvent } from '@/lib/analytics';
 import { SUPPORT_MESSAGE_SHORT, EMAIL_SUPPORT } from '@/lib/branding';
 import { type CoachTone, normalizeCoachTone } from '@/lib/coachTone';
+import { restoreBodyScroll } from '@/hooks/useScrollRestore';
 
 import { OnboardingProgress, StepAboutYou } from '@/components/onboarding';
 import { StepGoals } from '@/components/onboarding/StepGoals';
@@ -102,6 +103,11 @@ export default function Onboarding() {
   const [isLoading, setIsLoading] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
+
+  // Restore body scroll on mount (in case navigating from a modal-locked state)
+  useEffect(() => {
+    restoreBodyScroll();
+  }, []);
 
   // Pre-fill form with existing profile data
   useEffect(() => {
@@ -293,7 +299,7 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background p-4">
+    <div className="flex min-h-screen flex-col bg-background p-4 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
       {/* Header */}
       <div className="mb-4 flex items-center gap-2">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
