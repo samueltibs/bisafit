@@ -299,7 +299,10 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background p-4 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+    <div 
+      className="min-h-screen flex flex-col bg-background p-4"
+      style={{ WebkitOverflowScrolling: 'touch' }}
+    >
       {/* Header */}
       <div className="mb-4 flex items-center gap-2">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
