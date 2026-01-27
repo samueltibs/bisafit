@@ -635,3 +635,20 @@
     animation: scaleIn 0.2s ease-out;
   }
 }
+
+/* ============================================
+   DEBUG MODE - Overlay Detection (Dev Only)
+   Toggle via OverlayDebugPanel component
+   ============================================ */
+.debug-overlays [class*="fixed"][class*="inset-0"],
+.debug-overlays [class*="absolute"][class*="inset-0"] {
+  outline: 3px dashed red !important;
+  outline-offset: -3px;
+  background-color: rgba(255, 0, 0, 0.1) !important;
+}
+
+.debug-overlays .image-overlay::after,
+.debug-overlays .image-overlay-dark::after,
+.debug-overlays .image-overlay-subtle::after {
+  outline: 2px dashed orange !important;
+}
