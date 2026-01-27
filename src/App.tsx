@@ -8,6 +8,7 @@ import { PlatformProvider } from "@/hooks/usePlatform";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SubscriptionGate } from "@/components/subscription/SubscriptionGate";
 import { AnalyticsDebugPanel } from "@/components/debug/AnalyticsDebugPanel";
+import { OverlayDebugPanel } from "@/components/debug/OverlayDebugPanel";
 
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -120,6 +121,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
           <AnalyticsDebugPanel />
+          <OverlayDebugPanel />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
