@@ -1,0 +1,637 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ============================================
+       DESIGN LOCK — BISAFIT VISUAL IDENTITY
+       Do NOT modify these values.
+       ============================================ */
+
+    /* Background: near-black #0E1116 */
+    --background: 216 22% 7%;
+    /* Text primary: white #FFFFFF */
+    --foreground: 0 0% 100%;
+
+    /* Primary cards/surfaces: dark charcoal #171A20 */
+    --card: 220 13% 11%;
+    --card-foreground: 0 0% 100%;
+
+    /* Popover: same as card */
+    --popover: 220 13% 11%;
+    --popover-foreground: 0 0% 100%;
+
+    /* Primary accent: soft fitness green #6FCF97 */
+    --primary: 145 52% 62%;
+    --primary-foreground: 220 22% 7%;
+
+    /* Secondary surfaces: #1F232B */
+    --secondary: 220 16% 15%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Muted: secondary surface with soft gray text #B0B6C3 */
+    --muted: 220 16% 15%;
+    --muted-foreground: 220 14% 70%;
+
+    /* Secondary accent: muted gold #E6B65C */
+    --accent: 42 75% 63%;
+    --accent-foreground: 220 22% 7%;
+
+    /* Destructive: muted red */
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders and Inputs */
+    --border: 220 14% 20%;
+    --input: 220 14% 18%;
+    --ring: 145 52% 62%;
+
+    /* Radius: 18-22px for cards */
+    --radius: 1.125rem;
+    --radius-card: 1.25rem;
+    --radius-lg: 1.375rem;
+
+    /* Semantic colors (locked to palette) */
+    --success: 145 52% 62%;
+    --success-foreground: 220 22% 7%;
+    --warning: 42 75% 63%;
+    --warning-foreground: 220 22% 7%;
+    --energy: 42 75% 63%;
+    --energy-foreground: 220 22% 7%;
+
+    /* Gradients - Subtle, premium */
+    --gradient-primary: linear-gradient(135deg, hsl(145 52% 62%) 0%, hsl(145 52% 52%) 100%);
+    --gradient-energy: linear-gradient(135deg, hsl(42 75% 63%) 0%, hsl(42 75% 53%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(220 13% 13%) 0%, hsl(220 13% 11%) 100%);
+
+    /* Sidebar */
+    --sidebar-background: 216 22% 7%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 145 52% 62%;
+    --sidebar-primary-foreground: 220 22% 7%;
+    --sidebar-accent: 220 16% 15%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 14% 20%;
+    --sidebar-ring: 145 52% 62%;
+  }
+
+  /* Dark class mirrors root (locked) */
+  .dark {
+    --background: 216 22% 7%;
+    --foreground: 0 0% 100%;
+
+    --card: 220 13% 11%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 220 13% 11%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 145 52% 62%;
+    --primary-foreground: 220 22% 7%;
+
+    --secondary: 220 16% 15%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 220 16% 15%;
+    --muted-foreground: 220 14% 70%;
+
+    --accent: 42 75% 63%;
+    --accent-foreground: 220 22% 7%;
+
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 14% 20%;
+    --input: 220 14% 18%;
+    --ring: 145 52% 62%;
+
+    --sidebar-background: 216 22% 7%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 145 52% 62%;
+    --sidebar-primary-foreground: 220 22% 7%;
+    --sidebar-accent: 220 16% 15%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 14% 20%;
+    --sidebar-ring: 145 52% 62%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.011em;
+    line-height: 1.5;
+  }
+
+  /* iOS-style heading hierarchy */
+  h1 {
+    @apply text-3xl font-bold tracking-tight leading-tight;
+    letter-spacing: -0.025em;
+  }
+
+  h2 {
+    @apply text-2xl font-semibold tracking-tight leading-snug;
+    letter-spacing: -0.02em;
+  }
+
+  h3 {
+    @apply text-xl font-semibold tracking-tight leading-snug;
+    letter-spacing: -0.015em;
+  }
+
+  h4 {
+    @apply text-lg font-medium leading-normal;
+    letter-spacing: -0.01em;
+  }
+
+  p {
+    @apply text-base font-normal leading-relaxed;
+  }
+}
+
+@layer components {
+  /* Large numeric displays - timers, calories, stats */
+  .text-display {
+    @apply text-5xl font-bold tracking-tighter;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+
+  .text-display-lg {
+    @apply text-6xl font-extrabold tracking-tighter;
+    letter-spacing: -0.035em;
+    line-height: 1;
+  }
+
+  .text-display-sm {
+    @apply text-4xl font-bold tracking-tight;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+  }
+
+  /* Stat values - prominent numbers */
+  .text-stat {
+    @apply text-3xl font-bold tracking-tight;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .text-stat-sm {
+    @apply text-2xl font-semibold tracking-tight;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+  }
+
+  /* Body text variants */
+  .text-body {
+    @apply text-base font-medium leading-relaxed;
+    letter-spacing: -0.011em;
+  }
+
+  .text-body-lg {
+    @apply text-lg font-medium leading-relaxed;
+    letter-spacing: -0.011em;
+  }
+
+  .text-body-sm {
+    @apply text-sm font-medium leading-relaxed;
+    letter-spacing: -0.006em;
+  }
+
+  /* Secondary/muted labels */
+  .text-label {
+    @apply text-sm font-medium text-muted-foreground;
+    letter-spacing: -0.006em;
+  }
+
+  .text-label-xs {
+    @apply text-xs font-medium text-muted-foreground uppercase tracking-wide;
+    letter-spacing: 0.05em;
+  }
+
+  /* Caption/helper text */
+  .text-caption {
+    @apply text-xs font-normal text-muted-foreground leading-normal;
+  }
+
+  /* Card title style */
+  .text-card-title {
+    @apply text-lg font-semibold tracking-tight leading-snug;
+    letter-spacing: -0.01em;
+  }
+
+  /* Section headers */
+  .text-section {
+    @apply text-xs font-semibold uppercase tracking-wider text-muted-foreground;
+    letter-spacing: 0.08em;
+  }
+
+  /* Prominent action text */
+  .text-action {
+    @apply text-base font-semibold;
+    letter-spacing: -0.01em;
+  }
+  /* Premium card variants - Subtle, refined shadows */
+  .card-elevated {
+    @apply rounded-[20px] border border-border/30 bg-card;
+    box-shadow: 
+      0 1px 3px rgba(0, 0, 0, 0.1),
+      0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .card-elevated-lg {
+    @apply rounded-[22px] border border-border/25 bg-card;
+    box-shadow: 
+      0 2px 6px rgba(0, 0, 0, 0.08),
+      0 8px 24px rgba(0, 0, 0, 0.1);
+  }
+
+  .card-subtle {
+    @apply rounded-[18px] border border-border/20 bg-card/60;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .card-interactive {
+    @apply rounded-[20px] border border-border/30 bg-card cursor-pointer;
+    box-shadow: 
+      0 1px 3px rgba(0, 0, 0, 0.1),
+      0 4px 12px rgba(0, 0, 0, 0.08);
+    transition: all 0.2s ease-out;
+  }
+
+  .card-interactive:hover {
+    @apply border-border/40;
+    transform: translateY(-1px);
+    box-shadow: 
+      0 2px 6px rgba(0, 0, 0, 0.1),
+      0 8px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  .card-interactive:active {
+    transform: translateY(0);
+    box-shadow: 
+      0 1px 2px rgba(0, 0, 0, 0.08),
+      0 3px 10px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Card spacing utility */
+  .card-stack > * + * {
+    @apply mt-4;
+  }
+
+  .card-stack-lg > * + * {
+    @apply mt-6;
+  }
+
+  /* Icon styling - minimal, line-based with rounded edges */
+  .icon {
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.75;
+    @apply text-current transition-colors duration-200;
+  }
+
+  .icon-sm {
+    @apply w-4 h-4;
+    stroke-width: 2;
+  }
+
+  .icon-md {
+    @apply w-5 h-5;
+    stroke-width: 1.75;
+  }
+
+  .icon-lg {
+    @apply w-6 h-6;
+    stroke-width: 1.5;
+  }
+
+  .icon-xl {
+    @apply w-8 h-8;
+    stroke-width: 1.25;
+  }
+
+  /* Icon color variants - monochrome or lightly tinted */
+  .icon-primary {
+    @apply text-primary;
+  }
+
+  .icon-muted {
+    @apply text-muted-foreground;
+  }
+
+  .icon-accent {
+    @apply text-accent;
+  }
+
+  .icon-subtle {
+    @apply text-foreground/60;
+  }
+
+  /* Icon container for consistent sizing and touch targets */
+  .icon-container {
+    @apply inline-flex items-center justify-center rounded-xl;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .icon-container-sm {
+    @apply inline-flex items-center justify-center rounded-lg;
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  /* Image overlay styles for consistent photography treatment */
+  .image-overlay {
+    @apply relative overflow-hidden;
+  }
+
+  .image-overlay::after {
+    content: '';
+    @apply absolute inset-0 pointer-events-none;
+    background: linear-gradient(
+      to bottom,
+      rgba(14, 17, 22, 0.1) 0%,
+      rgba(14, 17, 22, 0.4) 100%
+    );
+  }
+
+  .image-overlay-dark::after {
+    background: linear-gradient(
+      to bottom,
+      rgba(14, 17, 22, 0.2) 0%,
+      rgba(14, 17, 22, 0.6) 100%
+    );
+  }
+
+  .image-overlay-subtle::after {
+    background: linear-gradient(
+      to bottom,
+      rgba(14, 17, 22, 0.05) 0%,
+      rgba(14, 17, 22, 0.25) 100%
+    );
+  }
+
+  /* Image with vignette effect */
+  .image-vignette::after {
+    content: '';
+    @apply absolute inset-0 pointer-events-none;
+    background: radial-gradient(
+      ellipse at center,
+      transparent 40%,
+      rgba(14, 17, 22, 0.4) 100%
+    );
+  }
+
+  /* Photo container with consistent rounded corners */
+  .photo-container {
+    @apply relative overflow-hidden rounded-[16px];
+  }
+
+  .photo-container img {
+    @apply w-full h-full object-cover;
+  }
+
+  .photo-container-lg {
+    @apply relative overflow-hidden rounded-[20px];
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-energy {
+    background: var(--gradient-energy);
+  }
+
+  .gradient-card {
+    background: var(--gradient-card);
+  }
+
+  .safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  /* Text utilities for fine-tuning */
+  .tracking-tighter-ios {
+    letter-spacing: -0.03em;
+  }
+
+  .tracking-tight-ios {
+    letter-spacing: -0.02em;
+  }
+
+  .tracking-normal-ios {
+    letter-spacing: -0.011em;
+  }
+
+  /* Page transition animations */
+  .animate-page-enter {
+    animation: pageEnter 0.25s ease-out forwards;
+  }
+
+  .animate-page-exit {
+    animation: pageExit 0.2s ease-in forwards;
+  }
+
+  @keyframes pageEnter {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pageExit {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+
+  /* Subtle fade animations */
+  .animate-fade-in {
+    animation: fadeIn 0.2s ease-out forwards;
+  }
+
+  .animate-fade-in-slow {
+    animation: fadeIn 0.35s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out forwards;
+  }
+
+  .animate-slide-up-subtle {
+    animation: slideUpSubtle 0.25s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.15s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideUpSubtle {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Micro-interaction: Gentle tap scale */
+  .tap-scale {
+    @apply transition-transform duration-150 ease-out active:scale-[0.97];
+  }
+
+  .tap-scale-sm {
+    @apply transition-transform duration-100 ease-out active:scale-[0.98];
+  }
+
+  .tap-scale-lg {
+    @apply transition-transform duration-150 ease-out active:scale-[0.95];
+  }
+
+  /* Hover lift effect */
+  .hover-lift {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-2px);
+  }
+
+  .hover-lift:active {
+    transform: translateY(0);
+  }
+
+  /* Smooth opacity transitions */
+  .fade-hover {
+    @apply transition-opacity duration-200 ease-out;
+  }
+
+  .fade-hover:hover {
+    opacity: 0.85;
+  }
+
+  /* Interactive element base */
+  .interactive {
+    @apply transition-all duration-200 ease-out cursor-pointer;
+  }
+
+  .interactive:hover {
+    @apply opacity-90;
+  }
+
+  .interactive:active {
+    @apply scale-[0.98] opacity-100;
+  }
+
+  /* Staggered animation delays for lists */
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+  .stagger-5 { animation-delay: 0.25s; }
+  .stagger-6 { animation-delay: 0.3s; }
+
+  /* Progress animations */
+  @keyframes progressPulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.85;
+    }
+  }
+
+  @keyframes progressComplete {
+    0% {
+      transform: scale(1);
+      filter: drop-shadow(0 0 0 transparent);
+    }
+    50% {
+      transform: scale(1.02);
+      filter: drop-shadow(0 0 8px hsl(145 52% 55% / 0.4));
+    }
+    100% {
+      transform: scale(1);
+      filter: drop-shadow(0 0 4px hsl(145 52% 55% / 0.3));
+    }
+  }
+
+  .animate-progress-pulse {
+    animation: progressPulse 2s ease-in-out infinite;
+  }
+
+  .animate-progress-complete {
+    animation: progressComplete 0.6s ease-out forwards;
+  }
+
+  /* Smooth number transitions */
+  .progress-value {
+    @apply tabular-nums font-bold;
+    transition: color 0.3s ease, transform 0.2s ease;
+  }
+
+  .progress-value-update {
+    animation: scaleIn 0.2s ease-out;
+  }
+}

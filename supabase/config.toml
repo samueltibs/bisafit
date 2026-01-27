@@ -1,0 +1,40 @@
+project_id = "wfivicfvbihzkxrqcekv"
+
+[functions.generate-plan]
+verify_jwt = false
+
+[functions.detect-ingredients-from-receipt]
+verify_jwt = false
+
+[functions.detect-equipment]
+verify_jwt = false
+
+[functions.generate-next-block]
+verify_jwt = false
+
+[functions.generate-nutrition-targets]
+verify_jwt = false
+
+[functions.generate-meal-plan]
+verify_jwt = false
+
+[functions.swap-meal]
+verify_jwt = false
+
+[functions.detect-ingredients]
+verify_jwt = false
+
+[functions.generate-meals-from-ingredients]
+verify_jwt = false
+
+[functions.schedule-notifications]
+verify_jwt = false
+
+[functions.send-email]
+verify_jwt = false
+
+[functions.log-email-preference]
+verify_jwt = false
+
+[functions.unsubscribe]
+verify_jwt = false
