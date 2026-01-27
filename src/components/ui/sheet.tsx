@@ -5,7 +5,28 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-const Sheet = SheetPrimitive.Root;
+/**
+ * Sheet Root wrapper that handles scroll restoration on close.
+ */
+const Sheet = React.forwardRef<
+  React.ElementRef<typeof SheetPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof SheetPrimitive.Root>
+>(({ onOpenChange, ...props }, ref) => {
+  const handleOpenChange = React.useCallback((open: boolean) => {
+    if (!open) {
+      requestAnimationFrame(() => {
+        document.body.style.overflow = '';
+        document.body.style.pointerEvents = '';
+        document.body.removeAttribute('data-scroll-locked');
+        document.documentElement.style.overflow = '';
+      });
+    }
+    onOpenChange?.(open);
+  }, [onOpenChange]);
+
+  return <SheetPrimitive.Root onOpenChange={handleOpenChange} {...props} />;
+});
+Sheet.displayName = "Sheet";
 
 const SheetTrigger = SheetPrimitive.Trigger;
 

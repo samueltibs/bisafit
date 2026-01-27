@@ -4,7 +4,28 @@ import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
-const AlertDialog = AlertDialogPrimitive.Root;
+/**
+ * AlertDialog Root wrapper that handles scroll restoration on close.
+ */
+const AlertDialog = React.forwardRef<
+  React.ElementRef<typeof AlertDialogPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Root>
+>(({ onOpenChange, ...props }, ref) => {
+  const handleOpenChange = React.useCallback((open: boolean) => {
+    if (!open) {
+      requestAnimationFrame(() => {
+        document.body.style.overflow = '';
+        document.body.style.pointerEvents = '';
+        document.body.removeAttribute('data-scroll-locked');
+        document.documentElement.style.overflow = '';
+      });
+    }
+    onOpenChange?.(open);
+  }, [onOpenChange]);
+
+  return <AlertDialogPrimitive.Root onOpenChange={handleOpenChange} {...props} />;
+});
+AlertDialog.displayName = "AlertDialog";
 
 const AlertDialogTrigger = AlertDialogPrimitive.Trigger;
 

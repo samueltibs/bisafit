@@ -3,9 +3,31 @@ import { Drawer as DrawerPrimitive } from "vaul";
 
 import { cn } from "@/lib/utils";
 
-const Drawer = ({ shouldScaleBackground = true, ...props }: React.ComponentProps<typeof DrawerPrimitive.Root>) => (
-  <DrawerPrimitive.Root shouldScaleBackground={shouldScaleBackground} {...props} />
-);
+/**
+ * Drawer wrapper that handles scroll restoration on close.
+ * Vaul's shouldScaleBackground can cause scroll lock - we restore on close.
+ */
+const Drawer = ({ shouldScaleBackground = true, onOpenChange, ...props }: React.ComponentProps<typeof DrawerPrimitive.Root>) => {
+  const handleOpenChange = React.useCallback((open: boolean) => {
+    if (!open) {
+      requestAnimationFrame(() => {
+        document.body.style.overflow = '';
+        document.body.style.pointerEvents = '';
+        document.body.removeAttribute('data-scroll-locked');
+        document.documentElement.style.overflow = '';
+      });
+    }
+    onOpenChange?.(open);
+  }, [onOpenChange]);
+
+  return (
+    <DrawerPrimitive.Root 
+      shouldScaleBackground={shouldScaleBackground} 
+      onOpenChange={handleOpenChange}
+      {...props} 
+    />
+  );
+};
 Drawer.displayName = "Drawer";
 
 const DrawerTrigger = DrawerPrimitive.Trigger;
