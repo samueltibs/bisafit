@@ -124,12 +124,18 @@
     @apply border-border;
   }
 
+  /* 
+   * iOS Safari scroll fix:
+   * - html/body must NOT have overflow: hidden
+   * - Use height: 100% to allow natural document flow
+   * - Apply -webkit-overflow-scrolling: touch for momentum
+   */
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    /* Prevent scroll locking issues on iOS */
     height: 100%;
+    overflow: visible;
   }
 
   body {
@@ -138,18 +144,19 @@
     font-feature-settings: 'cv11', 'ss01';
     letter-spacing: -0.011em;
     line-height: 1.5;
-    /* Ensure body can scroll and prevent stuck states */
+    /* iOS Safari scroll compatibility */
     min-height: 100%;
+    height: auto;
     overflow-x: hidden;
-    overflow-y: auto;
-    position: static !important;
+    overflow-y: visible;
+    position: relative;
     -webkit-overflow-scrolling: touch;
   }
 
   /* Force restore scroll when no modals are open */
   body:not([data-scroll-locked]) {
-    overflow: auto !important;
-    position: static !important;
+    overflow-y: visible !important;
+    position: relative !important;
   }
 
   /* iOS-style heading hierarchy */

@@ -16,15 +16,31 @@ export function AppLayout({ children, title = 'BisaFit', showNav = true }: AppLa
   useScrollRestore();
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <TrialBanner />
-      <Header title={title} />
-      <main className="flex-1 pb-20 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
-        <PageTransition>
-          {children}
-        </PageTransition>
-      </main>
-      {showNav && <BottomNav />}
-    </div>
+    <>
+      {/* 
+        Single scroll container for iOS Safari compatibility.
+        - No nested overflow containers
+        - min-h-screen ensures full viewport
+        - overflow-y-auto on this root div only
+        - -webkit-overflow-scrolling: touch for momentum scrolling
+      */}
+      <div 
+        className="min-h-screen bg-background flex flex-col"
+        style={{ 
+          WebkitOverflowScrolling: 'touch',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+        }}
+      >
+        <TrialBanner />
+        <Header title={title} />
+        <main className="flex-1 pb-20">
+          <PageTransition>
+            {children}
+          </PageTransition>
+        </main>
+        {showNav && <BottomNav />}
+      </div>
+    </>
   );
 }
