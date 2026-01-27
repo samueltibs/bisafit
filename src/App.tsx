@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SubscriptionGate } from "@/components/subscription/SubscriptionGate";
 import { AnalyticsDebugPanel } from "@/components/debug/AnalyticsDebugPanel";
 import { OverlayDebugPanel } from "@/components/debug/OverlayDebugPanel";
+import { AppLanguageProvider } from "@/components/AppLanguageProvider";
 
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -32,10 +33,11 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <PlatformProvider>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-        <BrowserRouter>
+        <AppLanguageProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+          <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -120,10 +122,11 @@ const App = () => (
             } />
             <Route path="*" element={<NotFound />} />
           </Routes>
-          <AnalyticsDebugPanel />
-          <OverlayDebugPanel />
-        </BrowserRouter>
-      </TooltipProvider>
+            <AnalyticsDebugPanel />
+            <OverlayDebugPanel />
+          </BrowserRouter>
+        </TooltipProvider>
+      </AppLanguageProvider>
     </AuthProvider>
   </PlatformProvider>
   </QueryClientProvider>

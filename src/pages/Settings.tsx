@@ -70,6 +70,7 @@ import { getCountryName } from '@/lib/countryUtils';
 import { CountrySelector } from '@/components/settings/CountrySelector';
 import { LanguageSelector } from '@/components/settings/LanguageSelector';
 import { getLanguageName } from '@/lib/languageUtils';
+import { useTranslation, translateGoal } from '@/lib/i18n';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -433,12 +434,7 @@ export default function Settings() {
     return user?.email?.[0].toUpperCase() || 'U';
   };
 
-  const goalLabels: Record<string, string> = {
-    fat_loss: 'Fat Loss',
-    muscle_gain: 'Build Muscle',
-    endurance: 'Endurance',
-    maintenance: 'Maintenance',
-  };
+  const { t } = useTranslation();
 
   const displayUnit: UnitPreference = (profile?.unit_preference as UnitPreference) || getDefaultUnitPreference();
 
@@ -477,7 +473,7 @@ export default function Settings() {
 
         {/* Section 1: You & Your Plan */}
         <div className="space-y-4 animate-slide-up">
-          <h3 className="text-sm font-medium text-muted-foreground">You & Your Plan</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">{t('settings.youAndYourPlan')}</h3>
           
           <Card className="border-border">
             <CardContent className="divide-y divide-border p-0">
@@ -489,9 +485,9 @@ export default function Settings() {
                 <div className="flex items-center gap-3">
                   <Target className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <span className="block font-medium">Goals</span>
+                    <span className="block font-medium">{t('settings.goals')}</span>
                     <span className="text-sm text-muted-foreground">
-                      {profile?.goal_primary ? goalLabels[profile.goal_primary] || profile.goal_primary : 'Not set'}
+                      {profile?.goal_primary ? translateGoal(profile.goal_primary, t) : 'Not set'}
                     </span>
                   </div>
                 </div>
@@ -506,7 +502,7 @@ export default function Settings() {
                 <div className="flex items-center gap-3">
                   <Globe className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <span className="block font-medium">Country / Region</span>
+                    <span className="block font-medium">{t('onboarding.countryRegion')}</span>
                     <span className="text-sm text-muted-foreground">
                       {getCountryName((profile as any)?.country)}
                     </span>
@@ -523,7 +519,7 @@ export default function Settings() {
                 <div className="flex items-center gap-3">
                   <Languages className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <span className="block font-medium">Language</span>
+                    <span className="block font-medium">{t('settings.language')}</span>
                     <span className="text-sm text-muted-foreground">
                       {getLanguageName((profile as any)?.language)}
                     </span>
@@ -539,7 +535,7 @@ export default function Settings() {
                 <div className="flex items-center gap-3">
                   <Dumbbell className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <span className="block font-medium">Equipment</span>
+                    <span className="block font-medium">{t('settings.equipment')}</span>
                     <span className="text-sm text-muted-foreground">
                       {(profile as any)?.equipment_json && ((profile as any).equipment_json as string[]).length > 0 
                         ? `${((profile as any).equipment_json as string[]).length} items`
@@ -554,7 +550,7 @@ export default function Settings() {
               <div className="p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <Sparkles className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">Coach Tone</span>
+                  <span className="font-medium">{t('settings.coachTone')}</span>
                 </div>
                 <CoachToneSelector
                   currentTone={coachTone}
@@ -567,7 +563,7 @@ export default function Settings() {
               <div className="p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <User className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">Coach Voice</span>
+                  <span className="font-medium">{t('settings.coachVoice')}</span>
                 </div>
                 <CoachVoiceSelector compact />
               </div>
@@ -597,7 +593,7 @@ export default function Settings() {
 
         {/* Section 2: Account */}
         <div className="space-y-4 animate-slide-up">
-          <h3 className="text-sm font-medium text-muted-foreground">Account</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">{t('settings.account')}</h3>
           
           <Card className="border-border">
             <CardContent className="divide-y divide-border p-0">
@@ -660,7 +656,7 @@ export default function Settings() {
               >
                 <div className="flex items-center gap-3">
                   <LogOut className="h-5 w-5" />
-                  <span className="font-medium">Sign Out</span>
+                  <span className="font-medium">{t('settings.signOut')}</span>
                 </div>
               </button>
             </CardContent>
@@ -669,7 +665,7 @@ export default function Settings() {
 
         {/* Section 3: Help & Support */}
         <div className="space-y-4 animate-slide-up">
-          <h3 className="text-sm font-medium text-muted-foreground">Help & Support</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">{t('settings.helpSupport')}</h3>
           
           <Card className="border-border">
             <CardContent className="divide-y divide-border p-0">

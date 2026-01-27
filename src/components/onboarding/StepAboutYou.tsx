@@ -6,6 +6,7 @@ import { CountrySelector } from '@/components/settings/CountrySelector';
 import { LanguageSelector } from '@/components/settings/LanguageSelector';
 import { getUnitPreferenceForCountry, detectCountryFromDevice } from '@/lib/countryUtils';
 import { useEffect } from 'react';
+import { useTranslation, type TranslationKey } from '@/lib/i18n';
 
 interface StepAboutYouProps {
   fullName: string;
@@ -24,11 +25,11 @@ interface StepAboutYouProps {
   onLanguageChange: (value: string) => void;
 }
 
-const genderOptions = [
-  { value: 'male', label: 'Male' },
-  { value: 'female', label: 'Female' },
-  { value: 'other', label: 'Other' },
-  { value: 'prefer_not_to_say', label: 'Prefer not to say' },
+const genderOptions: { value: string; labelKey: TranslationKey }[] = [
+  { value: 'male', labelKey: 'gender.male' },
+  { value: 'female', labelKey: 'gender.female' },
+  { value: 'other', labelKey: 'gender.other' },
+  { value: 'prefer_not_to_say', labelKey: 'gender.preferNotToSay' },
 ];
 
 export function StepAboutYou({
@@ -47,6 +48,7 @@ export function StepAboutYou({
   onCountryChange,
   onLanguageChange,
 }: StepAboutYouProps) {
+  const { t } = useTranslation();
   const isMetric = unitPreference === 'metric';
 
   // Auto-detect country on mount if not set
@@ -108,19 +110,19 @@ export function StepAboutYou({
           <User className="h-6 w-6 text-primary" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold">About You</h3>
-          <p className="text-sm text-muted-foreground">Let's get to know you better</p>
+          <h3 className="text-lg font-semibold">{t('onboarding.aboutYou')}</h3>
+          <p className="text-sm text-muted-foreground">{t('onboarding.aboutYou.desc')}</p>
         </div>
       </div>
 
       {/* Full Name */}
       <div className="space-y-2">
         <Label htmlFor="fullName">
-          Your Name <span className="text-destructive">*</span>
+          {t('onboarding.yourName')} <span className="text-destructive">*</span>
         </Label>
         <Input
           id="fullName"
-          placeholder="Enter your name"
+          placeholder={t('onboarding.yourName')}
           value={fullName}
           onChange={(e) => onFullNameChange(e.target.value)}
         />
@@ -128,13 +130,13 @@ export function StepAboutYou({
 
       {/* Gender */}
       <div className="space-y-3">
-        <Label>Gender (optional)</Label>
+        <Label>{t('onboarding.gender')} ({t('common.optional')})</Label>
         <RadioGroup value={gender} onValueChange={onGenderChange} className="grid grid-cols-2 gap-2">
           {genderOptions.map((option) => (
             <div key={option.value} className="flex items-center space-x-2">
               <RadioGroupItem value={option.value} id={`gender-${option.value}`} />
               <Label htmlFor={`gender-${option.value}`} className="cursor-pointer font-normal">
-                {option.label}
+                {t(option.labelKey)}
               </Label>
             </div>
           ))}
@@ -155,7 +157,7 @@ export function StepAboutYou({
 
       {/* Unit Preference */}
       <div className="space-y-3">
-        <Label>Unit Preference</Label>
+        <Label>{t('onboarding.unitPreference')}</Label>
         <RadioGroup
           value={unitPreference}
           onValueChange={onUnitPreferenceChange}
@@ -164,13 +166,13 @@ export function StepAboutYou({
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="metric" id="unit-metric" />
             <Label htmlFor="unit-metric" className="cursor-pointer font-normal">
-              Metric (kg, cm)
+              {t('onboarding.metric')}
             </Label>
           </div>
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="imperial" id="unit-imperial" />
             <Label htmlFor="unit-imperial" className="cursor-pointer font-normal">
-              Imperial (lb, in)
+              {t('onboarding.imperial')}
             </Label>
           </div>
         </RadioGroup>
@@ -179,7 +181,7 @@ export function StepAboutYou({
       {/* Height & Weight */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="height">Height ({isMetric ? 'cm' : 'in'})</Label>
+          <Label htmlFor="height">{t('onboarding.height')} ({isMetric ? 'cm' : 'in'})</Label>
           <Input
             id="height"
             type="number"
@@ -189,7 +191,7 @@ export function StepAboutYou({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="weight">Weight ({isMetric ? 'kg' : 'lb'})</Label>
+          <Label htmlFor="weight">{t('onboarding.weight')} ({isMetric ? 'kg' : 'lb'})</Label>
           <Input
             id="weight"
             type="number"
