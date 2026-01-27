@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useCalendarSync } from '@/hooks/useCalendarSync';
 import { useScheduleRealignment } from '@/hooks/useScheduleRealignment';
+import { restoreBodyScroll } from '@/hooks/useScrollRestore';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { IntroTour } from '@/components/onboarding/IntroTour';
 import { Card, CardContent } from '@/components/ui/card';
@@ -74,13 +75,39 @@ export default function Settings() {
   const { profile, loading, update, refetch } = useUserProfile();
   const { realignSchedule, haveWorkoutDaysChanged, isRealigning } = useScheduleRealignment();
   
-  // Modal states
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isEquipmentModalOpen, setIsEquipmentModalOpen] = useState(false);
-  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  // Modal states with scroll restoration on close
+  const [isEditModalOpen, setIsEditModalOpenState] = useState(false);
+  const [isEquipmentModalOpen, setIsEquipmentModalOpenState] = useState(false);
+  const [isFeedbackModalOpen, setIsFeedbackModalOpenState] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState('');
-  const [isFAQOpen, setIsFAQOpen] = useState(false);
-  const [isIntroTourOpen, setIsIntroTourOpen] = useState(false);
+  const [isFAQOpen, setIsFAQOpenState] = useState(false);
+  const [isIntroTourOpen, setIsIntroTourOpenState] = useState(false);
+
+  // Wrap modal setters to restore scroll on close
+  const setIsEditModalOpen = useCallback((open: boolean) => {
+    setIsEditModalOpenState(open);
+    if (!open) setTimeout(restoreBodyScroll, 50);
+  }, []);
+  
+  const setIsEquipmentModalOpen = useCallback((open: boolean) => {
+    setIsEquipmentModalOpenState(open);
+    if (!open) setTimeout(restoreBodyScroll, 50);
+  }, []);
+  
+  const setIsFeedbackModalOpen = useCallback((open: boolean) => {
+    setIsFeedbackModalOpenState(open);
+    if (!open) setTimeout(restoreBodyScroll, 50);
+  }, []);
+  
+  const setIsFAQOpen = useCallback((open: boolean) => {
+    setIsFAQOpenState(open);
+    if (!open) setTimeout(restoreBodyScroll, 50);
+  }, []);
+  
+  const setIsIntroTourOpen = useCallback((open: boolean) => {
+    setIsIntroTourOpenState(open);
+    if (!open) setTimeout(restoreBodyScroll, 50);
+  }, []);
   
   // Coach tone state
   const [coachTone, setCoachTone] = useState<CoachTone>('balanced');
