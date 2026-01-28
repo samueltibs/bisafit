@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -201,10 +202,21 @@ export default function Nutrition() {
 
   const { showModal: showPremiumModal, setShowModal: setShowPremiumModal, checkPremiumAccess } = usePremiumFeature();
 
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedDay, setSelectedDay] = useState(0);
   const [fridgeScanOpen, setFridgeScanOpen] = useState(false);
   const [logMealOpen, setLogMealOpen] = useState(false);
   const [generatingFromIngredients, setGeneratingFromIngredients] = useState(false);
+  
+  // Open Log Meal modal from deep-link parameter (e.g., /nutrition?openLogMeal=1)
+  useEffect(() => {
+    if (searchParams.get('openLogMeal') === '1') {
+      setLogMealOpen(true);
+      // Clear the parameter to prevent re-opening on refresh
+      searchParams.delete('openLogMeal');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
   const [weekCuisineTheme, setWeekCuisineTheme] = useState<string | null>(null);
   const [modeModalOpen, setModeModalOpen] = useState(false);
   
