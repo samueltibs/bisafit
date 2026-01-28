@@ -679,3 +679,22 @@
 .debug-overlays .image-overlay-subtle::after {
   outline: 2px dashed orange !important;
 }
+
+/* ============================================
+   DEBUG MODE - Scroll Container Highlight (Dev Only)
+   Toggle via IOSScrollDebugPanel component
+   ============================================ */
+.debug-scroll-highlight main {
+  outline: 4px solid cyan !important;
+  outline-offset: -4px;
+}
+
+.debug-scroll-highlight .container.space-y-6 {
+  outline: 3px dashed magenta !important;
+  outline-offset: -3px;
+}
+
+.debug-scroll-highlight [data-scroll-container] {
+  outline: 3px solid lime !important;
+  outline-offset: -3px;
+}
