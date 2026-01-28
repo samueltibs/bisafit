@@ -709,6 +709,7 @@ export default function Nutrition() {
                     hasIngredients={hasActiveSession || status === 'used'}
                     onSwitchToGeneric={handleSwitchToGeneric}
                     onSwitchToIngredients={handleSwitchToIngredients}
+                    isLoading={generatingMealPlan || generatingFromIngredients}
                   />
                 )}
                 <Button 
