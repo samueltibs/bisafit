@@ -1,8 +1,28 @@
 /**
  * Translation strings for all supported languages
  * 
- * Language codes: en (English), lg (Luganda), sw (Swahili)
+ * Supported language codes:
+ * - en: English (canonical - all keys must exist here)
+ * - es: Spanish
+ * - pt: Portuguese
+ * - fr: French
+ * - zh: Chinese (Simplified)
+ * - ja: Japanese
+ * - ru: Russian
+ * - de: German
+ * - nl: Dutch
+ * - it: Italian
+ * - sw: Swahili
+ * - af: Afrikaans
+ * - lg: Luganda
+ * 
  * All strings must be complete - no partial translations allowed.
+ * Missing translations fall back to English.
+ * 
+ * To add a new language:
+ * 1. Add the language to SUPPORTED_LANGUAGES in src/lib/languageUtils.ts
+ * 2. Create a translation record here (can start as copy of `en`)
+ * 3. Add to the translations map at the bottom
  */
 
 export type TranslationKey = keyof typeof en;
@@ -643,9 +663,56 @@ export const sw: Record<TranslationKey, string> = {
   'error.saveFailed': 'Imeshindwa kuhifadhi mabadiliko.',
 };
 
+/**
+ * Stub translations for languages not yet fully translated.
+ * These use English as fallback - the LanguageContext handles this gracefully.
+ * As translations are completed, replace these with full translation objects.
+ */
+const createFallbackTranslations = (): Record<TranslationKey, string> => ({ ...en });
+
+// Spanish placeholder (will fall back to English for missing keys)
+export const es: Record<TranslationKey, string> = createFallbackTranslations();
+
+// Portuguese placeholder
+export const pt: Record<TranslationKey, string> = createFallbackTranslations();
+
+// French placeholder
+export const fr: Record<TranslationKey, string> = createFallbackTranslations();
+
+// Chinese (Simplified) placeholder
+export const zh: Record<TranslationKey, string> = createFallbackTranslations();
+
+// Japanese placeholder
+export const ja: Record<TranslationKey, string> = createFallbackTranslations();
+
+// Russian placeholder
+export const ru: Record<TranslationKey, string> = createFallbackTranslations();
+
+// German placeholder
+export const de: Record<TranslationKey, string> = createFallbackTranslations();
+
+// Dutch placeholder
+export const nl: Record<TranslationKey, string> = createFallbackTranslations();
+
+// Italian placeholder
+export const it: Record<TranslationKey, string> = createFallbackTranslations();
+
+// Afrikaans placeholder
+export const af: Record<TranslationKey, string> = createFallbackTranslations();
+
 // Translation map by language code
 export const translations: Record<string, Record<TranslationKey, string>> = {
   en,
-  lg,
+  es,
+  pt,
+  fr,
+  zh,
+  ja,
+  ru,
+  de,
+  nl,
+  it,
   sw,
+  af,
+  lg,
 };
