@@ -84,6 +84,33 @@ export const en = {
   'workout.noWorkoutToday': 'No workout scheduled for today',
   'workout.restDay': 'Rest Day',
   'workout.enjoyRestDay': 'Take it easy and recover.',
+  'workout.generic': 'Workout',
+  'workout.day': 'Day',
+  
+  // Workout program names
+  'workout.program.foundation': 'Foundation',
+  'workout.program.progression': 'Progression',
+  'workout.program.peak': 'Peak',
+  'workout.program.deload': 'Deload',
+  'workout.program.strength': 'Strength',
+  'workout.program.conditioning': 'Conditioning',
+  'workout.program.mobility': 'Mobility',
+  'workout.program.custom': 'Custom',
+  
+  // Workout focus labels
+  'workout.focus.balance': 'Balance',
+  'workout.focus.strength': 'Strength',
+  'workout.focus.stability': 'Stability',
+  'workout.focus.power': 'Power',
+  'workout.focus.endurance': 'Endurance',
+  'workout.focus.recovery': 'Recovery',
+  'workout.focus.mobility': 'Mobility',
+  'workout.focus.core': 'Core',
+  'workout.focus.upper_body': 'Upper Body',
+  'workout.focus.lower_body': 'Lower Body',
+  'workout.focus.full_body': 'Full Body',
+  'workout.focus.hiit': 'HIIT',
+  'workout.focus.cardio': 'Cardio',
   
   // Plan
   'plan.title': 'Your Plan',
@@ -269,6 +296,33 @@ export const lg: Record<TranslationKey, string> = {
   'workout.noWorkoutToday': 'Tewali kuzannyisa kwa leero',
   'workout.restDay': 'Olunaku Olw\'okuwummula',
   'workout.enjoyRestDay': 'Wummula olabe bulungi.',
+  'workout.generic': 'Okuzannyisa',
+  'workout.day': 'Olunaku',
+  
+  // Workout program names
+  'workout.program.foundation': 'Omusingi',
+  'workout.program.progression': 'Okweyongera',
+  'workout.program.peak': 'Entikko',
+  'workout.program.deload': 'Okuwewula',
+  'workout.program.strength': 'Amaanyi',
+  'workout.program.conditioning': 'Okuteekerateekera',
+  'workout.program.mobility': 'Okutambula',
+  'workout.program.custom': 'Ey\'enjawulo',
+  
+  // Workout focus labels
+  'workout.focus.balance': 'Okwenkanankana',
+  'workout.focus.strength': 'Amaanyi',
+  'workout.focus.stability': 'Obunywevu',
+  'workout.focus.power': 'Amaanyi Amangi',
+  'workout.focus.endurance': 'Okugumira',
+  'workout.focus.recovery': 'Okuwummula',
+  'workout.focus.mobility': 'Okutambula',
+  'workout.focus.core': 'Wakati',
+  'workout.focus.upper_body': 'Ekitundu Eky\'Waggulu',
+  'workout.focus.lower_body': 'Ekitundu Eky\'Wansi',
+  'workout.focus.full_body': 'Omubiri Gwonna',
+  'workout.focus.hiit': 'HIIT',
+  'workout.focus.cardio': 'Omutima',
   
   // Plan
   'plan.title': 'Enteekateeka Yo',
@@ -454,6 +508,33 @@ export const sw: Record<TranslationKey, string> = {
   'workout.noWorkoutToday': 'Hakuna mazoezi yaliyopangwa leo',
   'workout.restDay': 'Siku ya Kupumzika',
   'workout.enjoyRestDay': 'Pumzika na upone.',
+  'workout.generic': 'Mazoezi',
+  'workout.day': 'Siku',
+  
+  // Workout program names
+  'workout.program.foundation': 'Msingi',
+  'workout.program.progression': 'Maendeleo',
+  'workout.program.peak': 'Kilele',
+  'workout.program.deload': 'Kupunguza',
+  'workout.program.strength': 'Nguvu',
+  'workout.program.conditioning': 'Kujiimarisha',
+  'workout.program.mobility': 'Uwezo wa Kusogea',
+  'workout.program.custom': 'Maalum',
+  
+  // Workout focus labels
+  'workout.focus.balance': 'Usawa',
+  'workout.focus.strength': 'Nguvu',
+  'workout.focus.stability': 'Uthabiti',
+  'workout.focus.power': 'Uwezo',
+  'workout.focus.endurance': 'Uvumilivu',
+  'workout.focus.recovery': 'Kupona',
+  'workout.focus.mobility': 'Uwezo wa Kusogea',
+  'workout.focus.core': 'Kiini',
+  'workout.focus.upper_body': 'Mwili wa Juu',
+  'workout.focus.lower_body': 'Mwili wa Chini',
+  'workout.focus.full_body': 'Mwili Mzima',
+  'workout.focus.hiit': 'HIIT',
+  'workout.focus.cardio': 'Moyo',
   
   // Plan
   'plan.title': 'Mpango Wako',
