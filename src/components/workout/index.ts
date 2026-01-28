@@ -25,6 +25,10 @@ export { SetLogDialog } from './SetLogDialog';
 export { SkipConfirmDialog } from './SkipConfirmDialog';
 export { SkipWorkoutConfirmDialog } from './SkipWorkoutConfirmDialog';
 
+// Quick Win & Streak
+export { QuickWinBanner } from './QuickWinBanner';
+export { StreakSaveBadge, StreakBadgeCompact } from './StreakSaveBadge';
+
 // TV Mode
 export { TVModeOverlay } from './TVModeOverlay';
 export { TVModeMedia } from './TVModeMedia';

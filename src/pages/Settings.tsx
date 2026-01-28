@@ -75,7 +75,7 @@ import { getLanguageName } from '@/lib/languageUtils';
 import { useTranslation, translateGoal } from '@/lib/i18n';
 import { MusicSettings } from '@/components/settings/MusicSettings';
 import { HealthPlatformSettings } from '@/components/settings/HealthPlatformSettings';
-
+import { ReminderSettings } from '@/components/settings/ReminderSettings';
 export default function Settings() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -656,6 +656,9 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Smart Reminders Section */}
+          <ReminderSettings />
 
           {/* Equipment Update Banner */}
           {showEquipmentBanner && (

@@ -14,6 +14,8 @@ export type AnalyticsEventName =
   // Engagement
   | 'workout_started'
   | 'workout_completed'
+  | 'quick_win_started'
+  | 'quick_win_completed'
   | 'nutrition_plan_generated'
   | 'ingredient_scan_used'
   | 'calendar_event_created'
@@ -27,10 +29,13 @@ export type AnalyticsEventName =
   | 'energy_level_logged'
   | 'personal_best_achieved'
   | 'streak_milestone'
-  // Notifications
+  | 'streak_saved'
+  // Notifications & Reminders
   | 'notification_scheduled'
   | 'notification_delivered'
   | 'notification_opened'
+  | 'smart_reminder_shown'
+  | 'reminder_preferences_updated'
   // Quality
   | 'generation_error'
   | 'scan_error';
