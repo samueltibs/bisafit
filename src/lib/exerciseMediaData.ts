@@ -38,6 +38,11 @@ export const warmupExercises: Record<string, ExerciseMediaEntry> = {
   },
   'jumping jacks': {
     filename: 'jumping-jacks.png',
+    demoImages: {
+      male: 'male/jumping-jacks.png',
+      female: 'female/jumping-jacks.png',
+      neutral: 'jumping-jacks.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Land softly on balls of feet',
@@ -47,6 +52,11 @@ export const warmupExercises: Record<string, ExerciseMediaEntry> = {
   },
   'high knees': {
     filename: 'high-knees.png',
+    demoImages: {
+      male: 'male/high-knees.png',
+      female: 'female/high-knees.png',
+      neutral: 'high-knees.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Drive knees to hip height',
@@ -180,6 +190,11 @@ export const lowerBodyExercises: Record<string, ExerciseMediaEntry> = {
   // Squats
   'squat': {
     filename: 'squat.png',
+    demoImages: {
+      male: 'male/squat.png',
+      female: 'female/squat.png',
+      neutral: 'squat.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Keep chest up and back flat',
@@ -189,6 +204,11 @@ export const lowerBodyExercises: Record<string, ExerciseMediaEntry> = {
   },
   'bodyweight squat': {
     filename: 'squat.png',
+    demoImages: {
+      male: 'male/squat.png',
+      female: 'female/squat.png',
+      neutral: 'squat.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Sit back like into a chair',
@@ -198,6 +218,11 @@ export const lowerBodyExercises: Record<string, ExerciseMediaEntry> = {
   },
   'goblet squat': {
     filename: 'goblet-squat.png',
+    demoImages: {
+      male: 'male/goblet-squat.png',
+      female: 'female/goblet-squat.png',
+      neutral: 'goblet-squat.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Keep chest tall',
@@ -207,6 +232,11 @@ export const lowerBodyExercises: Record<string, ExerciseMediaEntry> = {
   },
   'dumbbell goblet squat': {
     filename: 'goblet-squat.png',
+    demoImages: {
+      male: 'male/goblet-squat.png',
+      female: 'female/goblet-squat.png',
+      neutral: 'goblet-squat.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Hold weight at chest height',
@@ -216,6 +246,11 @@ export const lowerBodyExercises: Record<string, ExerciseMediaEntry> = {
   },
   'sumo squat': {
     filename: 'sumo-squat.png',
+    demoImages: {
+      male: 'male/sumo-squat.png',
+      female: 'female/sumo-squat.png',
+      neutral: 'sumo-squat.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Wide stance, toes pointed out',
@@ -225,6 +260,11 @@ export const lowerBodyExercises: Record<string, ExerciseMediaEntry> = {
   },
   'split squat': {
     filename: 'lunge.png',
+    demoImages: {
+      male: 'male/lunge.png',
+      female: 'female/lunge.png',
+      neutral: 'lunge.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Keep front shin vertical',
@@ -234,6 +274,11 @@ export const lowerBodyExercises: Record<string, ExerciseMediaEntry> = {
   },
   'bulgarian split squat': {
     filename: 'bulgarian-split-squat.png',
+    demoImages: {
+      male: 'male/bulgarian-split-squat.png',
+      female: 'female/bulgarian-split-squat.png',
+      neutral: 'bulgarian-split-squat.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Back foot elevated on bench',
@@ -245,6 +290,11 @@ export const lowerBodyExercises: Record<string, ExerciseMediaEntry> = {
   // Lunges
   'lunge': {
     filename: 'lunge.png',
+    demoImages: {
+      male: 'male/lunge.png',
+      female: 'female/lunge.png',
+      neutral: 'lunge.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Take a long stride',
