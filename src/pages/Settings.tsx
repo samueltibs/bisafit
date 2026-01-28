@@ -90,11 +90,22 @@ export default function Settings() {
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [isFAQOpen, setIsFAQOpenState] = useState(false);
   const [isIntroTourOpen, setIsIntroTourOpenState] = useState(false);
+  
+  // Track which section to scroll to in the edit modal
+  const [editModalSection, setEditModalSection] = useState<'profile' | 'country' | 'language' | 'goals' | null>(null);
+  const countrySectionRef = useRef<HTMLDivElement>(null);
+  const languageSectionRef = useRef<HTMLDivElement>(null);
+  const goalsSectionRef = useRef<HTMLDivElement>(null);
 
   // Wrap modal setters to restore scroll on close
-  const setIsEditModalOpen = useCallback((open: boolean) => {
+  const setIsEditModalOpen = useCallback((open: boolean, section?: 'profile' | 'country' | 'language' | 'goals') => {
     setIsEditModalOpenState(open);
-    if (!open) setTimeout(restoreBodyScroll, 50);
+    if (open && section) {
+      setEditModalSection(section);
+    } else if (!open) {
+      setEditModalSection(null);
+      setTimeout(restoreBodyScroll, 50);
+    }
   }, []);
   
   const setIsEquipmentModalOpen = useCallback((open: boolean) => {
@@ -246,6 +257,34 @@ export default function Settings() {
       });
     }
   }, [isEditModalOpen, profile]);
+
+  // Scroll to section when modal opens with a specific section target
+  useEffect(() => {
+    if (isEditModalOpen && editModalSection) {
+      // Small delay to ensure modal content is rendered
+      const scrollTimeout = setTimeout(() => {
+        let targetRef: React.RefObject<HTMLDivElement> | null = null;
+        if (editModalSection === 'country') {
+          targetRef = countrySectionRef;
+        } else if (editModalSection === 'language') {
+          targetRef = languageSectionRef;
+        } else if (editModalSection === 'goals') {
+          targetRef = goalsSectionRef;
+        }
+        
+        if (targetRef?.current) {
+          targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Add a brief highlight effect
+          targetRef.current.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+          setTimeout(() => {
+            targetRef?.current?.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
+          }, 1500);
+        }
+      }, 150);
+      
+      return () => clearTimeout(scrollTimeout);
+    }
+  }, [isEditModalOpen, editModalSection]);
 
   // Handle unit toggle
   const handleUnitChange = (checked: boolean) => {
@@ -476,7 +515,7 @@ export default function Settings() {
               </h2>
               <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setIsEditModalOpen(true)}>
+            <Button variant="ghost" size="icon" onClick={() => setIsEditModalOpen(true, 'profile')}>
               <Edit2 className="h-4 w-4" />
             </Button>
           </CardContent>
@@ -490,7 +529,10 @@ export default function Settings() {
             <CardContent className="divide-y divide-border p-0">
               {/* Goals */}
               <button 
-                onClick={() => setIsEditModalOpen(true)}
+                onClick={() => {
+                  if (import.meta.env.DEV) console.log('[Settings] Item clicked: Goals -> edit modal (goals section)');
+                  setIsEditModalOpen(true, 'goals');
+                }}
                 className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
               >
                 <div className="flex items-center gap-3">
@@ -507,7 +549,10 @@ export default function Settings() {
 
               {/* Country / Region */}
               <button 
-                onClick={() => setIsEditModalOpen(true)}
+                onClick={() => {
+                  if (import.meta.env.DEV) console.log('[Settings] Item clicked: Country -> edit modal (country section)');
+                  setIsEditModalOpen(true, 'country');
+                }}
                 className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
               >
                 <div className="flex items-center gap-3">
@@ -524,7 +569,10 @@ export default function Settings() {
 
               {/* Language */}
               <button 
-                onClick={() => setIsEditModalOpen(true)}
+                onClick={() => {
+                  if (import.meta.env.DEV) console.log('[Settings] Item clicked: Language -> edit modal (language section)');
+                  setIsEditModalOpen(true, 'language');
+                }}
                 className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
               >
                 <div className="flex items-center gap-3">
@@ -748,8 +796,8 @@ export default function Settings() {
       </div>
 
       {/* Edit Profile Modal */}
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog open={isEditModalOpen} onOpenChange={(open) => setIsEditModalOpen(open)}>
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Profile</DialogTitle>
             <DialogDescription>
@@ -771,18 +819,27 @@ export default function Settings() {
             </div>
 
             {/* Country / Region */}
-            <CountrySelector
-              value={editForm.country}
-              onChange={(v) => setEditForm({ ...editForm, country: v })}
-              compact
-            />
+            <div ref={countrySectionRef} className="rounded-lg transition-all duration-300">
+              <CountrySelector
+                value={editForm.country}
+                onChange={(v) => setEditForm({ ...editForm, country: v })}
+                compact
+              />
+            </div>
 
             {/* Language */}
-            <LanguageSelector
-              value={editForm.language}
-              onChange={(v) => setEditForm({ ...editForm, language: v })}
-              compact
-            />
+            <div ref={languageSectionRef} className="rounded-lg transition-all duration-300">
+              <LanguageSelector
+                value={editForm.language}
+                onChange={(v) => setEditForm({ ...editForm, language: v })}
+                compact
+              />
+            </div>
+
+            {/* Goals Section - placeholder for future expansion */}
+            <div ref={goalsSectionRef} className="rounded-lg transition-all duration-300">
+              {/* Goals are currently set during onboarding - this section can be expanded */}
+            </div>
 
             <div className="flex items-center justify-between py-2">
               <Label>Units</Label>
