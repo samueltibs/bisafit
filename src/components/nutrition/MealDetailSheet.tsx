@@ -1,17 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   Clock, Users, ExternalLink, Copy, Check, ChevronDown,
-  UtensilsCrossed, Flame, Beef, RefreshCw, Loader2, BookOpen, Sparkles
+  UtensilsCrossed, Flame, Beef, RefreshCw, Loader2, BookOpen, Sparkles, ChefHat
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { openExternalLink } from '@/lib/externalLinks';
-import type { Meal } from '@/hooks/useNutrition';
+import type { Meal, InstructionStyle } from '@/hooks/useNutrition';
+
+const INSTRUCTION_STYLE_KEY = 'bisafit_instruction_style';
 
 interface MealDetailSheetProps {
   meal: Meal | null;
@@ -21,6 +22,12 @@ interface MealDetailSheetProps {
   swapping?: boolean;
 }
 
+const styleLabels: Record<InstructionStyle, string> = {
+  simple: 'Simple',
+  detailed: 'Detailed',
+  gourmet: 'Gourmet',
+};
+
 export function MealDetailSheet({ 
   meal, 
   open, 
@@ -28,25 +35,53 @@ export function MealDetailSheet({
   onSwap,
   swapping = false,
 }: MealDetailSheetProps) {
-  const [copiedQuick, setCopiedQuick] = useState(false);
-  const [copiedDetailed, setCopiedDetailed] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [showMealPrepNotes, setShowMealPrepNotes] = useState(false);
+  const [instructionStyle, setInstructionStyle] = useState<InstructionStyle>(() => {
+    const saved = localStorage.getItem(INSTRUCTION_STYLE_KEY);
+    return (saved as InstructionStyle) || 'simple';
+  });
+
+  useEffect(() => {
+    localStorage.setItem(INSTRUCTION_STYLE_KEY, instructionStyle);
+  }, [instructionStyle]);
 
   if (!meal) return null;
 
   const hasDetailedInstructions = meal.detailed_instructions && meal.detailed_instructions.length > 0;
+  const hasGourmetNotes = !!meal.gourmet_notes;
   const hasSourceUrl = !!meal.recipe_source_url;
   const totalTime = (meal.prep_time_minutes || 0) + (meal.cook_time_minutes || 0);
 
-  const handleCopyInstructions = async (type: 'quick' | 'detailed') => {
+  // Determine effective style based on available content
+  const getEffectiveStyle = (): InstructionStyle => {
+    if (instructionStyle === 'gourmet' && !hasGourmetNotes && !hasDetailedInstructions) {
+      return 'simple';
+    }
+    if (instructionStyle === 'gourmet' && !hasGourmetNotes) {
+      return 'detailed';
+    }
+    if (instructionStyle === 'detailed' && !hasDetailedInstructions) {
+      return 'simple';
+    }
+    return instructionStyle;
+  };
+
+  const effectiveStyle = getEffectiveStyle();
+
+  const handleCopyInstructions = async () => {
     try {
       let text = `${meal.recipe_title}\n\n`;
       text += `Ingredients:\n${meal.ingredients.map(i => `• ${i}`).join('\n')}\n\n`;
       
-      if (type === 'quick') {
+      if (effectiveStyle === 'simple') {
         text += `Instructions:\n${meal.instructions}`;
       } else if (hasDetailedInstructions) {
         text += `Detailed Instructions:\n${meal.detailed_instructions!.map((step, i) => `${i + 1}. ${step}`).join('\n')}`;
+      }
+      
+      if (effectiveStyle === 'gourmet' && hasGourmetNotes) {
+        text += `\n\nChef's Notes:\n${meal.gourmet_notes}`;
       }
       
       if (meal.meal_prep_notes) {
@@ -54,15 +89,8 @@ export function MealDetailSheet({
       }
 
       await navigator.clipboard.writeText(text);
-      
-      if (type === 'quick') {
-        setCopiedQuick(true);
-        setTimeout(() => setCopiedQuick(false), 2000);
-      } else {
-        setCopiedDetailed(true);
-        setTimeout(() => setCopiedDetailed(false), 2000);
-      }
-      
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
       toast.success('Recipe copied to clipboard!');
     } catch {
       toast.error('Failed to copy recipe');
@@ -72,6 +100,53 @@ export function MealDetailSheet({
   const handleOpenRecipeSource = () => {
     if (meal.recipe_source_url) {
       openExternalLink(meal.recipe_source_url);
+    }
+  };
+
+  const renderInstructions = () => {
+    switch (effectiveStyle) {
+      case 'simple':
+        return (
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {meal.instructions}
+          </p>
+        );
+      case 'detailed':
+      case 'gourmet':
+        return (
+          <div className="space-y-4">
+            {hasDetailedInstructions ? (
+              <ol className="space-y-4">
+                {meal.detailed_instructions!.map((step, i) => (
+                  <li key={i} className="flex gap-3">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                      {i + 1}
+                    </span>
+                    <p className="text-sm text-muted-foreground leading-relaxed pt-0.5">
+                      {step}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {meal.instructions}
+              </p>
+            )}
+            
+            {effectiveStyle === 'gourmet' && hasGourmetNotes && (
+              <div className="mt-6 p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border border-primary/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <ChefHat className="h-5 w-5 text-primary" />
+                  <h4 className="font-semibold text-foreground">Chef's Notes</h4>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                  {meal.gourmet_notes}
+                </p>
+              </div>
+            )}
+          </div>
+        );
     }
   };
 
@@ -148,79 +223,52 @@ export function MealDetailSheet({
             </ul>
           </div>
 
-          {/* Instructions Tabs */}
+          {/* Instructions with Style Selector */}
           <div>
-            <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              Instructions
-            </h3>
-            
-            {hasDetailedInstructions ? (
-              <Tabs defaultValue="quick" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-4">
-                  <TabsTrigger value="quick" className="text-xs">
-                    Quick View
-                  </TabsTrigger>
-                  <TabsTrigger value="detailed" className="text-xs">
-                    Step-by-Step
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="quick" className="space-y-3">
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {meal.instructions}
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="gap-2"
-                    onClick={() => handleCopyInstructions('quick')}
-                  >
-                    {copiedQuick ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    {copiedQuick ? 'Copied!' : 'Copy Recipe'}
-                  </Button>
-                </TabsContent>
-                
-                <TabsContent value="detailed" className="space-y-4">
-                  <ol className="space-y-4">
-                    {meal.detailed_instructions!.map((step, i) => (
-                      <li key={i} className="flex gap-3">
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold">
-                          {i + 1}
-                        </span>
-                        <p className="text-sm text-muted-foreground leading-relaxed pt-0.5">
-                          {step}
-                        </p>
-                      </li>
-                    ))}
-                  </ol>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="gap-2"
-                    onClick={() => handleCopyInstructions('detailed')}
-                  >
-                    {copiedDetailed ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    {copiedDetailed ? 'Copied!' : 'Copy Full Recipe'}
-                  </Button>
-                </TabsContent>
-              </Tabs>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {meal.instructions}
-                </p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="gap-2"
-                  onClick={() => handleCopyInstructions('quick')}
-                >
-                  {copiedQuick ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  {copiedQuick ? 'Copied!' : 'Copy Recipe'}
-                </Button>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                Instructions
+              </h3>
+              
+              {/* Style Segmented Control */}
+              <div className="flex rounded-lg border bg-muted/50 p-0.5">
+                {(['simple', 'detailed', 'gourmet'] as InstructionStyle[]).map((style) => {
+                  const isDisabled = 
+                    (style === 'detailed' && !hasDetailedInstructions) ||
+                    (style === 'gourmet' && !hasGourmetNotes && !hasDetailedInstructions);
+                  
+                  return (
+                    <button
+                      key={style}
+                      onClick={() => !isDisabled && setInstructionStyle(style)}
+                      disabled={isDisabled}
+                      className={cn(
+                        "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                        instructionStyle === style
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground",
+                        isDisabled && "opacity-40 cursor-not-allowed"
+                      )}
+                    >
+                      {styleLabels[style]}
+                    </button>
+                  );
+                })}
               </div>
-            )}
+            </div>
+            
+            {renderInstructions()}
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2 mt-4"
+              onClick={handleCopyInstructions}
+            >
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              {copied ? 'Copied!' : 'Copy Recipe'}
+            </Button>
           </div>
 
           {/* Meal Prep Notes */}

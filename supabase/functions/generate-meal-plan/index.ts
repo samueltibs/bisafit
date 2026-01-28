@@ -12,6 +12,7 @@ interface Meal {
   ingredients: string[];
   instructions: string;
   detailed_instructions?: string[];
+  gourmet_notes?: string;
   protein_g_est: number;
   calories_est: number;
   cuisine_style?: string;
@@ -167,7 +168,8 @@ MEAL STRUCTURE - Each meal MUST include:
 - cook_time_minutes: time for cooking
 - servings: number of portions
 - cuisine_style: cuisine type or null
-- meal_prep_notes: storage time, reheating tips, make-ahead instructions (optional, include for suitable meals)`;
+- meal_prep_notes: storage time, reheating tips, make-ahead instructions (optional, include for suitable meals)
+- gourmet_notes: chef tips, technique variations, ingredient upgrades, plating suggestions for adventurous cooks (optional but recommended)`;
 
     const userPrompt = `Generate a ${days}-day meal plan:
 
@@ -212,7 +214,8 @@ Return ONLY this JSON structure:
           "cook_time_minutes": 0,
           "servings": 1,
           "cuisine_style": null,
-          "meal_prep_notes": "Prep yogurt and berries the night before, add granola just before eating to keep it crunchy"
+          "meal_prep_notes": "Prep yogurt and berries the night before, add granola just before eating to keep it crunchy",
+          "gourmet_notes": "For extra indulgence, drizzle with tahini or add a sprinkle of bee pollen. Swap granola for toasted coconut flakes for a tropical twist. Try layering in a glass for a parfait presentation."
         }
       ],
       "snacks": [
@@ -238,7 +241,8 @@ Return ONLY this JSON structure:
           "cook_time_minutes": 0,
           "servings": 10,
           "cuisine_style": null,
-          "meal_prep_notes": "Make a batch on Sunday for the whole week. Keep refrigerated up to 7 days or freeze for 1 month."
+          "meal_prep_notes": "Make a batch on Sunday for the whole week. Keep refrigerated up to 7 days or freeze for 1 month.",
+          "gourmet_notes": "Roll in cocoa powder, shredded coconut, or crushed nuts for variety. Add a teaspoon of espresso powder for a mocha version. Use almond butter for a different flavor profile."
         }
       ]
     }
