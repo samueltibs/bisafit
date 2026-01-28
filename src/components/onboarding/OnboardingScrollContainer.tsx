@@ -81,6 +81,8 @@ export function OnboardingScrollContainer({ children, className = '' }: Onboardi
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
+        // Ensure pointer events are not blocked
+        pointerEvents: 'auto',
       }}
     >
       {children}

@@ -6,15 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { Clock, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
-
-const ALL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
-const PRESETS = [
-  { label: '3 days', days: ['Monday', 'Wednesday', 'Friday'] },
-  { label: '4 days', days: ['Monday', 'Tuesday', 'Thursday', 'Friday'] },
-  { label: '5 days', days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] },
-];
+import { useState, useEffect } from 'react';
+import { WorkoutDaysSelector } from '@/components/settings/WorkoutDaysSelector';
 
 const DURATION_OPTIONS = [30, 45, 60, 75, 90];
 const BUFFER_OPTIONS = [0, 5, 10, 15];
@@ -48,33 +41,34 @@ export function StepSchedule({
 }: StepScheduleProps) {
   const [timeOpen, setTimeOpen] = useState(false);
 
-  const handleDayToggle = (day: string) => {
-    if (import.meta.env.DEV) {
-      console.log('[StepSchedule] handleDayToggle called:', day, 'current workoutDays:', workoutDays);
-    }
+  // Dev-only diagnostic: log tap targets
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
     
-    if (workoutDays.includes(day)) {
-      const newDays = workoutDays.filter(d => d !== day);
-      if (import.meta.env.DEV) {
-        console.log('[StepSchedule] Removing day, new days:', newDays);
-      }
-      onWorkoutDaysChange(newDays);
-      onDaysChange(newDays.length);
-    } else {
-      const newDays = [...workoutDays, day].sort((a, b) => 
-        ALL_DAYS.indexOf(a) - ALL_DAYS.indexOf(b)
-      );
-      if (import.meta.env.DEV) {
-        console.log('[StepSchedule] Adding day, new days:', newDays);
-      }
-      onWorkoutDaysChange(newDays);
-      onDaysChange(newDays.length);
-    }
-  };
+    const handleTap = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement;
+      const clientX = 'touches' in e ? e.touches[0]?.clientX : e.clientX;
+      const clientY = 'touches' in e ? e.touches[0]?.clientY : e.clientY;
+      const elementAtPoint = document.elementFromPoint(clientX, clientY);
+      console.log('[StepSchedule] Tap diagnostic:', {
+        target: target.tagName,
+        targetClasses: target.className,
+        elementAtPoint: elementAtPoint?.tagName,
+        elementAtPointClasses: elementAtPoint?.className,
+        position: { x: clientX, y: clientY },
+      });
+    };
+    
+    document.addEventListener('click', handleTap, { capture: true });
+    return () => document.removeEventListener('click', handleTap, { capture: true });
+  }, []);
 
-  const handlePresetClick = (presetDays: string[]) => {
-    onWorkoutDaysChange(presetDays);
-    onDaysChange(presetDays.length);
+  const handleWorkoutDaysChange = (days: string[]) => {
+    if (import.meta.env.DEV) {
+      console.log('[StepSchedule] handleWorkoutDaysChange called:', days);
+    }
+    onWorkoutDaysChange(days);
+    onDaysChange(days.length);
   };
 
   const handleTimeChange = (time: string) => {
@@ -93,83 +87,26 @@ export function StepSchedule({
   };
 
   return (
-    <div className="space-y-8">
-      {/* Days Per Week Display */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Label className="text-base font-medium">Workout days</Label>
-          <span className="text-2xl font-bold text-primary">{workoutDays.length} days</span>
-        </div>
-        
-        {/* Quick Presets */}
-        <div className="flex gap-2 relative z-10">
-          {PRESETS.map((preset) => (
-            <Button
-              key={preset.label}
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (import.meta.env.DEV) {
-                  console.log('[StepSchedule] Preset tapped:', preset.label);
-                }
-                handlePresetClick(preset.days);
-              }}
-              style={{
-                touchAction: 'manipulation',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-              className={cn(
-                "flex-1 min-h-[44px]",
-                workoutDays.length === preset.days.length && 
-                preset.days.every(d => workoutDays.includes(d)) &&
-                "border-primary bg-primary/10"
-              )}
-            >
-              {preset.label}
-            </Button>
-          ))}
-        </div>
-
-        {/* Day Selection Grid */}
-        <div className="grid grid-cols-7 gap-1 relative z-10">
-          {ALL_DAYS.map((day) => {
-            const isSelected = workoutDays.includes(day);
-            return (
-              <button
-                key={day}
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (import.meta.env.DEV) {
-                    console.log('[StepSchedule] Day tapped:', day, 'isSelected:', isSelected);
-                  }
-                  handleDayToggle(day);
-                }}
-                style={{
-                  cursor: 'pointer',
-                  touchAction: 'manipulation',
-                  WebkitTapHighlightColor: 'transparent',
-                  WebkitUserSelect: 'none',
-                  userSelect: 'none',
-                  pointerEvents: 'auto',
-                }}
-                className={cn(
-                  "flex flex-col items-center justify-center rounded-lg p-3 text-xs transition-all min-h-[44px] min-w-[44px]",
-                  isSelected
-                    ? "bg-primary text-primary-foreground active:bg-primary/90"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80 active:bg-muted/70"
-                )}
-              >
-                <span className="font-medium pointer-events-none">{day.slice(0, 3)}</span>
-              </button>
-            );
-          })}
-        </div>
-        <p className="text-xs text-muted-foreground text-center">
-          Tap days to toggle • {7 - workoutDays.length} rest day{7 - workoutDays.length !== 1 ? 's' : ''}
-        </p>
+    <div 
+      className="space-y-8"
+      style={{
+        // Ensure no ancestor blocks pointer events
+        pointerEvents: 'auto',
+        touchAction: 'auto',
+      }}
+    >
+      {/* Workout Days - Uses shared component from Settings */}
+      <div 
+        className={cn(
+          "relative",
+          import.meta.env.DEV && "outline outline-2 outline-dashed outline-blue-500"
+        )}
+        style={{ pointerEvents: 'auto', zIndex: 10 }}
+      >
+        <WorkoutDaysSelector
+          workoutDays={workoutDays}
+          onWorkoutDaysChange={handleWorkoutDaysChange}
+        />
       </div>
 
       {/* Session Duration */}

@@ -347,6 +347,7 @@ export default function Onboarding() {
           style={{ 
             overflow: 'visible',
             minHeight: 'auto',
+            pointerEvents: 'auto',
           }}
         >
           <CardContent 
@@ -354,6 +355,7 @@ export default function Onboarding() {
             style={{ 
               overflow: 'visible',
               touchAction: 'auto',
+              pointerEvents: 'auto',
             }}
           >
           {currentStep === 1 && (
