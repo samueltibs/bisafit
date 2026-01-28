@@ -1,14 +1,31 @@
+// Core workout components
 export { CoachingCues } from './CoachingCues';
 export { ExerciseCard } from './ExerciseCard';
 export { ExerciseMedia } from './ExerciseMedia';
 export { ProgressIndicator } from './ProgressIndicator';
+export { WorkoutComplete } from './WorkoutComplete';
+export { WorkoutTimer } from './WorkoutTimer';
+
+// Active workout premium components
+export { ActiveWorkoutHeader } from './ActiveWorkoutHeader';
+export { ActiveWorkoutTimer } from './ActiveWorkoutTimer';
+export { ActiveWorkoutExercise } from './ActiveWorkoutExercise';
+export { ActiveWorkoutControls } from './ActiveWorkoutControls';
+export { NextExercisePreview } from './NextExercisePreview';
+export { MusicMiniPlayer } from './MusicMiniPlayer';
+export { CastModeSheet } from './CastModeSheet';
+export { ExitWorkoutDialog } from './ExitWorkoutDialog';
+
+// Dialogs
 export { RescheduleWorkoutDialog } from './RescheduleWorkoutDialog';
 export { ResumeWorkoutDialog } from './ResumeWorkoutDialog';
 export { SetLogDialog } from './SetLogDialog';
 export { SkipConfirmDialog } from './SkipConfirmDialog';
 export { SkipWorkoutConfirmDialog } from './SkipWorkoutConfirmDialog';
+
+// TV Mode
 export { TVModeOverlay } from './TVModeOverlay';
-export { WorkoutComplete } from './WorkoutComplete';
+
+// Legacy / backwards compat
 export { WorkoutControls } from './WorkoutControls';
 export { WorkoutMusicButton } from './WorkoutMusicButton';
-export { WorkoutTimer } from './WorkoutTimer';
