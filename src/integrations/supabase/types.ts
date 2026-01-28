@@ -159,6 +159,75 @@ export type Database = {
           },
         ]
       }
+      meal_logs: {
+        Row: {
+          created_at: string
+          entry_method: string
+          id: string
+          items_json: Json
+          linked_meal_plan_id: string | null
+          logged_at: string
+          meal_type: string
+          notes: string | null
+          photo_url: string | null
+          total_calories: number | null
+          total_carbs_g: number | null
+          total_fat_g: number | null
+          total_protein_g: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entry_method?: string
+          id?: string
+          items_json?: Json
+          linked_meal_plan_id?: string | null
+          logged_at?: string
+          meal_type: string
+          notes?: string | null
+          photo_url?: string | null
+          total_calories?: number | null
+          total_carbs_g?: number | null
+          total_fat_g?: number | null
+          total_protein_g?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entry_method?: string
+          id?: string
+          items_json?: Json
+          linked_meal_plan_id?: string | null
+          logged_at?: string
+          meal_type?: string
+          notes?: string | null
+          photo_url?: string | null
+          total_calories?: number | null
+          total_carbs_g?: number | null
+          total_fat_g?: number | null
+          total_protein_g?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_logs_linked_meal_plan_id_fkey"
+            columns: ["linked_meal_plan_id"]
+            isOneToOne: false
+            referencedRelation: "meal_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meal_plans: {
         Row: {
           created_at: string | null

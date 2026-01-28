@@ -17,6 +17,10 @@ export type AnalyticsEventName =
   | 'nutrition_plan_generated'
   | 'ingredient_scan_used'
   | 'calendar_event_created'
+  // Meal logging
+  | 'meal_logged'
+  | 'meal_photo_scanned'
+  | 'meal_scan_error'
   // Notifications
   | 'notification_scheduled'
   | 'notification_delivered'

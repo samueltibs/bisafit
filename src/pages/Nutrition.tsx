@@ -10,12 +10,13 @@ import {
   Flame, Beef, Wheat, Droplets, Loader2, Sparkles, 
   ChevronDown, ShoppingCart, Lightbulb, RefreshCw, 
   Coffee, UtensilsCrossed, Moon, Apple, AlertTriangle, Target,
-  Camera, ShoppingBasket, Lock, Shuffle, Clock
+  Camera, ShoppingBasket, Lock, Shuffle, Clock, PlusCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useNutrition, type Meal, type DayPlan, type NutritionTargets } from '@/hooks/useNutrition';
 import { FridgeScanFlow } from '@/components/nutrition/FridgeScanFlow';
+import { LogMealFlow } from '@/components/nutrition/LogMealFlow';
 import { CuisineThemeSelector } from '@/components/nutrition/CuisineThemeSelector';
 import { CuisineThemeLabel } from '@/components/nutrition/CuisineThemeLabel';
 import { IngredientModeModal } from '@/components/nutrition/IngredientModeModal';
@@ -202,10 +203,10 @@ export default function Nutrition() {
 
   const [selectedDay, setSelectedDay] = useState(0);
   const [fridgeScanOpen, setFridgeScanOpen] = useState(false);
+  const [logMealOpen, setLogMealOpen] = useState(false);
   const [generatingFromIngredients, setGeneratingFromIngredients] = useState(false);
   const [weekCuisineTheme, setWeekCuisineTheme] = useState<string | null>(null);
   const [modeModalOpen, setModeModalOpen] = useState(false);
-  const [pendingGeneration, setPendingGeneration] = useState(false);
   
   // Meal detail sheet state
   const [detailMeal, setDetailMeal] = useState<Meal | null>(null);
@@ -429,20 +430,36 @@ export default function Nutrition() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Nutrition</h1>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => {
-              // Gate fridge scan behind premium
-              if (!checkPremiumAccess()) return;
-              setFridgeScanOpen(true);
-            }}
-            className="gap-2"
-          >
-            <Camera className="h-4 w-4" />
-            Scan Fridge
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={() => setLogMealOpen(true)}
+              size="sm"
+              className="gap-2"
+            >
+              <PlusCircle className="h-4 w-4" />
+              Log Meal
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                // Gate fridge scan behind premium
+                if (!checkPremiumAccess()) return;
+                setFridgeScanOpen(true);
+              }}
+              className="gap-2"
+            >
+              <Camera className="h-4 w-4" />
+              Scan Fridge
+            </Button>
+          </div>
         </div>
+
+        {/* Log Meal Flow */}
+        <LogMealFlow
+          open={logMealOpen}
+          onOpenChange={setLogMealOpen}
+        />
 
         {/* Fridge Scan Dialog */}
         <FridgeScanFlow 
