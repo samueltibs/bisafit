@@ -2,6 +2,7 @@
 export { CoachingCues } from './CoachingCues';
 export { ExerciseCard } from './ExerciseCard';
 export { ExerciseMedia } from './ExerciseMedia';
+export { FormTipsModal } from './FormTipsModal';
 export { ProgressIndicator } from './ProgressIndicator';
 export { WorkoutComplete } from './WorkoutComplete';
 export { WorkoutTimer } from './WorkoutTimer';
