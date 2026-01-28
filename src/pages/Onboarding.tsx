@@ -21,6 +21,7 @@ import { StepEquipment } from '@/components/onboarding/StepEquipment';
 import { StepHealth } from '@/components/onboarding/StepHealth';
 import { StepNutrition } from '@/components/onboarding/StepNutrition';
 import { StepCoachTone } from '@/components/onboarding/StepCoachTone';
+import { OnboardingScrollContainer } from '@/components/onboarding/OnboardingScrollContainer';
 
 const TOTAL_STEPS = 7;
 
@@ -307,48 +308,54 @@ export default function Onboarding() {
   }
 
   return (
-    <div 
-      className="min-h-screen flex flex-col bg-background p-4"
-      style={{ 
-        WebkitOverflowScrolling: 'touch',
-        overflowY: 'auto',
-        overflowX: 'hidden',
-        touchAction: 'auto',
-        position: 'relative',
-      }}
-    >
-      {/* Header */}
-      <div className="mb-4 flex items-center gap-2">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
-          <Dumbbell className="h-5 w-5 text-primary-foreground" />
+    <OnboardingScrollContainer className="bg-background">
+      {/* Inner content wrapper - NO nested scroll containers */}
+      <div 
+        className="flex flex-col p-4 flex-1"
+        style={{
+          // Ensure children don't create scroll containers
+          overflow: 'visible',
+        }}
+      >
+        {/* Header - Not fixed, scrolls with content */}
+        <div className="mb-4 flex items-center gap-2 flex-shrink-0">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
+            <Dumbbell className="h-5 w-5 text-primary-foreground" />
+          </div>
+          <span className="text-xl font-bold">BisaFit</span>
         </div>
-        <span className="text-xl font-bold">BisaFit</span>
-      </div>
 
-      {/* Error Display */}
-      {(profileError || saveError) && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            {profileError?.message || saveError}
-          </AlertDescription>
-        </Alert>
-      )}
+        {/* Error Display */}
+        {(profileError || saveError) && (
+          <Alert variant="destructive" className="mb-4 flex-shrink-0">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              {profileError?.message || saveError}
+            </AlertDescription>
+          </Alert>
+        )}
 
-      {/* Progress */}
-      <OnboardingProgress currentStep={currentStep} />
+        {/* Progress */}
+        <div className="flex-shrink-0">
+          <OnboardingProgress currentStep={currentStep} />
+        </div>
 
-      {/* Content - Single scroll container with iOS-compatible styles */}
-      <Card className="flex-1 border-border" style={{ overflow: 'visible' }}>
-        <CardContent 
-          className="p-4" 
+        {/* Content - NO overflow on Card or CardContent */}
+        <Card 
+          className="flex-1 border-border mt-4" 
           style={{ 
-            minHeight: 'auto',
             overflow: 'visible',
-            touchAction: 'auto',
+            minHeight: 'auto',
           }}
         >
+          <CardContent 
+            className="p-4" 
+            style={{ 
+              overflow: 'visible',
+              touchAction: 'auto',
+            }}
+          >
           {currentStep === 1 && (
             <StepAboutYou
               fullName={formData.fullName}
@@ -460,7 +467,8 @@ export default function Onboarding() {
             )}
           </Button>
         )}
+        </div>
       </div>
-    </div>
+    </OnboardingScrollContainer>
   );
 }

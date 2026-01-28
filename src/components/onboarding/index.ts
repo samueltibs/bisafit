@@ -1,4 +1,5 @@
 export { OnboardingProgress } from './OnboardingProgress';
+export { OnboardingScrollContainer } from './OnboardingScrollContainer';
 export { IntroTour } from './IntroTour';
 export { WhatsNew } from './WhatsNew';
 export { StepAboutYou } from './StepAboutYou';
