@@ -10,4 +10,5 @@ export { SkipWorkoutConfirmDialog } from './SkipWorkoutConfirmDialog';
 export { TVModeOverlay } from './TVModeOverlay';
 export { WorkoutComplete } from './WorkoutComplete';
 export { WorkoutControls } from './WorkoutControls';
+export { WorkoutMusicButton } from './WorkoutMusicButton';
 export { WorkoutTimer } from './WorkoutTimer';

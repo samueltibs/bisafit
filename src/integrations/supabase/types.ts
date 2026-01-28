@@ -550,6 +550,11 @@ export type Database = {
           id: string
           is_pro: boolean | null
           language: string | null
+          music_autoplay: boolean | null
+          music_playlist_id: string | null
+          music_playlist_name: string | null
+          music_provider: string | null
+          music_shuffle: boolean | null
           notification_types_json: Json | null
           notifications_enabled: boolean | null
           program_start_date: string | null
@@ -592,6 +597,11 @@ export type Database = {
           id: string
           is_pro?: boolean | null
           language?: string | null
+          music_autoplay?: boolean | null
+          music_playlist_id?: string | null
+          music_playlist_name?: string | null
+          music_provider?: string | null
+          music_shuffle?: boolean | null
           notification_types_json?: Json | null
           notifications_enabled?: boolean | null
           program_start_date?: string | null
@@ -634,6 +644,11 @@ export type Database = {
           id?: string
           is_pro?: boolean | null
           language?: string | null
+          music_autoplay?: boolean | null
+          music_playlist_id?: string | null
+          music_playlist_name?: string | null
+          music_provider?: string | null
+          music_shuffle?: boolean | null
           notification_types_json?: Json | null
           notifications_enabled?: boolean | null
           program_start_date?: string | null

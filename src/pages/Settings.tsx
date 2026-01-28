@@ -44,6 +44,7 @@ import {
   Mail,
   Info,
   Compass,
+  Music,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -71,6 +72,7 @@ import { CollapsibleCountrySelector } from '@/components/settings/CollapsibleCou
 import { CollapsibleLanguageSelector } from '@/components/settings/CollapsibleLanguageSelector';
 import { getLanguageName } from '@/lib/languageUtils';
 import { useTranslation, translateGoal } from '@/lib/i18n';
+import { MusicSettings } from '@/components/settings/MusicSettings';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -631,6 +633,15 @@ export default function Settings() {
                   <span className="font-medium">{t('settings.coachVoice')}</span>
                 </div>
                 <CoachVoiceSelector compact />
+              </div>
+
+              {/* Music */}
+              <div className="p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <Music className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">Music</span>
+                </div>
+                <MusicSettings compact />
               </div>
             </CardContent>
           </Card>
