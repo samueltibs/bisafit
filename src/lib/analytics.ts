@@ -23,6 +23,10 @@ export type AnalyticsEventName =
   | 'meal_scan_error'
   | 'meal_log_deleted'
   | 'meal_log_updated'
+  // Progress tracking
+  | 'energy_level_logged'
+  | 'personal_best_achieved'
+  | 'streak_milestone'
   // Notifications
   | 'notification_scheduled'
   | 'notification_delivered'
