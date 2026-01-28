@@ -6,18 +6,22 @@ interface ActiveWorkoutTimerProps {
   type: 'duration' | 'rest' | 'work' | null;
   isPaused?: boolean;
   onCountdownTick?: (seconds: number) => void;
+  compact?: boolean;
   className?: string;
 }
 
 /**
  * Hero timer element - large, high-contrast, readable from distance.
  * Designed as the central focus of the active workout screen.
+ * 
+ * compact mode: smaller timer for when demo panel is the primary visual
  */
 export function ActiveWorkoutTimer({
   seconds,
   type,
   isPaused = false,
   onCountdownTick,
+  compact = false,
   className,
 }: ActiveWorkoutTimerProps) {
   const prevSecondsRef = useRef(seconds);
@@ -45,6 +49,43 @@ export function ActiveWorkoutTimer({
     return 'TIME';
   };
 
+  // Compact mode - no ring, just timer
+  if (compact) {
+    return (
+      <div className={cn(
+        "flex flex-col items-center justify-center py-4",
+        className
+      )}>
+        {/* Label */}
+        <span className={cn(
+          "text-xs font-semibold tracking-[0.2em] uppercase mb-1",
+          isRest && "text-amber-500",
+          isWork && "text-emerald-500",
+          !isRest && !isWork && "text-primary",
+          isPaused && "opacity-60"
+        )}>
+          {getLabel()}
+        </span>
+
+        {/* Time display */}
+        <span className={cn(
+          "text-5xl font-bold font-mono tracking-tight tabular-nums",
+          isPaused && "opacity-60 animate-pulse"
+        )}>
+          {timeString}
+        </span>
+
+        {/* Paused indicator */}
+        {isPaused && (
+          <span className="text-xs font-medium text-muted-foreground mt-1 uppercase tracking-wider">
+            Paused
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  // Full mode with progress ring
   // Progress ring calculations
   const maxTime = isRest ? 120 : 60;
   const progress = Math.min((seconds / maxTime) * 100, 100);
