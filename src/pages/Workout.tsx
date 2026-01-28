@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,7 @@ import {
   WorkoutControls,
   ProgressIndicator,
 } from '@/components/workout';
+import { TVModeOverlay } from '@/components/workout/TVModeOverlay';
 import { cn } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics';
 
@@ -37,6 +38,8 @@ export default function Workout() {
   const [showSetLog, setShowSetLog] = useState(false);
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
   const [bigMode, setBigMode] = useState(false);
+  const [tvMode, setTvMode] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Premium feature gating
   const { showModal: showPremiumModal, setShowModal: setShowPremiumModal, checkPremiumAccess } = usePremiumFeature();
@@ -104,6 +107,40 @@ export default function Workout() {
 
     return { currentExerciseNumber: current, totalExercises: total };
   }, [workout, currentBlockIndex, currentItemIndex]);
+
+  // Fullscreen API handling
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.().then(() => {
+        setIsFullscreen(true);
+      }).catch(() => {
+        // Fullscreen not supported or blocked
+      });
+    } else {
+      document.exitFullscreen?.().then(() => {
+        setIsFullscreen(false);
+      });
+    }
+  }, []);
+
+  // Listen for fullscreen changes (e.g., user pressing Escape)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  // Exit TV mode when workout ends
+  useEffect(() => {
+    if (playerState === 'completed' && tvMode) {
+      setTvMode(false);
+      if (document.fullscreenElement) {
+        document.exitFullscreen?.();
+      }
+    }
+  }, [playerState, tvMode]);
 
   // Save resume state on position changes
   useEffect(() => {
@@ -288,7 +325,7 @@ export default function Workout() {
           </div>
         )}
 
-        {/* Controls (voice + big mode toggles) */}
+        {/* Controls (voice + big mode + TV mode toggles) */}
         {playerState !== 'idle' && (
           <div className={cn(
             "mb-4 flex items-center justify-between",
@@ -300,6 +337,10 @@ export default function Workout() {
               voiceAvailable={voiceCues.isAvailable}
               bigModeEnabled={bigMode}
               onBigModeToggle={setBigMode}
+              tvModeEnabled={tvMode}
+              onTVModeToggle={setTvMode}
+              onFullscreenToggle={toggleFullscreen}
+              isFullscreen={isFullscreen}
             />
             {bigMode && (
               <Button variant="ghost" size="sm" onClick={togglePause}>
@@ -466,6 +507,32 @@ export default function Workout() {
           onOpenChange={setShowPremiumModal}
         />
       </div>
+
+      {/* TV Mode Overlay - renders on top when active */}
+      {tvMode && playerState !== 'idle' && workout && (
+        <TVModeOverlay
+          workout={workout}
+          currentExercise={currentExercise}
+          currentBlock={currentBlock}
+          currentBlockIndex={currentBlockIndex}
+          currentItemIndex={currentItemIndex}
+          currentSet={currentSet}
+          timerSeconds={timerSeconds}
+          timerType={timerType}
+          isPaused={isPaused}
+          progress={progress}
+          onTogglePause={togglePause}
+          onSkipExercise={skipExercise}
+          onSkipRest={timerType === 'rest' ? skipRest : undefined}
+          onExit={() => setTvMode(false)}
+          onEndWorkout={() => {
+            setTvMode(false);
+            navigate(-1);
+          }}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+        />
+      )}
     </AppLayout>
   );
 }
