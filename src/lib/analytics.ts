@@ -36,6 +36,13 @@ export type AnalyticsEventName =
   | 'notification_opened'
   | 'smart_reminder_shown'
   | 'reminder_preferences_updated'
+  // Health platform integration
+  | 'apple_health_connect_started'
+  | 'apple_health_connected'
+  | 'apple_health_connect_failed'
+  | 'apple_health_disconnected'
+  | 'apple_health_synced'
+  | 'apple_health_sync_failed'
   // Quality
   | 'generation_error'
   | 'scan_error';
