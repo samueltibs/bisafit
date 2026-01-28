@@ -8,13 +8,9 @@ import { cn } from "@/lib/utils";
  * Dialog Root wrapper that handles modal cleanup on close.
  * For app-shell scrolling: html/body stay locked, we just clean up modal attributes.
  */
-const Dialog = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>
->(({ onOpenChange, ...props }, _ref) => {
+function Dialog({ onOpenChange, ...props }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>) {
   const handleOpenChange = React.useCallback((open: boolean) => {
     if (!open) {
-      // Clean up modal-related attributes (don't touch html/body scroll - app-shell handles that)
       requestAnimationFrame(() => {
         document.body.removeAttribute('data-scroll-locked');
         document.body.style.pointerEvents = '';
@@ -23,10 +19,8 @@ const Dialog = React.forwardRef<
     onOpenChange?.(open);
   }, [onOpenChange]);
 
-  // Note: DialogPrimitive.Root doesn't accept refs, we just forward props
   return <DialogPrimitive.Root onOpenChange={handleOpenChange} {...props} />;
-});
-Dialog.displayName = "Dialog";
+}
 
 const DialogTrigger = DialogPrimitive.Trigger;
 
