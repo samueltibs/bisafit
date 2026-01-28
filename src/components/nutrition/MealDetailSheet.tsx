@@ -152,7 +152,7 @@ export function MealDetailSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl">
+      <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl" style={{ pointerEvents: 'auto' }}>
         <SheetHeader className="text-left pb-4 border-b">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
@@ -206,7 +206,7 @@ export function MealDetailSheet({
           )}
         </SheetHeader>
 
-        <div className="overflow-y-auto h-[calc(100%-180px)] py-4 space-y-6">
+        <div className="overflow-y-auto h-[calc(100%-180px)] py-4 space-y-6" style={{ pointerEvents: 'auto' }}>
           {/* Ingredients */}
           <div>
             <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
