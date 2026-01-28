@@ -44,8 +44,6 @@ import {
   Mail,
   Info,
   Compass,
-  Globe,
-  Languages,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -69,6 +67,8 @@ import { FAQScreen } from '@/components/settings/FAQScreen';
 import { getCountryName } from '@/lib/countryUtils';
 import { CountrySelector } from '@/components/settings/CountrySelector';
 import { LanguageSelector } from '@/components/settings/LanguageSelector';
+import { InlineCountrySelector } from '@/components/settings/InlineCountrySelector';
+import { InlineLanguageSelector } from '@/components/settings/InlineLanguageSelector';
 import { getLanguageName } from '@/lib/languageUtils';
 import { useTranslation, translateGoal } from '@/lib/i18n';
 
@@ -466,6 +466,47 @@ export default function Settings() {
     }
   };
 
+  // Inline save handler for Country
+  const handleInlineCountrySave = async (countryCode: string): Promise<boolean> => {
+    const previousValue = (profile as any)?.country;
+    try {
+      const success = await update({ country: countryCode } as any);
+      if (success) {
+        await refetch();
+        toast.success('Country updated');
+        return true;
+      } else {
+        toast.error('Failed to update country');
+        return false;
+      }
+    } catch (error) {
+      console.error('Country update error:', error);
+      toast.error('Failed to update country');
+      return false;
+    }
+  };
+
+  // Inline save handler for Language
+  const handleInlineLanguageSave = async (languageCode: string): Promise<boolean> => {
+    const previousValue = (profile as any)?.language;
+    try {
+      const success = await update({ language: languageCode } as any);
+      if (success) {
+        await refetch();
+        toast.success('Language updated');
+        // The UI will re-render automatically when profile updates trigger AppLanguageProvider
+        return true;
+      } else {
+        toast.error('Failed to update language');
+        return false;
+      }
+    } catch (error) {
+      console.error('Language update error:', error);
+      toast.error('Failed to update language');
+      return false;
+    }
+  };
+
   const getInitials = () => {
     if (profile?.full_name) {
       return profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -536,45 +577,17 @@ export default function Settings() {
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
 
-              {/* Country / Region */}
-              <button 
-                onClick={() => {
-                  if (import.meta.env.DEV) console.log('[Settings] Item clicked: Country -> edit modal (country section)');
-                  setIsEditModalOpen(true, 'country');
-                }}
-                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
-              >
-                <div className="flex items-center gap-3">
-                  <Globe className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <span className="block font-medium">{t('onboarding.countryRegion')}</span>
-                    <span className="text-sm text-muted-foreground">
-                      {getCountryName((profile as any)?.country)}
-                    </span>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </button>
+              {/* Country / Region - Inline Dropdown */}
+              <InlineCountrySelector
+                value={(profile as any)?.country || null}
+                onSave={handleInlineCountrySave}
+              />
 
-              {/* Language */}
-              <button 
-                onClick={() => {
-                  if (import.meta.env.DEV) console.log('[Settings] Item clicked: Language -> edit modal (language section)');
-                  setIsEditModalOpen(true, 'language');
-                }}
-                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
-              >
-                <div className="flex items-center gap-3">
-                  <Languages className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <span className="block font-medium">{t('settings.language')}</span>
-                    <span className="text-sm text-muted-foreground">
-                      {getLanguageName((profile as any)?.language)}
-                    </span>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </button>
+              {/* Language - Inline Dropdown */}
+              <InlineLanguageSelector
+                value={(profile as any)?.language || null}
+                onSave={handleInlineLanguageSave}
+              />
 
               <button 
                 onClick={() => setIsEquipmentModalOpen(true)}
