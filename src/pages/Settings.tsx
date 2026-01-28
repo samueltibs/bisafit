@@ -45,6 +45,7 @@ import {
   Info,
   Compass,
   Music,
+  Activity,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -73,6 +74,7 @@ import { CollapsibleLanguageSelector } from '@/components/settings/CollapsibleLa
 import { getLanguageName } from '@/lib/languageUtils';
 import { useTranslation, translateGoal } from '@/lib/i18n';
 import { MusicSettings } from '@/components/settings/MusicSettings';
+import { HealthPlatformSettings } from '@/components/settings/HealthPlatformSettings';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -642,6 +644,15 @@ export default function Settings() {
                   <span className="font-medium">Music</span>
                 </div>
                 <MusicSettings compact />
+              </div>
+
+              {/* Health Platforms */}
+              <div className="p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <Activity className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">Health Tracking</span>
+                </div>
+                <HealthPlatformSettings compact />
               </div>
             </CardContent>
           </Card>

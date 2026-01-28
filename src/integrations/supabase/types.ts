@@ -597,6 +597,7 @@ export type Database = {
       }
       users_profile: {
         Row: {
+          apple_health_connected: boolean | null
           calendar_provider: string | null
           calendar_sync_enabled: boolean | null
           coach_tone: string | null
@@ -614,11 +615,13 @@ export type Database = {
           gender: string | null
           goal_primary: string | null
           goal_secondary: string | null
+          google_fit_connected: boolean | null
           has_seen_intro_tour: boolean | null
           height_cm: number | null
           id: string
           is_pro: boolean | null
           language: string | null
+          last_health_sync_at: string | null
           music_autoplay: boolean | null
           music_playlist_id: string | null
           music_playlist_name: string | null
@@ -644,6 +647,7 @@ export type Database = {
           workout_time_preferences_json: Json | null
         }
         Insert: {
+          apple_health_connected?: boolean | null
           calendar_provider?: string | null
           calendar_sync_enabled?: boolean | null
           coach_tone?: string | null
@@ -661,11 +665,13 @@ export type Database = {
           gender?: string | null
           goal_primary?: string | null
           goal_secondary?: string | null
+          google_fit_connected?: boolean | null
           has_seen_intro_tour?: boolean | null
           height_cm?: number | null
           id: string
           is_pro?: boolean | null
           language?: string | null
+          last_health_sync_at?: string | null
           music_autoplay?: boolean | null
           music_playlist_id?: string | null
           music_playlist_name?: string | null
@@ -691,6 +697,7 @@ export type Database = {
           workout_time_preferences_json?: Json | null
         }
         Update: {
+          apple_health_connected?: boolean | null
           calendar_provider?: string | null
           calendar_sync_enabled?: boolean | null
           coach_tone?: string | null
@@ -708,11 +715,13 @@ export type Database = {
           gender?: string | null
           goal_primary?: string | null
           goal_secondary?: string | null
+          google_fit_connected?: boolean | null
           has_seen_intro_tour?: boolean | null
           height_cm?: number | null
           id?: string
           is_pro?: boolean | null
           language?: string | null
+          last_health_sync_at?: string | null
           music_autoplay?: boolean | null
           music_playlist_id?: string | null
           music_playlist_name?: string | null
@@ -743,6 +752,81 @@ export type Database = {
             columns: ["current_plan_id"]
             isOneToOne: false
             referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workout_logs: {
+        Row: {
+          calories_burned: number | null
+          created_at: string
+          distance_meters: number | null
+          duration_minutes: number
+          end_time: string | null
+          external_id: string | null
+          heart_rate_avg: number | null
+          id: string
+          linked_workout_id: string | null
+          metadata: Json | null
+          source: string
+          start_time: string
+          steps: number | null
+          updated_at: string
+          user_id: string
+          user_notes: string | null
+          workout_type: string
+        }
+        Insert: {
+          calories_burned?: number | null
+          created_at?: string
+          distance_meters?: number | null
+          duration_minutes: number
+          end_time?: string | null
+          external_id?: string | null
+          heart_rate_avg?: number | null
+          id?: string
+          linked_workout_id?: string | null
+          metadata?: Json | null
+          source: string
+          start_time: string
+          steps?: number | null
+          updated_at?: string
+          user_id: string
+          user_notes?: string | null
+          workout_type: string
+        }
+        Update: {
+          calories_burned?: number | null
+          created_at?: string
+          distance_meters?: number | null
+          duration_minutes?: number
+          end_time?: string | null
+          external_id?: string | null
+          heart_rate_avg?: number | null
+          id?: string
+          linked_workout_id?: string | null
+          metadata?: Json | null
+          source?: string
+          start_time?: string
+          steps?: number | null
+          updated_at?: string
+          user_id?: string
+          user_notes?: string | null
+          workout_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_logs_linked_workout_id_fkey"
+            columns: ["linked_workout_id"]
+            isOneToOne: false
+            referencedRelation: "workouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_profile"
             referencedColumns: ["id"]
           },
         ]
