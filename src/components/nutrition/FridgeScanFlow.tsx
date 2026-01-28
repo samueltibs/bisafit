@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { 
   Camera, Upload, X, Loader2, ChevronDown, Plus, 
   Trash2, CheckCircle2, UtensilsCrossed, Clock, Sparkles,
-  ShoppingBasket, AlertTriangle, RefreshCw, Receipt
+  ShoppingBasket, AlertTriangle, RefreshCw, Receipt, PenLine
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,8 +44,8 @@ interface MealsResult {
   error?: string;
 }
 
-type FlowStep = 'select-mode' | 'upload' | 'review' | 'meals';
-type ScanMode = 'fridge' | 'receipt';
+type FlowStep = 'select-mode' | 'upload' | 'review' | 'meals' | 'manual';
+type ScanMode = 'fridge' | 'receipt' | 'manual';
 
 interface FridgeScanFlowProps {
   open: boolean;
@@ -93,13 +93,13 @@ export function FridgeScanFlow({
   };
 
   const handleClose = () => {
-    // Keep ingredients in session when closing from meals step
-    if (step === 'meals' || step === 'review') {
+    // Keep ingredients in session when closing from meals, review, or manual step
+    if (step === 'meals' || step === 'review' || step === 'manual') {
       const selectedIngredients = ingredients
         .filter(i => i.selected)
         .map(i => ({ name: i.name, confidence: i.confidence }));
       if (selectedIngredients.length > 0) {
-        saveIngredients(selectedIngredients);
+        saveIngredients(selectedIngredients, 'flexible_prefer', scanMode as 'fridge' | 'receipt' | 'manual');
       }
     }
     resetFlow();
@@ -226,7 +226,7 @@ export function FridgeScanFlow({
     saveIngredients(ingredients.filter(i => i.selected).map(i => ({ 
       name: i.name, 
       confidence: i.confidence 
-    })));
+    })), 'flexible_prefer', scanMode as 'fridge' | 'receipt' | 'manual');
 
     setGenerating(true);
     try {
@@ -289,7 +289,7 @@ export function FridgeScanFlow({
       saveIngredients(ingredients.filter(i => i.selected).map(i => ({ 
         name: i.name, 
         confidence: i.confidence 
-      })));
+      })), 'flexible_prefer', scanMode as 'fridge' | 'receipt' | 'manual');
       
       await onGeneratePlanFromIngredients();
       
@@ -307,10 +307,11 @@ export function FridgeScanFlow({
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {scanMode === 'receipt' ? <Receipt className="h-5 w-5" /> : <ShoppingBasket className="h-5 w-5" />}
-            {step === 'select-mode' && 'Scan Ingredients'}
+            {scanMode === 'receipt' ? <Receipt className="h-5 w-5" /> : scanMode === 'manual' ? <PenLine className="h-5 w-5" /> : <ShoppingBasket className="h-5 w-5" />}
+            {step === 'select-mode' && 'Add Ingredients'}
             {step === 'upload' && (scanMode === 'receipt' ? 'Scan Receipt' : 'Scan Your Fridge')}
             {step === 'review' && 'Confirm Ingredients'}
+            {step === 'manual' && 'Add Items Manually'}
             {step === 'meals' && 'Meal Suggestions'}
           </DialogTitle>
           <DialogDescription>
@@ -319,6 +320,7 @@ export function FridgeScanFlow({
               ? 'Upload photos of your grocery receipt to extract food items' 
               : 'Upload photos of your fridge or pantry to get meal ideas')}
             {step === 'review' && 'Review and edit the detected ingredients'}
+            {step === 'manual' && 'Type each ingredient you have available'}
             {step === 'meals' && 'Choose how to use your ingredients'}
           </DialogDescription>
         </DialogHeader>
@@ -326,33 +328,48 @@ export function FridgeScanFlow({
         {/* Mode Selection Step */}
         {step === 'select-mode' && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <button
                 onClick={() => { setScanMode('fridge'); setStep('upload'); }}
-                className="flex flex-col items-center gap-3 p-6 rounded-lg border-2 border-muted hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                className="flex flex-col items-center gap-3 p-4 rounded-lg border-2 border-muted hover:border-primary/50 hover:bg-primary/5 transition-colors"
               >
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Camera className="h-6 w-6 text-primary" />
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Camera className="h-5 w-5 text-primary" />
                 </div>
                 <div className="text-center">
                   <p className="font-medium text-sm">Scan Fridge</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Photo of fridge or pantry
+                    Photo of fridge
                   </p>
                 </div>
               </button>
 
               <button
                 onClick={() => { setScanMode('receipt'); setStep('upload'); }}
-                className="flex flex-col items-center gap-3 p-6 rounded-lg border-2 border-muted hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                className="flex flex-col items-center gap-3 p-4 rounded-lg border-2 border-muted hover:border-primary/50 hover:bg-primary/5 transition-colors"
               >
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Receipt className="h-6 w-6 text-primary" />
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Receipt className="h-5 w-5 text-primary" />
                 </div>
                 <div className="text-center">
                   <p className="font-medium text-sm">Scan Receipt</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Photo of grocery receipt
+                    Grocery receipt
+                  </p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => { setScanMode('manual'); setStep('manual'); }}
+                className="flex flex-col items-center gap-3 p-4 rounded-lg border-2 border-muted hover:border-primary/50 hover:bg-primary/5 transition-colors"
+              >
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <PenLine className="h-5 w-5 text-primary" />
+                </div>
+                <div className="text-center">
+                  <p className="font-medium text-sm">Add Manually</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Type items
                   </p>
                 </div>
               </button>
@@ -555,6 +572,100 @@ export function FridgeScanFlow({
                   <>
                     <UtensilsCrossed className="h-4 w-4" />
                     Get Suggestions
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Manual Entry Step */}
+        {step === 'manual' && (
+          <div className="space-y-4">
+            <Alert className="border-primary/50 bg-primary/5">
+              <PenLine className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-sm">
+                Add each ingredient you have available. Press Enter or tap + to add.
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {ingredients.map((ing, i) => (
+                <div 
+                  key={i} 
+                  className={cn(
+                    "flex items-center gap-3 p-2 rounded-lg border",
+                    ing.selected ? "border-primary/30 bg-primary/5" : "border-muted"
+                  )}
+                >
+                  <Checkbox
+                    checked={ing.selected}
+                    onCheckedChange={() => toggleIngredient(i)}
+                  />
+                  <Input
+                    value={ing.name}
+                    onChange={(e) => updateIngredientName(i, e.target.value)}
+                    className="flex-1 h-8 text-sm"
+                  />
+                  <button onClick={() => removeIngredient(i)} className="p-1 hover:text-destructive">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+
+              {ingredients.length === 0 && (
+                <div className="text-center text-muted-foreground py-8 border-2 border-dashed rounded-lg">
+                  <PenLine className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No items yet. Add your first ingredient below.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Add Manual Input */}
+            <div className="flex gap-2">
+              <Input
+                placeholder="e.g., chicken breast, rice, broccoli..."
+                value={newIngredient}
+                onChange={(e) => setNewIngredient(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addManualIngredient()}
+                autoFocus
+              />
+              <Button variant="outline" size="icon" onClick={addManualIngredient} disabled={!newIngredient.trim()}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  if (ingredients.length > 0) {
+                    if (window.confirm('Discard all added items?')) {
+                      setIngredients([]);
+                      setStep('select-mode');
+                    }
+                  } else {
+                    setStep('select-mode');
+                  }
+                }} 
+                className="flex-1"
+              >
+                Back
+              </Button>
+              <Button 
+                onClick={generateMealSuggestions} 
+                disabled={selectedCount < 2 || generating}
+                className="flex-1 gap-2"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <UtensilsCrossed className="h-4 w-4" />
+                    Get Suggestions ({selectedCount})
                   </>
                 )}
               </Button>
