@@ -232,24 +232,33 @@ export function MealDetailSheet({
               </h3>
               
               {/* Style Segmented Control */}
-              <div className="flex rounded-lg border bg-muted/50 p-0.5">
+              <div className="flex rounded-lg border bg-muted/50 p-0.5 relative z-10">
                 {(['simple', 'detailed', 'gourmet'] as InstructionStyle[]).map((style) => {
-                  const isDisabled = 
+                  const isUnavailable = 
                     (style === 'detailed' && !hasDetailedInstructions) ||
                     (style === 'gourmet' && !hasGourmetNotes && !hasDetailedInstructions);
                   
                   return (
                     <button
                       key={style}
-                      onClick={() => !isDisabled && setInstructionStyle(style)}
-                      disabled={isDisabled}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (!isUnavailable) {
+                          setInstructionStyle(style);
+                        }
+                      }}
                       className={cn(
-                        "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                        "px-3 py-1.5 text-xs font-medium rounded-md transition-all select-none touch-manipulation",
                         instructionStyle === style
                           ? "bg-background text-foreground shadow-sm"
                           : "text-muted-foreground hover:text-foreground",
-                        isDisabled && "opacity-40 cursor-not-allowed"
+                        isUnavailable 
+                          ? "opacity-40 cursor-not-allowed" 
+                          : "cursor-pointer active:scale-95"
                       )}
+                      style={{ pointerEvents: 'auto' }}
                     >
                       {styleLabels[style]}
                     </button>
