@@ -65,7 +65,7 @@ import { openExternalLink, openMailto, EXTERNAL_URLS } from '@/lib/externalLinks
 import { type CoachTone, normalizeCoachTone } from '@/lib/coachTone';
 import { FAQScreen } from '@/components/settings/FAQScreen';
 import { getCountryName } from '@/lib/countryUtils';
-import { CountrySelector } from '@/components/settings/CountrySelector';
+import { CountrySelect } from '@/components/settings/CountrySelect';
 import { LanguageSelector } from '@/components/settings/LanguageSelector';
 import { CollapsibleCountrySelector } from '@/components/settings/CollapsibleCountrySelector';
 import { CollapsibleLanguageSelector } from '@/components/settings/CollapsibleLanguageSelector';
@@ -826,7 +826,7 @@ export default function Settings() {
 
             {/* Country / Region */}
             <div ref={countrySectionRef} className="rounded-lg transition-all duration-300">
-              <CountrySelector
+              <CountrySelect
                 value={editForm.country}
                 onChange={(v) => setEditForm({ ...editForm, country: v })}
                 compact

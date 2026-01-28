@@ -3,9 +3,11 @@
  * 
  * Provides country detection, defaults, and mapping for contextual preferences.
  * Country selection provides sensible defaults but does not restrict user choices.
+ * Uses the full ISO-3166 country list from countryFlags.ts as the single source of truth.
  */
 
 import type { UnitPreference } from './unitConversions';
+import { ALL_COUNTRIES, getCountryFromCode as getCountryFromFullList } from './countryFlags';
 
 export interface Country {
   code: string; // ISO 3166-1 alpha-2
@@ -13,78 +15,38 @@ export interface Country {
   defaultUnit: UnitPreference;
 }
 
-// Common countries list - can be expanded as needed
-const countriesData: Array<{ code: string; name: string; defaultUnit: UnitPreference }> = [
-  { code: 'US', name: 'United States', defaultUnit: 'imperial' },
-  { code: 'GB', name: 'United Kingdom', defaultUnit: 'metric' },
-  { code: 'CA', name: 'Canada', defaultUnit: 'metric' },
-  { code: 'AU', name: 'Australia', defaultUnit: 'metric' },
-  { code: 'DE', name: 'Germany', defaultUnit: 'metric' },
-  { code: 'FR', name: 'France', defaultUnit: 'metric' },
-  { code: 'ES', name: 'Spain', defaultUnit: 'metric' },
-  { code: 'IT', name: 'Italy', defaultUnit: 'metric' },
-  { code: 'NL', name: 'Netherlands', defaultUnit: 'metric' },
-  { code: 'BE', name: 'Belgium', defaultUnit: 'metric' },
-  { code: 'CH', name: 'Switzerland', defaultUnit: 'metric' },
-  { code: 'AT', name: 'Austria', defaultUnit: 'metric' },
-  { code: 'SE', name: 'Sweden', defaultUnit: 'metric' },
-  { code: 'NO', name: 'Norway', defaultUnit: 'metric' },
-  { code: 'DK', name: 'Denmark', defaultUnit: 'metric' },
-  { code: 'FI', name: 'Finland', defaultUnit: 'metric' },
-  { code: 'IE', name: 'Ireland', defaultUnit: 'metric' },
-  { code: 'PT', name: 'Portugal', defaultUnit: 'metric' },
-  { code: 'PL', name: 'Poland', defaultUnit: 'metric' },
-  { code: 'CZ', name: 'Czech Republic', defaultUnit: 'metric' },
-  { code: 'HU', name: 'Hungary', defaultUnit: 'metric' },
-  { code: 'RO', name: 'Romania', defaultUnit: 'metric' },
-  { code: 'GR', name: 'Greece', defaultUnit: 'metric' },
-  { code: 'RU', name: 'Russia', defaultUnit: 'metric' },
-  { code: 'UA', name: 'Ukraine', defaultUnit: 'metric' },
-  { code: 'TR', name: 'Turkey', defaultUnit: 'metric' },
-  { code: 'BR', name: 'Brazil', defaultUnit: 'metric' },
-  { code: 'MX', name: 'Mexico', defaultUnit: 'metric' },
-  { code: 'AR', name: 'Argentina', defaultUnit: 'metric' },
-  { code: 'CL', name: 'Chile', defaultUnit: 'metric' },
-  { code: 'CO', name: 'Colombia', defaultUnit: 'metric' },
-  { code: 'PE', name: 'Peru', defaultUnit: 'metric' },
-  { code: 'JP', name: 'Japan', defaultUnit: 'metric' },
-  { code: 'KR', name: 'South Korea', defaultUnit: 'metric' },
-  { code: 'CN', name: 'China', defaultUnit: 'metric' },
-  { code: 'IN', name: 'India', defaultUnit: 'metric' },
-  { code: 'ID', name: 'Indonesia', defaultUnit: 'metric' },
-  { code: 'MY', name: 'Malaysia', defaultUnit: 'metric' },
-  { code: 'SG', name: 'Singapore', defaultUnit: 'metric' },
-  { code: 'TH', name: 'Thailand', defaultUnit: 'metric' },
-  { code: 'VN', name: 'Vietnam', defaultUnit: 'metric' },
-  { code: 'PH', name: 'Philippines', defaultUnit: 'metric' },
-  { code: 'ZA', name: 'South Africa', defaultUnit: 'metric' },
-  { code: 'EG', name: 'Egypt', defaultUnit: 'metric' },
-  { code: 'NG', name: 'Nigeria', defaultUnit: 'metric' },
-  { code: 'KE', name: 'Kenya', defaultUnit: 'metric' },
-  { code: 'AE', name: 'United Arab Emirates', defaultUnit: 'metric' },
-  { code: 'SA', name: 'Saudi Arabia', defaultUnit: 'metric' },
-  { code: 'IL', name: 'Israel', defaultUnit: 'metric' },
-  { code: 'NZ', name: 'New Zealand', defaultUnit: 'metric' },
-  { code: 'LR', name: 'Liberia', defaultUnit: 'imperial' },
-  { code: 'MM', name: 'Myanmar', defaultUnit: 'imperial' },
-];
-
-export const COUNTRIES: Country[] = countriesData.sort((a, b) => a.name.localeCompare(b.name));
+// Countries that use imperial units
+const IMPERIAL_COUNTRIES = new Set(['US', 'LR', 'MM']);
 
 /**
- * Get country by ISO code
+ * Re-export full country list with unit preference added
+ */
+export const COUNTRIES: Country[] = ALL_COUNTRIES.map(c => ({
+  code: c.code,
+  name: c.name,
+  defaultUnit: IMPERIAL_COUNTRIES.has(c.code) ? 'imperial' as UnitPreference : 'metric' as UnitPreference,
+}));
+
+/**
+ * Get country by ISO code from the full list
  */
 export function getCountryByCode(code: string | null): Country | undefined {
   if (!code) return undefined;
-  return COUNTRIES.find((c) => c.code.toUpperCase() === code.toUpperCase());
+  const country = getCountryFromFullList(code);
+  if (!country) return undefined;
+  return {
+    code: country.code,
+    name: country.name,
+    defaultUnit: IMPERIAL_COUNTRIES.has(country.code) ? 'imperial' : 'metric',
+  };
 }
 
 /**
  * Get the default unit preference for a country
  */
 export function getUnitPreferenceForCountry(countryCode: string | null): UnitPreference {
-  const country = getCountryByCode(countryCode);
-  return country?.defaultUnit || 'metric';
+  if (!countryCode) return 'metric';
+  return IMPERIAL_COUNTRIES.has(countryCode.toUpperCase()) ? 'imperial' : 'metric';
 }
 
 /**
@@ -101,8 +63,8 @@ export function detectCountryFromDevice(): string | null {
     const parts = locale.split('-');
     if (parts.length >= 2) {
       const countryCode = parts[parts.length - 1].toUpperCase();
-      // Verify it's a valid country in our list
-      if (getCountryByCode(countryCode)) {
+      // Verify it's a valid country in our full list
+      if (getCountryFromFullList(countryCode)) {
         return countryCode;
       }
     }
@@ -124,11 +86,14 @@ export function detectCountryFromDevice(): string | null {
       nl: 'NL',
       pl: 'PL',
       tr: 'TR',
+      sw: 'KE',
+      af: 'ZA',
+      lg: 'UG',
     };
 
     const langCode = parts[0].toLowerCase();
     const fallbackCountry = languageToCountry[langCode];
-    if (fallbackCountry && getCountryByCode(fallbackCountry)) {
+    if (fallbackCountry && getCountryFromFullList(fallbackCountry)) {
       return fallbackCountry;
     }
 
