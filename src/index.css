@@ -126,8 +126,8 @@
 
   /* 
    * iOS Safari scroll fix:
-   * - html/body must NOT have overflow: hidden
-   * - Use height: 100% to allow natural document flow
+   * - html/body must have height: 100% and overflow: auto
+   * - Use auto (not visible or hidden) for reliable scrolling
    * - Apply -webkit-overflow-scrolling: touch for momentum
    */
   html {
@@ -135,7 +135,9 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     height: 100%;
-    overflow: visible;
+    overflow: auto;
+    overflow-y: auto;
+    touch-action: auto;
   }
 
   body {
@@ -145,18 +147,20 @@
     letter-spacing: -0.011em;
     line-height: 1.5;
     /* iOS Safari scroll compatibility */
+    height: 100%;
     min-height: 100%;
-    height: auto;
     overflow-x: hidden;
-    overflow-y: visible;
-    position: relative;
+    overflow-y: auto;
+    position: static;
+    touch-action: auto;
     -webkit-overflow-scrolling: touch;
   }
 
   /* Force restore scroll when no modals are open */
   body:not([data-scroll-locked]) {
-    overflow-y: visible !important;
-    position: relative !important;
+    overflow-y: auto !important;
+    position: static !important;
+    touch-action: auto !important;
   }
 
   /* iOS-style heading hierarchy */
