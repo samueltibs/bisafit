@@ -23,7 +23,6 @@ import {
   ProgressIndicator,
   ActiveWorkoutHeader,
   ActiveWorkoutTimer,
-  ActiveWorkoutExercise,
   ActiveWorkoutControls,
   NextExercisePreview,
   MusicMiniPlayer,
@@ -31,9 +30,11 @@ import {
   ExitWorkoutDialog,
   TVModeOverlay,
   CoachingCues,
+  LargeDemoPanel,
 } from '@/components/workout';
 import { cn } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics';
+import { hasExerciseMedia } from '@/lib/exerciseMediaMap';
 
 export default function Workout() {
   const { id } = useParams();
@@ -416,42 +417,36 @@ export default function Workout() {
             <div className="container max-w-lg mx-auto px-4 py-6">
               
               {/* Active workout state */}
-              {isActive && (
-                <>
-                  {/* Progress bar */}
-                  <div className="mb-6 animate-fade-in">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-                      <span>Progress</span>
-                      <span className="font-medium tabular-nums">{Math.round(progress.percentage)}%</span>
-                    </div>
-                    <Progress value={progress.percentage} className="h-1.5" />
+              {isActive && currentExercise && currentBlock && (
+                <div className="space-y-4 animate-fade-in">
+                  {/* Compact progress indicator */}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Exercise {currentExerciseNumber} of {totalExercises}
+                    </span>
+                    <span className="font-medium tabular-nums text-primary">
+                      {Math.round(progress.percentage)}%
+                    </span>
                   </div>
+                  <Progress value={progress.percentage} className="h-1.5" />
 
-                  {/* Exercise counter */}
-                  <ProgressIndicator
-                    currentExercise={currentExerciseNumber}
-                    totalExercises={totalExercises}
-                    currentSet={currentBlock?.type === 'strength' ? currentSet : undefined}
-                    totalSets={currentBlock?.type === 'strength' ? currentExercise?.sets : undefined}
-                    className="mb-6"
-                  />
-
-                  {/* Hero Timer */}
+                  {/* Hero Timer (compact when demo is visible) */}
                   {timerType && timerSeconds > 0 && (
-                    <div className="mb-6 animate-scale-in">
+                    <div className="animate-scale-in">
                       <ActiveWorkoutTimer
                         seconds={timerSeconds}
                         type={timerType}
                         isPaused={isPaused}
                         onCountdownTick={handleCountdownTick}
+                        compact={hasExerciseMedia(currentExercise.name)}
                       />
                       {timerType === 'rest' && (
-                        <div className="text-center mt-3">
+                        <div className="text-center mt-2">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={skipRest}
-                            className="text-muted-foreground"
+                            className="text-muted-foreground h-8 text-xs"
                           >
                             Skip Rest
                           </Button>
@@ -460,29 +455,64 @@ export default function Workout() {
                     </div>
                   )}
 
-                  {/* Current Exercise */}
-                  {currentExercise && currentBlock && (
-                    <div className="animate-fade-in">
-                      <ActiveWorkoutExercise
-                        item={currentExercise}
-                        block={currentBlock}
-                        currentSet={currentSet}
-                        currentRound={currentRound}
-                        isPaused={isPaused}
-                        className="mb-6"
-                      />
+                  {/* LARGE Demo Panel - primary visual */}
+                  <LargeDemoPanel
+                    videoUrl={currentExercise.video_url_optional}
+                    imageUrl={currentExercise.image_url}
+                    exerciseName={currentExercise.name}
+                    className="animate-fade-in"
+                  />
 
-                      {/* Coaching cues */}
-                      <div className="mb-6">
-                        <CoachingCues
-                          exerciseName={currentExercise.name}
-                          instructions={currentExercise.instructions}
-                          coachingCues={currentExercise.coaching_cues}
-                          isActiveCard={!isPaused}
-                        />
-                      </div>
+                  {/* Exercise info */}
+                  <div className="text-center space-y-2">
+                    {/* Block badge */}
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted/50 text-xs font-medium text-muted-foreground capitalize">
+                      {currentBlock.type}
                     </div>
-                  )}
+
+                    {/* Exercise name */}
+                    <h2 className={cn(
+                      "text-2xl font-bold leading-tight",
+                      isPaused && "opacity-60"
+                    )}>
+                      {currentExercise.name}
+                    </h2>
+
+                    {/* Sets/reps info */}
+                    <div className="flex items-center justify-center gap-6 text-muted-foreground">
+                      {currentBlock.type === 'strength' && currentExercise.sets && (
+                        <span className="text-lg">
+                          Set <span className="font-bold text-primary tabular-nums">{currentSet}</span>
+                          <span className="text-sm">/{currentExercise.sets}</span>
+                        </span>
+                      )}
+                      {currentExercise.reps && (
+                        <span className="text-lg">
+                          <span className="font-bold tabular-nums">{currentExercise.reps}</span> reps
+                        </span>
+                      )}
+                      {currentExercise.duration_sec && currentBlock.type !== 'strength' && (
+                        <span className="text-lg">
+                          <span className="font-bold tabular-nums">{currentExercise.duration_sec}</span>s
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Rest info */}
+                    {currentBlock.type === 'strength' && currentExercise.rest_sec && (
+                      <p className="text-xs text-muted-foreground">
+                        {currentExercise.rest_sec}s rest between sets
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Coaching cues (collapsible) */}
+                  <CoachingCues
+                    exerciseName={currentExercise.name}
+                    instructions={currentExercise.instructions}
+                    coachingCues={currentExercise.coaching_cues}
+                    isActiveCard={!isPaused}
+                  />
 
                   {/* Next exercise preview */}
                   {nextExerciseInfo && (
@@ -493,7 +523,7 @@ export default function Workout() {
                       className="animate-slide-up"
                     />
                   )}
-                </>
+                </div>
               )}
 
               {/* Idle state - workout overview */}
