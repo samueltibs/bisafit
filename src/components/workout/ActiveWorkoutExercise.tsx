@@ -67,17 +67,16 @@ export function ActiveWorkoutExercise({
         {getBlockLabel()}
       </Badge>
 
-      {/* Exercise media (compact) */}
-      {(item.video_url_optional || item.image_url) && (
-        <div className="w-32 h-32 rounded-2xl overflow-hidden mb-4">
-          <ExerciseMedia
-            videoUrl={item.video_url_optional}
-            imageUrl={item.image_url}
-            exerciseName={item.name}
-            className="w-full h-full"
-          />
-        </div>
-      )}
+      {/* Exercise media - always render, let component handle lookup/fallback */}
+      <div className="w-40 h-40 rounded-2xl overflow-hidden mb-4">
+        <ExerciseMedia
+          videoUrl={item.video_url_optional}
+          imageUrl={item.image_url}
+          exerciseName={item.name}
+          bigMode
+          className="w-full h-full"
+        />
+      </div>
 
       {/* Exercise name - hero text */}
       <h1 className={cn(
