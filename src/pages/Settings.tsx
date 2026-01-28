@@ -67,8 +67,8 @@ import { FAQScreen } from '@/components/settings/FAQScreen';
 import { getCountryName } from '@/lib/countryUtils';
 import { CountrySelector } from '@/components/settings/CountrySelector';
 import { LanguageSelector } from '@/components/settings/LanguageSelector';
-import { InlineCountrySelector } from '@/components/settings/InlineCountrySelector';
-import { InlineLanguageSelector } from '@/components/settings/InlineLanguageSelector';
+import { CollapsibleCountrySelector } from '@/components/settings/CollapsibleCountrySelector';
+import { CollapsibleLanguageSelector } from '@/components/settings/CollapsibleLanguageSelector';
 import { getLanguageName } from '@/lib/languageUtils';
 import { useTranslation, translateGoal } from '@/lib/i18n';
 
@@ -577,14 +577,14 @@ export default function Settings() {
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
 
-              {/* Country / Region - Inline Dropdown */}
-              <InlineCountrySelector
+              {/* Country / Region - Collapsible Inline */}
+              <CollapsibleCountrySelector
                 value={(profile as any)?.country || null}
                 onSave={handleInlineCountrySave}
               />
 
-              {/* Language - Inline Dropdown */}
-              <InlineLanguageSelector
+              {/* Language - Collapsible Inline */}
+              <CollapsibleLanguageSelector
                 value={(profile as any)?.language || null}
                 onSave={handleInlineLanguageSave}
               />
