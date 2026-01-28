@@ -11,10 +11,13 @@ const Drawer = ({ shouldScaleBackground = true, onOpenChange, ...props }: React.
   const handleOpenChange = React.useCallback((open: boolean) => {
     if (!open) {
       requestAnimationFrame(() => {
-        document.body.style.overflow = '';
+        document.body.style.overflow = 'auto';
+        document.body.style.position = 'static';
         document.body.style.pointerEvents = '';
+        document.body.style.touchAction = 'auto';
         document.body.removeAttribute('data-scroll-locked');
-        document.documentElement.style.overflow = '';
+        document.documentElement.style.overflow = 'auto';
+        document.documentElement.style.touchAction = 'auto';
       });
     }
     onOpenChange?.(open);

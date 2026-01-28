@@ -15,23 +15,26 @@ export function useScrollRestore() {
     // On every route change, restore normal scroll behavior
     const restoreScroll = () => {
       // Reset html element
-      document.documentElement.style.overflow = '';
+      document.documentElement.style.overflow = 'auto';
       document.documentElement.style.position = '';
       document.documentElement.style.height = '';
+      document.documentElement.style.touchAction = 'auto';
       
-      // Reset body element - use 'visible' for iOS Safari
-      document.body.style.overflow = '';
+      // Reset body element - use 'auto' for scroll restoration
+      document.body.style.overflow = 'auto';
       document.body.style.overflowY = '';
       document.body.style.overflowX = '';
-      document.body.style.position = '';
+      document.body.style.position = 'static';
       document.body.style.top = '';
       document.body.style.left = '';
       document.body.style.right = '';
-      document.body.style.width = '';
-      document.body.style.height = '';
+      document.body.style.width = 'auto';
+      document.body.style.height = 'auto';
+      document.body.style.touchAction = 'auto';
       
       // Remove any lingering Radix/Vaul data attributes that might affect scrolling
       document.body.removeAttribute('data-scroll-locked');
+      document.body.style.pointerEvents = '';
     };
 
     // Restore immediately on route change
@@ -48,11 +51,14 @@ export function useScrollRestore() {
   // Also restore on unmount
   useEffect(() => {
     return () => {
-      document.documentElement.style.overflow = '';
+      document.documentElement.style.overflow = 'auto';
       document.documentElement.style.position = '';
-      document.body.style.overflow = '';
-      document.body.style.position = '';
+      document.documentElement.style.touchAction = 'auto';
+      document.body.style.overflow = 'auto';
+      document.body.style.position = 'static';
+      document.body.style.touchAction = 'auto';
       document.body.removeAttribute('data-scroll-locked');
+      document.body.style.pointerEvents = '';
     };
   }, []);
 }
@@ -63,19 +69,22 @@ export function useScrollRestore() {
 export function restoreBodyScroll() {
   // Small delay to let modal animation complete
   requestAnimationFrame(() => {
-    document.documentElement.style.overflow = '';
+    document.documentElement.style.overflow = 'auto';
     document.documentElement.style.position = '';
     document.documentElement.style.height = '';
+    document.documentElement.style.touchAction = 'auto';
     
-    document.body.style.overflow = '';
+    document.body.style.overflow = 'auto';
     document.body.style.overflowY = '';
     document.body.style.overflowX = '';
-    document.body.style.position = '';
+    document.body.style.position = 'static';
     document.body.style.top = '';
     document.body.style.left = '';
     document.body.style.right = '';
-    document.body.style.width = '';
-    document.body.style.height = '';
+    document.body.style.width = 'auto';
+    document.body.style.height = 'auto';
+    document.body.style.touchAction = 'auto';
     document.body.removeAttribute('data-scroll-locked');
+    document.body.style.pointerEvents = '';
   });
 }
