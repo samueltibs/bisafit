@@ -8,10 +8,7 @@ import { cn } from "@/lib/utils";
  * Dialog Root wrapper that handles scroll restoration on close.
  * Radix Dialog locks body scroll by default - we restore it on close.
  */
-const Dialog = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>
->(({ onOpenChange, ...props }, ref) => {
+function Dialog({ onOpenChange, ...props }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>) {
   const handleOpenChange = React.useCallback((open: boolean) => {
     if (!open) {
       // Restore scroll after dialog closes - use requestAnimationFrame for timing
@@ -29,7 +26,7 @@ const Dialog = React.forwardRef<
   }, [onOpenChange]);
 
   return <DialogPrimitive.Root onOpenChange={handleOpenChange} {...props} />;
-});
+}
 Dialog.displayName = "Dialog";
 
 const DialogTrigger = DialogPrimitive.Trigger;
