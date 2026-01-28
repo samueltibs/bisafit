@@ -15,8 +15,9 @@ import {
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useIngredientSession, type SessionIngredient } from '@/hooks/useIngredientSession';
+import { useIngredientSession, type SessionIngredient, type IngredientMode } from '@/hooks/useIngredientSession';
 import { trackEvent } from '@/lib/analytics';
+import { StrictModeToggle } from './StrictModeToggle';
 
 interface DetectedIngredient {
   name: string;
@@ -72,9 +73,14 @@ export function FridgeScanFlow({
   const [generating, setGenerating] = useState(false);
   const [mealsResult, setMealsResult] = useState<MealsResult | null>(null);
   const [swappingIndex, setSwappingIndex] = useState<number | null>(null);
+  const [strictMode, setStrictMode] = useState(false);
+  const [includeStaples, setIncludeStaples] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { saveIngredients, clearIngredients } = useIngredientSession();
+
+  // Common staples that can be included in strict mode
+  const COMMON_STAPLES = ['salt', 'pepper', 'water', 'cooking oil'];
 
   const maxImages = scanMode === 'receipt' ? 2 : 3;
 
@@ -90,6 +96,15 @@ export function FridgeScanFlow({
     setMealsResult(null);
     setDetecting(false);
     setGenerating(false);
+    setStrictMode(false);
+    setIncludeStaples(true);
+  };
+
+  // Calculate the effective mode based on strict toggle and staples
+  const getEffectiveMode = (): IngredientMode => {
+    if (!strictMode) return 'flexible_prefer';
+    // If strict but including staples, we still use strict_only but add staples to ingredients
+    return 'strict_only';
   };
 
   const handleClose = () => {
@@ -99,7 +114,7 @@ export function FridgeScanFlow({
         .filter(i => i.selected)
         .map(i => ({ name: i.name, confidence: i.confidence }));
       if (selectedIngredients.length > 0) {
-        saveIngredients(selectedIngredients, 'flexible_prefer', scanMode as 'fridge' | 'receipt' | 'manual');
+        saveIngredients(selectedIngredients, getEffectiveMode(), scanMode as 'fridge' | 'receipt' | 'manual', includeStaples);
       }
     }
     resetFlow();
@@ -215,23 +230,35 @@ export function FridgeScanFlow({
   };
 
   const generateMealSuggestions = async () => {
-    const selectedIngredients = ingredients.filter(i => i.selected).map(i => i.name);
+    let selectedIngredients = ingredients.filter(i => i.selected).map(i => i.name);
     
     if (selectedIngredients.length < 2) {
       toast.error('Please select at least 2 ingredients');
       return;
     }
 
+    // If strict mode with staples, add the common staples
+    if (strictMode && includeStaples) {
+      const existingLower = selectedIngredients.map(i => i.toLowerCase());
+      const staplesToAdd = COMMON_STAPLES.filter(s => !existingLower.includes(s.toLowerCase()));
+      selectedIngredients = [...selectedIngredients, ...staplesToAdd];
+    }
+
+    const effectiveMode = getEffectiveMode();
+
     // Save to session before generating
     saveIngredients(ingredients.filter(i => i.selected).map(i => ({ 
       name: i.name, 
       confidence: i.confidence 
-    })), 'flexible_prefer', scanMode as 'fridge' | 'receipt' | 'manual');
+    })), effectiveMode, scanMode as 'fridge' | 'receipt' | 'manual', includeStaples);
 
     setGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-meals-from-ingredients', {
-        body: { ingredients: selectedIngredients },
+        body: { 
+          ingredients: selectedIngredients,
+          mode: effectiveMode,
+        },
       });
 
       if (error) throw error;
@@ -256,12 +283,22 @@ export function FridgeScanFlow({
   };
 
   const swapMeal = async (index: number) => {
-    const selectedIngredients = ingredients.filter(i => i.selected).map(i => i.name);
+    let selectedIngredients = ingredients.filter(i => i.selected).map(i => i.name);
+    
+    // If strict mode with staples, add the common staples
+    if (strictMode && includeStaples) {
+      const existingLower = selectedIngredients.map(i => i.toLowerCase());
+      const staplesToAdd = COMMON_STAPLES.filter(s => !existingLower.includes(s.toLowerCase()));
+      selectedIngredients = [...selectedIngredients, ...staplesToAdd];
+    }
     
     setSwappingIndex(index);
     try {
       const { data, error } = await supabase.functions.invoke('generate-meals-from-ingredients', {
-        body: { ingredients: selectedIngredients },
+        body: { 
+          ingredients: selectedIngredients,
+          mode: getEffectiveMode(),
+        },
       });
 
       if (error) throw error;
@@ -289,7 +326,7 @@ export function FridgeScanFlow({
       saveIngredients(ingredients.filter(i => i.selected).map(i => ({ 
         name: i.name, 
         confidence: i.confidence 
-      })), 'flexible_prefer', scanMode as 'fridge' | 'receipt' | 'manual');
+      })), getEffectiveMode(), scanMode as 'fridge' | 'receipt' | 'manual', includeStaples);
       
       await onGeneratePlanFromIngredients();
       
@@ -554,6 +591,16 @@ export function FridgeScanFlow({
               </Button>
             </div>
 
+            {/* Strict Mode Toggle */}
+            {selectedCount >= 2 && (
+              <StrictModeToggle
+                strictMode={strictMode}
+                onStrictModeChange={setStrictMode}
+                includeStaples={includeStaples}
+                onIncludeStaplesChange={setIncludeStaples}
+              />
+            )}
+
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep('upload')} className="flex-1">
                 Back
@@ -635,6 +682,16 @@ export function FridgeScanFlow({
               </Button>
             </div>
 
+            {/* Strict Mode Toggle */}
+            {selectedCount >= 2 && (
+              <StrictModeToggle
+                strictMode={strictMode}
+                onStrictModeChange={setStrictMode}
+                includeStaples={includeStaples}
+                onIncludeStaplesChange={setIncludeStaples}
+              />
+            )}
+
             <div className="flex gap-2">
               <Button 
                 variant="outline" 
@@ -676,10 +733,15 @@ export function FridgeScanFlow({
         {/* Meals Step - Explicit Choice */}
         {step === 'meals' && mealsResult && (
           <div className="space-y-4">
-            <Alert className="border-primary/50 bg-primary/10">
+            <Alert className={cn(
+              "border-primary/50",
+              strictMode ? "bg-primary/10" : "bg-primary/5"
+            )}>
               <CheckCircle2 className="h-4 w-4 text-primary" />
               <AlertDescription className="text-sm">
-                These meals were generated using what you already have.
+                {strictMode 
+                  ? `Showing meals using only what you entered${includeStaples ? ' + common staples' : ''}.`
+                  : 'These meals were generated using what you already have.'}
               </AlertDescription>
             </Alert>
 

@@ -14,6 +14,7 @@ interface IngredientSession {
   mode: IngredientMode;
   source: ScanSource;
   status: SessionStatus;
+  includeStaples: boolean;
   timestamp: number;
 }
 
@@ -25,6 +26,7 @@ export function useIngredientSession() {
   const [mode, setMode] = useState<IngredientMode>('flexible_prefer');
   const [source, setSource] = useState<ScanSource>('fridge');
   const [status, setStatus] = useState<SessionStatus>('ready');
+  const [includeStaples, setIncludeStaples] = useState(true);
   const [hasActiveSession, setHasActiveSession] = useState(false);
 
   // Load session from storage on mount
@@ -40,6 +42,7 @@ export function useIngredientSession() {
           setMode(session.mode || 'flexible_prefer');
           setSource(session.source || 'fridge');
           setStatus(session.status || 'ready');
+          setIncludeStaples(session.includeStaples ?? true);
           setHasActiveSession(true);
         } else {
           // Clear expired session
@@ -56,13 +59,15 @@ export function useIngredientSession() {
     newIngredients: SessionIngredient[],
     newMode: IngredientMode,
     newSource: ScanSource,
-    newStatus: SessionStatus
+    newStatus: SessionStatus,
+    newIncludeStaples: boolean
   ) => {
     const session: IngredientSession = {
       ingredients: newIngredients,
       mode: newMode,
       source: newSource,
       status: newStatus,
+      includeStaples: newIncludeStaples,
       timestamp: Date.now(),
     };
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
@@ -70,24 +75,30 @@ export function useIngredientSession() {
     setMode(newMode);
     setSource(newSource);
     setStatus(newStatus);
+    setIncludeStaples(newIncludeStaples);
     setHasActiveSession(newIngredients.length > 0);
   }, []);
 
   const saveIngredients = useCallback((
     newIngredients: SessionIngredient[], 
     newMode: IngredientMode = 'flexible_prefer',
-    newSource: ScanSource = 'fridge'
+    newSource: ScanSource = 'fridge',
+    newIncludeStaples: boolean = true
   ) => {
-    persistSession(newIngredients, newMode, newSource, 'ready');
+    persistSession(newIngredients, newMode, newSource, 'ready', newIncludeStaples);
   }, [persistSession]);
 
-  const updateMode = useCallback((newMode: IngredientMode) => {
-    persistSession(ingredients, newMode, source, status);
-  }, [ingredients, source, status, persistSession]);
+  const updateMode = useCallback((newMode: IngredientMode, newIncludeStaples?: boolean) => {
+    persistSession(ingredients, newMode, source, status, newIncludeStaples ?? includeStaples);
+  }, [ingredients, source, status, includeStaples, persistSession]);
 
   const updateStatus = useCallback((newStatus: SessionStatus) => {
-    persistSession(ingredients, mode, source, newStatus);
-  }, [ingredients, mode, source, persistSession]);
+    persistSession(ingredients, mode, source, newStatus, includeStaples);
+  }, [ingredients, mode, source, includeStaples, persistSession]);
+
+  const updateIncludeStaples = useCallback((newIncludeStaples: boolean) => {
+    persistSession(ingredients, mode, source, status, newIncludeStaples);
+  }, [ingredients, mode, source, status, persistSession]);
 
   const clearIngredients = useCallback(() => {
     sessionStorage.removeItem(SESSION_KEY);
@@ -95,6 +106,7 @@ export function useIngredientSession() {
     setMode('flexible_prefer');
     setSource('fridge');
     setStatus('ready');
+    setIncludeStaples(true);
     setHasActiveSession(false);
   }, []);
 
@@ -107,10 +119,12 @@ export function useIngredientSession() {
     mode,
     source,
     status,
+    includeStaples,
     hasActiveSession,
     saveIngredients,
     updateMode,
     updateStatus,
+    updateIncludeStaples,
     clearIngredients,
     getIngredientNames,
   };
