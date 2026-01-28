@@ -48,16 +48,26 @@ export function WorkoutDaysSelector({
       </p>
       
       {/* Quick Presets */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 relative z-10">
         {PRESETS.map((preset) => (
           <Button
             key={preset.label}
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => handlePresetClick(preset.days)}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (import.meta.env.DEV) {
+                console.log('[WorkoutDaysSelector] Preset tapped:', preset.label);
+              }
+              handlePresetClick(preset.days);
+            }}
+            style={{
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
+            }}
             className={cn(
-              "flex-1 text-xs",
+              "flex-1 text-xs min-h-[44px]",
               workoutDays.length === preset.days.length && 
               preset.days.every(d => workoutDays.includes(d)) &&
               "border-primary bg-primary/10"
@@ -69,22 +79,36 @@ export function WorkoutDaysSelector({
       </div>
 
       {/* Day Selection Grid */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-1 relative z-10">
         {ALL_DAYS.map((day) => {
           const isSelected = workoutDays.includes(day);
           return (
             <button
               key={day}
               type="button"
-              onClick={() => handleDayToggle(day)}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (import.meta.env.DEV) {
+                  console.log('[WorkoutDaysSelector] Day tapped:', day, 'isSelected:', isSelected);
+                }
+                handleDayToggle(day);
+              }}
+              style={{
+                cursor: 'pointer',
+                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'transparent',
+                WebkitUserSelect: 'none',
+                userSelect: 'none',
+                pointerEvents: 'auto',
+              }}
               className={cn(
-                "flex flex-col items-center justify-center rounded-lg p-2 text-xs transition-all",
+                "flex flex-col items-center justify-center rounded-lg p-3 text-xs transition-all min-h-[44px] min-w-[44px]",
                 isSelected
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  ? "bg-primary text-primary-foreground active:bg-primary/90"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80 active:bg-muted/70"
               )}
             >
-              <span className="font-medium">{day.slice(0, 2)}</span>
+              <span className="font-medium pointer-events-none">{day.slice(0, 2)}</span>
             </button>
           );
         })}
