@@ -1,35 +1,27 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { forceUnlockScroll } from './useIOSScrollUnlock';
 
 /**
- * Hook to restore scroll behavior on route changes.
- * For authenticated app (AppLayout): cleans up modal/drawer scroll locks.
- * The scroll container is AppLayout's <main>, not body.
+ * Hook to handle cleanup after modal/drawer closes.
+ * For app-shell scrolling, we just need to clean up any modal-related attributes.
  */
 export function useScrollRestore() {
   const location = useLocation();
 
   useEffect(() => {
-    // On every route change, clean up any modal scroll locks
-    forceUnlockScroll();
-
-    // Also run on a small delay to catch any async cleanup issues
-    const timeout = setTimeout(forceUnlockScroll, 100);
-
-    return () => {
-      clearTimeout(timeout);
-    };
+    // On route change, clean up any lingering modal attributes
+    document.body.removeAttribute('data-scroll-locked');
+    document.body.style.pointerEvents = '';
   }, [location.pathname]);
 }
 
 /**
  * Utility function to manually restore scroll - called after closing modals.
- * For authenticated app, this just cleans up modal locks (scroll is in AppLayout).
+ * Cleans up any modal-related scroll locks.
  */
 export function restoreBodyScroll() {
-  // Small delay to let modal animation complete
   requestAnimationFrame(() => {
-    forceUnlockScroll();
+    document.body.removeAttribute('data-scroll-locked');
+    document.body.style.pointerEvents = '';
   });
 }

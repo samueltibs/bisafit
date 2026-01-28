@@ -125,10 +125,10 @@
   }
 
   /* 
-   * iOS Safari scroll fix for authenticated app:
-   * - html/body are locked (overflow: hidden) 
+   * SCROLLING STRATEGY (Option A: App-shell scrolling)
+   * - html, body: height 100%, overflow hidden
    * - Scroll happens in AppLayout's <main> element only
-   * - This prevents iOS rubber-banding and scroll conflicts
+   * - This prevents iOS Safari rubber-banding and scroll conflicts
    */
   html {
     -webkit-font-smoothing: antialiased;
@@ -136,7 +136,6 @@
     text-rendering: optimizeLegibility;
     height: 100%;
     overflow: hidden;
-    touch-action: manipulation;
   }
 
   body {
@@ -145,16 +144,7 @@
     font-feature-settings: 'cv11', 'ss01';
     letter-spacing: -0.011em;
     line-height: 1.5;
-    /* iOS Safari: body is fixed, scroll happens in app container */
     height: 100%;
-    min-height: 100%;
-    overflow: hidden;
-    overscroll-behavior: none;
-  }
-
-  /* When modals close, ensure body doesn't get stuck */
-  body:not([data-scroll-locked]) {
-    /* Keep overflow hidden for authenticated app - scroll is in AppLayout */
     overflow: hidden;
   }
 
