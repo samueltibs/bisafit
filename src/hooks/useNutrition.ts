@@ -19,8 +19,15 @@ export interface Meal {
   recipe_title: string;
   ingredients: string[];
   instructions: string;
+  detailed_instructions?: string[];
   protein_g_est: number;
   calories_est: number;
+  cuisine_style?: string;
+  prep_time_minutes?: number;
+  cook_time_minutes?: number;
+  servings?: number;
+  recipe_source_url?: string;
+  meal_prep_notes?: string;
 }
 
 export interface DayPlan {
