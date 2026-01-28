@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { useWorkoutContext } from '@/hooks/useWorkoutContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useWorkoutTitle } from '@/hooks/useWorkoutTitle';
+import { useTranslation } from '@/lib/i18n';
 import { RescheduleWorkoutDialog } from '@/components/workout/RescheduleWorkoutDialog';
 import { SkipWorkoutConfirmDialog } from '@/components/workout/SkipWorkoutConfirmDialog';
 import { format, addDays } from 'date-fns';
@@ -29,9 +31,25 @@ import {
   type CoachTone 
 } from '@/lib/coachTone';
 
+// Helper to get localized workout title
+function useLocalizedWorkoutTitle(workout: DisplayWorkout | null | undefined): string {
+  const { getTitle } = useWorkoutTitle();
+  const { t } = useTranslation();
+  
+  if (!workout) return t('workout.generic');
+  
+  if (workout.workoutJson) {
+    return getTitle(workout.workoutJson, workout.workout);
+  }
+  
+  return workout.workout || t('workout.generic');
+}
+
 export default function WorkoutToday() {
   const navigate = useNavigate();
   const { profile } = useUserProfile();
+  const { t } = useTranslation();
+  const { getTitle: getDisplayTitle } = useWorkoutTitle();
   const { 
     contextType, 
     todayWorkout, 
@@ -162,12 +180,16 @@ export default function WorkoutToday() {
 
   // Today is a workout day - redirect to the actual workout
   if (contextType === 'today_workout' && todayWorkout && !todayWorkout.isRest) {
+    const todayTitle = todayWorkout.workoutJson 
+      ? getDisplayTitle(todayWorkout.workoutJson, todayWorkout.workout)
+      : todayWorkout.workout;
+    
     return (
       <AppLayout>
         <div className="container space-y-6 px-4 py-6">
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Today's Workout</p>
-            <h1 className="text-2xl font-bold">{todayWorkout.workout}</h1>
+            <p className="text-sm text-muted-foreground">{t('workout.todaysWorkout')}</p>
+            <h1 className="text-2xl font-bold">{todayTitle}</h1>
           </div>
 
           <Card className="border-border/50">
@@ -177,7 +199,7 @@ export default function WorkoutToday() {
                   <Dumbbell className="h-7 w-7 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-lg">{todayWorkout.workout}</p>
+                  <p className="font-semibold text-lg">{todayTitle}</p>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Clock className="h-4 w-4" />
                     <span>{todayWorkout.duration} min</span>

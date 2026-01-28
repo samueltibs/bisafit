@@ -21,6 +21,8 @@ import { usePlan } from '@/hooks/usePlan';
 import { usePlanGeneration } from '@/hooks/usePlanGeneration';
 import { useProgressionEngine, type BlockFeedback } from '@/hooks/useProgressionEngine';
 import { usePremiumFeature } from '@/hooks/usePremiumFeature';
+import { useWorkoutTitle } from '@/hooks/useWorkoutTitle';
+import { useTranslation, translateDay } from '@/lib/i18n';
 import { BlockFeedbackDialog, NextBlockSuccessDialog } from '@/components/progression';
 import { BlockSelector, ScheduleMismatchBanner, ScheduleDebugBanner } from '@/components/plan';
 import { PremiumFeatureModal } from '@/components/subscription';
@@ -753,6 +755,17 @@ interface WorkoutDayCardProps {
 }
 
 function WorkoutDayCard({ workout }: WorkoutDayCardProps) {
+  const { t } = useTranslation();
+  const { getTitle } = useWorkoutTitle();
+  
+  // Get localized day name
+  const localizedDay = translateDay(workout.day, t);
+  
+  // Get localized workout title
+  const displayTitle = workout.workoutJson 
+    ? getTitle(workout.workoutJson, workout.workout)
+    : workout.workout;
+  
   if (workout.isRest) {
     return (
       <Card className="border-border/50 bg-muted/30">
@@ -762,12 +775,12 @@ function WorkoutDayCard({ workout }: WorkoutDayCardProps) {
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <p className="font-medium text-muted-foreground">Rest Day</p>
+              <p className="font-medium text-muted-foreground">{t('workout.restDay')}</p>
               {isLocalToday(workout.dayDate) && (
-                <Badge variant="secondary" className="text-xs">Today</Badge>
+                <Badge variant="secondary" className="text-xs">{t('workout.todaysWorkout').includes('Today') ? 'Today' : localizedDay}</Badge>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">{workout.day} • Recovery & Mobility</p>
+            <p className="text-sm text-muted-foreground">{localizedDay} • {t('workout.type.recovery')}</p>
           </div>
         </CardContent>
       </Card>
@@ -799,13 +812,13 @@ function WorkoutDayCard({ workout }: WorkoutDayCardProps) {
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <p className={cn("font-medium", workout.completed && "line-through")}>
-                {workout.workout}
+                {displayTitle}
               </p>
               {isLocalToday(workout.dayDate) && (
                 <Badge variant="secondary" className="text-xs">Today</Badge>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">{workout.day}</p>
+            <p className="text-sm text-muted-foreground">{localizedDay}</p>
           </div>
           
           {workout.duration > 0 && (
