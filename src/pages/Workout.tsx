@@ -17,6 +17,8 @@ import { useVoiceCues, type CoachVoice } from '@/hooks/useVoiceCues';
 import { useWorkoutResume } from '@/hooks/useWorkoutResume';
 import { usePremiumFeature } from '@/hooks/usePremiumFeature';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useMusicSettings } from '@/hooks/useMusicSettings';
+import { musicService } from '@/lib/musicService';
 import { PremiumFeatureModal } from '@/components/subscription';
 import {
   WorkoutTimer,
@@ -29,6 +31,7 @@ import {
   ProgressIndicator,
 } from '@/components/workout';
 import { TVModeOverlay } from '@/components/workout/TVModeOverlay';
+import { WorkoutMusicButton } from '@/components/workout/WorkoutMusicButton';
 import { cn } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics';
 
@@ -71,6 +74,9 @@ export default function Workout() {
   const preferredVoice = (profile?.coach_voice as CoachVoice) || 'female';
   
   const voiceCues = useVoiceCues({ preferredVoice });
+  
+  // Music settings
+  const { settings: musicSettings } = useMusicSettings();
 
   const {
     incompleteSession,
@@ -155,11 +161,18 @@ export default function Workout() {
     }
   }, [playerState, currentBlockIndex, currentItemIndex, currentSet, currentRound, sessionLog, saveResumeState]);
 
-  // Voice cue: workout start
+  // Voice cue: workout start + optional music autoplay
   const handleStart = () => {
     trackEvent('workout_started');
     startWorkout();
     voiceCues.announceWorkoutStart();
+    
+    // Trigger music autoplay if enabled
+    if (musicSettings.autoplay && musicSettings.provider !== 'none') {
+      musicService.playDefaultPlaylistOnWorkoutStart().catch(err => {
+        console.log('[Workout] Music autoplay failed:', err);
+      });
+    }
   };
 
   // Voice cue: rest timer
@@ -313,15 +326,21 @@ export default function Workout() {
                 </span>
               </div>
             </div>
-            {playerState !== 'idle' && (
-              <Button variant="ghost" size="icon" onClick={togglePause}>
-                {isPaused ? (
-                  <Play className="h-5 w-5" />
-                ) : (
-                  <Pause className="h-5 w-5" />
-                )}
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Music button - only show during active workout */}
+              {playerState !== 'idle' && (
+                <WorkoutMusicButton compact />
+              )}
+              {playerState !== 'idle' && (
+                <Button variant="ghost" size="icon" onClick={togglePause}>
+                  {isPaused ? (
+                    <Play className="h-5 w-5" />
+                  ) : (
+                    <Pause className="h-5 w-5" />
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         )}
 
