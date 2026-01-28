@@ -13,10 +13,12 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
-  Calendar
+  Calendar,
+  Activity,
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { cn } from '@/lib/utils';
+import { WorkoutHistoryList } from '@/components/progress/WorkoutHistoryList';
 
 const weightData = [
   { date: 'Jan 1', weight: 82 },
@@ -43,7 +45,7 @@ const progressPhotos = [
 ];
 
 export default function Progress() {
-  const [activeTab, setActiveTab] = useState('weight');
+  const [activeTab, setActiveTab] = useState('workouts');
 
   const currentWeight = weightData[weightData.length - 1].weight;
   const previousWeight = weightData[weightData.length - 2].weight;
@@ -86,20 +88,28 @@ export default function Progress() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="animate-slide-up">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="workouts" className="gap-1">
+              <Activity className="h-4 w-4" />
+              <span className="hidden sm:inline">Workouts</span>
+            </TabsTrigger>
             <TabsTrigger value="weight" className="gap-1">
               <Scale className="h-4 w-4" />
-              Weight
+              <span className="hidden sm:inline">Weight</span>
             </TabsTrigger>
             <TabsTrigger value="measurements" className="gap-1">
               <Ruler className="h-4 w-4" />
-              Body
+              <span className="hidden sm:inline">Body</span>
             </TabsTrigger>
             <TabsTrigger value="photos" className="gap-1">
               <Camera className="h-4 w-4" />
-              Photos
+              <span className="hidden sm:inline">Photos</span>
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="workouts" className="mt-4">
+            <WorkoutHistoryList />
+          </TabsContent>
 
           <TabsContent value="weight" className="mt-4 space-y-4">
             {/* Weight Chart */}
