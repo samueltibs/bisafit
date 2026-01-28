@@ -41,6 +41,59 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_progress: {
+        Row: {
+          active_minutes: number
+          created_at: string | null
+          current_streak: number
+          date: string
+          endurance_signals: Json | null
+          energy_level: number | null
+          id: string
+          strength_signals: Json | null
+          updated_at: string | null
+          user_id: string
+          workouts_completed: number
+          workouts_planned: number
+        }
+        Insert: {
+          active_minutes?: number
+          created_at?: string | null
+          current_streak?: number
+          date: string
+          endurance_signals?: Json | null
+          energy_level?: number | null
+          id?: string
+          strength_signals?: Json | null
+          updated_at?: string | null
+          user_id: string
+          workouts_completed?: number
+          workouts_planned?: number
+        }
+        Update: {
+          active_minutes?: number
+          created_at?: string | null
+          current_streak?: number
+          date?: string
+          endurance_signals?: Json | null
+          energy_level?: number | null
+          id?: string
+          strength_signals?: Json | null
+          updated_at?: string | null
+          user_id?: string
+          workouts_completed?: number
+          workouts_planned?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_log: {
         Row: {
           created_at: string
@@ -370,6 +423,63 @@ export type Database = {
           },
         ]
       }
+      personal_bests: {
+        Row: {
+          achieved_at: string | null
+          best_volume: number | null
+          created_at: string | null
+          exercise_name: string
+          id: string
+          max_reps: number | null
+          max_sets: number | null
+          max_weight_kg: number | null
+          updated_at: string | null
+          user_id: string
+          workout_session_id: string | null
+        }
+        Insert: {
+          achieved_at?: string | null
+          best_volume?: number | null
+          created_at?: string | null
+          exercise_name: string
+          id?: string
+          max_reps?: number | null
+          max_sets?: number | null
+          max_weight_kg?: number | null
+          updated_at?: string | null
+          user_id: string
+          workout_session_id?: string | null
+        }
+        Update: {
+          achieved_at?: string | null
+          best_volume?: number | null
+          created_at?: string | null
+          exercise_name?: string
+          id?: string
+          max_reps?: number | null
+          max_sets?: number | null
+          max_weight_kg?: number | null
+          updated_at?: string | null
+          user_id?: string
+          workout_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personal_bests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "personal_bests_workout_session_id_fkey"
+            columns: ["workout_session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plans: {
         Row: {
           block_number: number | null
@@ -622,6 +732,7 @@ export type Database = {
           is_pro: boolean | null
           language: string | null
           last_health_sync_at: string | null
+          longest_streak: number | null
           music_autoplay: boolean | null
           music_playlist_id: string | null
           music_playlist_name: string | null
@@ -672,6 +783,7 @@ export type Database = {
           is_pro?: boolean | null
           language?: string | null
           last_health_sync_at?: string | null
+          longest_streak?: number | null
           music_autoplay?: boolean | null
           music_playlist_id?: string | null
           music_playlist_name?: string | null
@@ -722,6 +834,7 @@ export type Database = {
           is_pro?: boolean | null
           language?: string | null
           last_health_sync_at?: string | null
+          longest_streak?: number | null
           music_autoplay?: boolean | null
           music_playlist_id?: string | null
           music_playlist_name?: string | null

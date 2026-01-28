@@ -15,10 +15,13 @@ import {
   ChevronRight,
   Calendar,
   Activity,
+  Sparkles,
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { cn } from '@/lib/utils';
 import { WorkoutHistoryList } from '@/components/progress/WorkoutHistoryList';
+import { NonScaleProgress } from '@/components/progress/NonScaleProgress';
+import { useProgressMetrics } from '@/hooks/useProgressMetrics';
 
 const weightData = [
   { date: 'Jan 1', weight: 82 },
@@ -45,12 +48,16 @@ const progressPhotos = [
 ];
 
 export default function Progress() {
-  const [activeTab, setActiveTab] = useState('workouts');
+  const [activeTab, setActiveTab] = useState('progress');
+  const { summary, loading: metricsLoading } = useProgressMetrics();
 
   const currentWeight = weightData[weightData.length - 1].weight;
   const previousWeight = weightData[weightData.length - 2].weight;
   const weightChange = currentWeight - previousWeight;
   const totalChange = currentWeight - weightData[0].weight;
+
+  // Use real streak data if available
+  const streakDays = summary?.streak.current ?? 0;
 
   return (
     <AppLayout>
@@ -79,19 +86,23 @@ export default function Progress() {
           </Card>
           <Card className="border-border">
             <CardContent className="p-4 text-center">
-              <Calendar className="mx-auto mb-2 h-5 w-5 text-muted-foreground" />
-              <p className="text-xl font-bold">42</p>
-              <p className="text-xs text-muted-foreground">days</p>
+              <Calendar className="mx-auto mb-2 h-5 w-5 text-energy" />
+              <p className="text-xl font-bold tabular-nums">{streakDays}</p>
+              <p className="text-xs text-muted-foreground">day streak</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="animate-slide-up">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="progress" className="gap-1">
+              <Sparkles className="h-4 w-4" />
+              <span className="hidden sm:inline">Progress</span>
+            </TabsTrigger>
             <TabsTrigger value="workouts" className="gap-1">
               <Activity className="h-4 w-4" />
-              <span className="hidden sm:inline">Workouts</span>
+              <span className="hidden sm:inline">History</span>
             </TabsTrigger>
             <TabsTrigger value="weight" className="gap-1">
               <Scale className="h-4 w-4" />
@@ -106,6 +117,11 @@ export default function Progress() {
               <span className="hidden sm:inline">Photos</span>
             </TabsTrigger>
           </TabsList>
+
+          {/* Non-Scale Progress Tab */}
+          <TabsContent value="progress" className="mt-4">
+            <NonScaleProgress summary={summary} loading={metricsLoading} />
+          </TabsContent>
 
           <TabsContent value="workouts" className="mt-4">
             <WorkoutHistoryList />
