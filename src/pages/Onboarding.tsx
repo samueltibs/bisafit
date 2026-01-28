@@ -365,13 +365,13 @@ export default function Onboarding() {
               unitPreference={formData.unitPreference}
               country={formData.country}
               language={formData.language}
-              onFullNameChange={(v) => setFormData({ ...formData, fullName: v })}
-              onGenderChange={(v) => setFormData({ ...formData, gender: v })}
-              onHeightChange={(v) => setFormData({ ...formData, heightCm: v })}
-              onWeightChange={(v) => setFormData({ ...formData, weightKg: v })}
-              onUnitPreferenceChange={(v) => setFormData({ ...formData, unitPreference: v })}
-              onCountryChange={(v) => setFormData({ ...formData, country: v })}
-              onLanguageChange={(v) => setFormData({ ...formData, language: v })}
+              onFullNameChange={(v) => setFormData(prev => ({ ...prev, fullName: v }))}
+              onGenderChange={(v) => setFormData(prev => ({ ...prev, gender: v }))}
+              onHeightChange={(v) => setFormData(prev => ({ ...prev, heightCm: v }))}
+              onWeightChange={(v) => setFormData(prev => ({ ...prev, weightKg: v }))}
+              onUnitPreferenceChange={(v) => setFormData(prev => ({ ...prev, unitPreference: v }))}
+              onCountryChange={(v) => setFormData(prev => ({ ...prev, country: v }))}
+              onLanguageChange={(v) => setFormData(prev => ({ ...prev, language: v }))}
             />
           )}
 
@@ -380,9 +380,9 @@ export default function Onboarding() {
               goalPrimary={formData.goalPrimary}
               goalSecondary={formData.goalSecondary}
               experienceLevel={formData.experienceLevel}
-              onGoalChange={(v) => setFormData({ ...formData, goalPrimary: v, goalSecondary: formData.goalSecondary === v ? '' : formData.goalSecondary })}
-              onSecondaryGoalChange={(v) => setFormData({ ...formData, goalSecondary: v })}
-              onExperienceChange={(v) => setFormData({ ...formData, experienceLevel: v })}
+              onGoalChange={(v) => setFormData(prev => ({ ...prev, goalPrimary: v, goalSecondary: prev.goalSecondary === v ? '' : prev.goalSecondary }))}
+              onSecondaryGoalChange={(v) => setFormData(prev => ({ ...prev, goalSecondary: v }))}
+              onExperienceChange={(v) => setFormData(prev => ({ ...prev, experienceLevel: v }))}
             />
           )}
 
@@ -392,38 +392,43 @@ export default function Onboarding() {
               sessionMinutes={formData.sessionMinutes}
               workoutDays={formData.workoutDays}
               workoutTimePrefs={formData.workoutTimePrefs}
-              onDaysChange={(v) => setFormData({ ...formData, daysPerWeek: v })}
-              onSessionChange={(v) => setFormData({ ...formData, sessionMinutes: v })}
-              onWorkoutDaysChange={(v) => setFormData({ ...formData, workoutDays: v, daysPerWeek: v.length })}
-              onWorkoutTimePrefsChange={(v) => setFormData({ ...formData, workoutTimePrefs: v })}
+              onDaysChange={(v) => setFormData(prev => ({ ...prev, daysPerWeek: v }))}
+              onSessionChange={(v) => setFormData(prev => ({ ...prev, sessionMinutes: v }))}
+              onWorkoutDaysChange={(v) => {
+                if (import.meta.env.DEV) {
+                  console.log('[Onboarding] onWorkoutDaysChange called with:', v);
+                }
+                setFormData(prev => ({ ...prev, workoutDays: v, daysPerWeek: v.length }));
+              }}
+              onWorkoutTimePrefsChange={(v) => setFormData(prev => ({ ...prev, workoutTimePrefs: v }))}
             />
           )}
 
           {currentStep === 4 && (
             <StepEquipment
               equipment={formData.equipment}
-              onEquipmentChange={(v) => setFormData({ ...formData, equipment: v })}
+              onEquipmentChange={(v) => setFormData(prev => ({ ...prev, equipment: v }))}
             />
           )}
 
           {currentStep === 5 && (
             <StepHealth
               constraints={formData.constraints}
-              onConstraintsChange={(v) => setFormData({ ...formData, constraints: v })}
+              onConstraintsChange={(v) => setFormData(prev => ({ ...prev, constraints: v }))}
             />
           )}
 
           {currentStep === 6 && (
             <StepNutrition
               preferences={formData.nutritionPreferences}
-              onPreferencesChange={(v) => setFormData({ ...formData, nutritionPreferences: v })}
+              onPreferencesChange={(v) => setFormData(prev => ({ ...prev, nutritionPreferences: v }))}
             />
           )}
 
           {currentStep === 7 && (
             <StepCoachTone
               coachTone={formData.coachTone}
-              onToneChange={(v) => setFormData({ ...formData, coachTone: v })}
+              onToneChange={(v) => setFormData(prev => ({ ...prev, coachTone: v }))}
             />
           )}
         </CardContent>
