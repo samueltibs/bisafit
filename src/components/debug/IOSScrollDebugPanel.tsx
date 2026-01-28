@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Bug, Eye, EyeOff, Wrench, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -206,23 +207,59 @@ export function IOSScrollDebugPanel() {
   }
 
   if (!isVisible) {
-    return (
-      <Button
-        variant="outline"
-        size="icon"
+    return createPortal(
+      <button
         onClick={() => setIsVisible(true)}
-        className="fixed top-4 right-4 z-[9999] h-10 w-10 rounded-full shadow-lg bg-orange-500 text-white border-orange-600 hover:bg-orange-600"
         title="Open iOS Scroll Debug"
+        style={{
+          position: 'fixed',
+          top: 12,
+          right: 12,
+          zIndex: 2147483647,
+          pointerEvents: 'auto',
+          touchAction: 'manipulation',
+          width: 44,
+          height: 44,
+          minWidth: 44,
+          minHeight: 44,
+          borderRadius: '50%',
+          backgroundColor: '#f97316',
+          color: 'white',
+          border: '2px solid #ea580c',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          WebkitTapHighlightColor: 'transparent',
+        }}
       >
-        <Bug className="h-4 w-4" />
-      </Button>
+        <Bug style={{ width: 18, height: 18 }} />
+      </button>,
+      document.body
     );
   }
 
-  return (
+  // Render via portal to document.body for guaranteed accessibility
+  return createPortal(
     <div 
-      className="fixed top-4 right-4 z-[9999] bg-black/90 text-white text-xs rounded-lg shadow-xl max-w-[320px] max-h-[80vh] overflow-hidden flex flex-col"
-      style={{ fontSize: '10px' }}
+      style={{ 
+        position: 'fixed',
+        top: 12,
+        right: 12,
+        zIndex: 2147483647,
+        pointerEvents: 'auto',
+        fontSize: '10px',
+        maxWidth: 320,
+        maxHeight: '80vh',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        color: 'white',
+        borderRadius: 8,
+        boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+      }}
     >
       {/* Header */}
       <div className="flex items-center justify-between p-2 border-b border-white/20 bg-orange-600">
@@ -369,6 +406,7 @@ export function IOSScrollDebugPanel() {
           </Button>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
