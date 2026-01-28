@@ -41,27 +41,6 @@ export function StepSchedule({
 }: StepScheduleProps) {
   const [timeOpen, setTimeOpen] = useState(false);
 
-  // Dev-only diagnostic: log tap targets
-  useEffect(() => {
-    if (!import.meta.env.DEV) return;
-    
-    const handleTap = (e: MouseEvent | TouchEvent) => {
-      const target = e.target as HTMLElement;
-      const clientX = 'touches' in e ? e.touches[0]?.clientX : e.clientX;
-      const clientY = 'touches' in e ? e.touches[0]?.clientY : e.clientY;
-      const elementAtPoint = document.elementFromPoint(clientX, clientY);
-      console.log('[StepSchedule] Tap diagnostic:', {
-        target: target.tagName,
-        targetClasses: target.className,
-        elementAtPoint: elementAtPoint?.tagName,
-        elementAtPointClasses: elementAtPoint?.className,
-        position: { x: clientX, y: clientY },
-      });
-    };
-    
-    document.addEventListener('click', handleTap, { capture: true });
-    return () => document.removeEventListener('click', handleTap, { capture: true });
-  }, []);
 
   const handleWorkoutDaysChange = (days: string[]) => {
     if (import.meta.env.DEV) {
@@ -96,13 +75,7 @@ export function StepSchedule({
       }}
     >
       {/* Workout Days - Uses shared component from Settings */}
-      <div 
-        className={cn(
-          "relative",
-          import.meta.env.DEV && "outline outline-2 outline-dashed outline-blue-500"
-        )}
-        style={{ pointerEvents: 'auto', zIndex: 10 }}
-      >
+      <div className="relative" style={{ pointerEvents: 'auto' }}>
         <WorkoutDaysSelector
           workoutDays={workoutDays}
           onWorkoutDaysChange={handleWorkoutDaysChange}
