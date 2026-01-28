@@ -5,6 +5,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { useCalendarSync } from '@/hooks/useCalendarSync';
 import { useScheduleRealignment } from '@/hooks/useScheduleRealignment';
 import { restoreBodyScroll } from '@/hooks/useScrollRestore';
+import { useIOSScrollUnlock } from '@/hooks/useIOSScrollUnlock';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { IntroTour } from '@/components/onboarding/IntroTour';
 import { Card, CardContent } from '@/components/ui/card';
@@ -78,6 +79,9 @@ export default function Settings() {
   const { user, signOut } = useAuth();
   const { profile, loading, update, refetch } = useUserProfile();
   const { realignSchedule, haveWorkoutDaysChanged, isRealigning } = useScheduleRealignment();
+  
+  // iOS scroll unlock safeguard for Settings page
+  useIOSScrollUnlock('Settings');
   
   // Modal states with scroll restoration on close
   const [isEditModalOpen, setIsEditModalOpenState] = useState(false);
@@ -450,7 +454,14 @@ export default function Settings() {
 
   return (
     <AppLayout>
-      <div className="container space-y-6 px-4 py-6">
+      <div 
+        className="container space-y-6 px-4 py-6 pb-24"
+        style={{
+          // Ensure content flows naturally without blocking parent scroll
+          overflow: 'visible',
+          minHeight: 'auto',
+        }}
+      >
         {/* Profile Header - Compact */}
         <Card className="border-border animate-fade-in">
           <CardContent className="flex items-center gap-4 p-4">
