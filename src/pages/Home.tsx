@@ -11,7 +11,8 @@ import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner
 import { WeekRecapBanner } from '@/components/progress/WeekRecapBanner';
 import { IntroTour } from '@/components/onboarding/IntroTour';
 import { WhatsNew } from '@/components/onboarding/WhatsNew';
-import { Flame, Droplets, Footprints, Dumbbell, Apple, ChevronRight, Trophy, User, Bed } from 'lucide-react';
+import { StepsCard } from '@/components/home/StepsCard';
+import { Flame, Droplets, Dumbbell, Apple, ChevronRight, Trophy, User, Bed } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -156,15 +157,11 @@ export default function Home() {
             </CardContent>
           </Card>
           
-          <Card className="border-border">
-            <CardContent className="p-4 text-center">
-              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                <Footprints className="h-5 w-5 text-primary" />
-              </div>
-              <p className="text-lg font-bold">{(todayStats.steps.current / 1000).toFixed(1)}k</p>
-              <p className="text-xs text-muted-foreground">/ {todayStats.steps.target / 1000}k steps</p>
-            </CardContent>
-          </Card>
+          {/* Steps Card - with Apple Health sync support */}
+          <StepsCard 
+            steps={todayStats.steps.current} 
+            target={todayStats.steps.target} 
+          />
         </div>
 
         {/* Quick Actions */}
