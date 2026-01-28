@@ -59,10 +59,18 @@ export function useUserProfile() {
     hasCompletedOnboarding,
     refetch: async () => {
       if (!user) return;
-      setLoading(true);
-      const profileData = await getOrCreateUserProfile(user.id);
-      setProfile(profileData);
-      setLoading(false);
+      try {
+        setLoading(true);
+        setError(null);
+        const profileData = await getOrCreateUserProfile(user.id);
+        setProfile(profileData);
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Failed to refetch profile');
+        console.error('useUserProfile refetch error:', error);
+        setError(error);
+      } finally {
+        setLoading(false);
+      }
     },
   };
 }

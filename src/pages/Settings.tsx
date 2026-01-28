@@ -468,11 +468,13 @@ export default function Settings() {
 
   // Inline save handler for Country
   const handleInlineCountrySave = async (countryCode: string): Promise<boolean> => {
-    const previousValue = (profile as any)?.country;
     try {
       const success = await update({ country: countryCode } as any);
       if (success) {
+        // Refetch to ensure global state is updated
         await refetch();
+        // Also update local editForm state in case modal is opened later
+        setEditForm(prev => ({ ...prev, country: countryCode }));
         toast.success('Country updated');
         return true;
       } else {
@@ -488,11 +490,13 @@ export default function Settings() {
 
   // Inline save handler for Language
   const handleInlineLanguageSave = async (languageCode: string): Promise<boolean> => {
-    const previousValue = (profile as any)?.language;
     try {
       const success = await update({ language: languageCode } as any);
       if (success) {
+        // Refetch to ensure global state is updated
         await refetch();
+        // Also update local editForm state in case modal is opened later
+        setEditForm(prev => ({ ...prev, language: languageCode }));
         toast.success('Language updated');
         // The UI will re-render automatically when profile updates trigger AppLanguageProvider
         return true;
