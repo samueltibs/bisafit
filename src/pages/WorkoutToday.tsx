@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,8 @@ import {
   Dumbbell,
   AlertCircle,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Zap
 } from 'lucide-react';
 import { useWorkoutContext } from '@/hooks/useWorkoutContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -20,6 +21,8 @@ import { useWorkoutTitle } from '@/hooks/useWorkoutTitle';
 import { useTranslation } from '@/lib/i18n';
 import { RescheduleWorkoutDialog } from '@/components/workout/RescheduleWorkoutDialog';
 import { SkipWorkoutConfirmDialog } from '@/components/workout/SkipWorkoutConfirmDialog';
+import { QuickWinBanner } from '@/components/workout/QuickWinBanner';
+import { StreakBadgeCompact } from '@/components/workout/StreakSaveBadge';
 import { format, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
@@ -30,6 +33,7 @@ import {
   normalizeCoachTone,
   type CoachTone 
 } from '@/lib/coachTone';
+import { generateQuickWinWorkout } from '@/lib/quickWinWorkout';
 
 // Helper to get localized workout title
 function useLocalizedWorkoutTitle(workout: DisplayWorkout | null | undefined): string {
@@ -71,12 +75,18 @@ export default function WorkoutToday() {
   const [workoutToSkip, setWorkoutToSkip] = useState<DisplayWorkout | null>(null);
   const [isSkipping, setIsSkipping] = useState(false);
 
+  // Quick Win state
+  const [showQuickWinMode, setShowQuickWinMode] = useState(false);
+
   // Extract user preferences for suggestions
   const workoutDays = Array.isArray((profile as any)?.workout_days) 
     ? (profile as any).workout_days as string[] 
     : [];
   const timePrefs = (profile as any)?.workout_time_preferences_json as { default_time?: string } | null;
   const preferredTime = timePrefs?.default_time;
+
+  // Get current streak from profile
+  const currentStreak = (profile as any)?.longest_streak || 0;
 
   const handleOpenReschedule = (workout: DisplayWorkout) => {
     setWorkoutToReschedule(workout);
@@ -188,9 +198,24 @@ export default function WorkoutToday() {
       <AppLayout>
         <div className="container space-y-6 px-4 py-6">
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">{t('workout.todaysWorkout')}</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">{t('workout.todaysWorkout')}</p>
+              {currentStreak > 0 && <StreakBadgeCompact streak={currentStreak} />}
+            </div>
             <h1 className="text-2xl font-bold">{todayTitle}</h1>
           </div>
+
+          {/* Quick Win Banner - show for longer workouts */}
+          {todayWorkout.duration >= 30 && todayWorkout.workoutJson && (
+            <QuickWinBanner
+              originalDuration={todayWorkout.duration}
+              quickWinDuration={15}
+              onStartQuickWin={() => {
+                // Navigate with quick win mode
+                navigate(`/workout/${todayWorkout.id}?quickWin=1`);
+              }}
+            />
+          )}
 
           <Card className="border-border/50">
             <CardContent className="p-6 space-y-4">
@@ -301,14 +326,28 @@ export default function WorkoutToday() {
       <AppLayout>
         <div className="container space-y-6 px-4 py-6">
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-accent">
-              <AlertCircle className="h-5 w-5" />
-              <p className="text-sm font-medium">Missed Workout</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-accent">
+                <AlertCircle className="h-5 w-5" />
+                <p className="text-sm font-medium">Missed Workout</p>
+              </div>
+              {currentStreak > 0 && <StreakBadgeCompact streak={currentStreak} />}
             </div>
             <h1 className="text-2xl font-bold">
               {getCoachMessage('missed_workout', coachTone).replace("yesterday's", missedDateLabel)}
             </h1>
           </div>
+
+          {/* Quick Win Banner for missed workouts */}
+          {missedWorkout.workout.duration >= 30 && missedWorkout.workout.workoutJson && (
+            <QuickWinBanner
+              originalDuration={missedWorkout.workout.duration}
+              quickWinDuration={15}
+              onStartQuickWin={() => {
+                navigate(`/workout/${missedWorkout.workout.id}?quickWin=1`);
+              }}
+            />
+          )}
 
           <Card className="border-accent/30 bg-accent/5">
             <CardContent className="p-6 space-y-4">
