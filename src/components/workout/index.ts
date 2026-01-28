@@ -25,6 +25,7 @@ export { SkipWorkoutConfirmDialog } from './SkipWorkoutConfirmDialog';
 
 // TV Mode
 export { TVModeOverlay } from './TVModeOverlay';
+export { TVModeMedia } from './TVModeMedia';
 
 // Legacy / backwards compat
 export { WorkoutControls } from './WorkoutControls';

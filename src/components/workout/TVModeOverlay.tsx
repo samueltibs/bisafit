@@ -1,17 +1,18 @@
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { 
   Play, 
   Pause, 
   SkipForward, 
-  SkipBack, 
   X, 
   Tv,
   Maximize,
-  Minimize 
+  Minimize,
+  ChevronRight
 } from 'lucide-react';
 import { WorkoutItem, WorkoutBlock, WorkoutJson } from '@/types/plan';
+import { TVModeMedia } from './TVModeMedia';
 
 interface TVModeOverlayProps {
   workout: WorkoutJson;
@@ -35,7 +36,8 @@ interface TVModeOverlayProps {
 
 /**
  * TV Mode overlay for active workouts.
- * Designed to be readable from 8-12 feet away with extra-large typography.
+ * Redesigned with exercise demonstration as primary visual focus.
+ * Layout: Top (timer) → Middle (demo) → Bottom (info + controls)
  */
 export function TVModeOverlay({
   workout,
@@ -57,7 +59,7 @@ export function TVModeOverlay({
   onToggleFullscreen,
 }: TVModeOverlayProps) {
   // Get next exercise preview
-  const getNextExercise = (): { name: string; block: string } | null => {
+  const getNextExercise = (): { name: string; block: string; detail?: string } | null => {
     if (!workout) return null;
     
     const block = workout.blocks[currentBlockIndex];
@@ -65,14 +67,30 @@ export function TVModeOverlay({
     // Check if there's a next item in current block
     if (currentItemIndex < block.items.length - 1) {
       const nextItem = block.items[currentItemIndex + 1];
-      return { name: nextItem.name, block: block.type };
+      return { 
+        name: nextItem.name, 
+        block: block.type,
+        detail: nextItem.sets && nextItem.reps 
+          ? `${nextItem.sets}×${nextItem.reps}` 
+          : nextItem.duration_sec 
+            ? `${nextItem.duration_sec}s` 
+            : undefined
+      };
     }
     
     // Check if there's a next block
     if (currentBlockIndex < workout.blocks.length - 1) {
       const nextBlock = workout.blocks[currentBlockIndex + 1];
       const nextItem = nextBlock.items[0];
-      return { name: nextItem.name, block: nextBlock.type };
+      return { 
+        name: nextItem.name, 
+        block: nextBlock.type,
+        detail: nextItem.sets && nextItem.reps 
+          ? `${nextItem.sets}×${nextItem.reps}` 
+          : nextItem.duration_sec 
+            ? `${nextItem.duration_sec}s` 
+            : undefined
+      };
     }
     
     return null;
@@ -102,208 +120,231 @@ export function TVModeOverlay({
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden">
-      {/* Top bar - minimal header */}
-      <div className="flex items-center justify-between px-8 py-6 border-b border-border/30">
-        <div className="flex items-center gap-4">
-          <Tv className="h-8 w-8 text-primary" />
-          <span className="text-2xl font-semibold text-muted-foreground">TV Mode</span>
-        </div>
-        
-        {/* Progress bar */}
-        <div className="flex-1 max-w-md mx-8">
-          <div className="h-3 bg-muted rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-primary transition-all duration-700 ease-out rounded-full"
-              style={{ width: `${progress.percentage}%` }}
-            />
+      {/* ============ TOP SECTION: Header + Timer ============ */}
+      <div className="shrink-0 px-6 pt-4 pb-3">
+        {/* Top bar */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Tv className="h-6 w-6 text-primary" />
+            <span className="text-lg font-medium text-muted-foreground">{workout.title}</span>
           </div>
-          <p className="text-center text-lg text-muted-foreground mt-2">
-            {Math.round(progress.percentage)}% complete
-          </p>
+          
+          {/* Top controls */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleFullscreen}
+              className="h-12 w-12"
+            >
+              {isFullscreen ? (
+                <Minimize className="h-5 w-5" />
+              ) : (
+                <Maximize className="h-5 w-5" />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onExit}
+              className="h-12 w-12"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
-        
-        {/* Top controls */}
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={onToggleFullscreen}
-            className="h-14 w-14"
-          >
-            {isFullscreen ? (
-              <Minimize className="h-7 w-7" />
-            ) : (
-              <Maximize className="h-7 w-7" />
-            )}
-          </Button>
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={onExit}
-            className="h-14 w-14"
-          >
-            <X className="h-7 w-7" />
-          </Button>
-        </div>
-      </div>
 
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col items-center justify-center px-8 py-12 gap-8">
-        {/* Timer display - HUGE when active */}
+        {/* Compact timer - only when active */}
         {hasTimer && (
           <div className={cn(
-            "rounded-3xl px-16 py-10 text-center transition-all",
-            isRest && "bg-amber-500/20 border-4 border-amber-500/40",
-            timerType === 'work' && "bg-emerald-500/20 border-4 border-emerald-500/40",
-            timerType === 'duration' && "bg-blue-500/20 border-4 border-blue-500/40"
+            "flex items-center justify-center gap-6 py-4 px-8 rounded-2xl mx-auto max-w-xl",
+            isRest && "bg-amber-500/10 border border-amber-500/20",
+            timerType === 'work' && "bg-emerald-500/10 border border-emerald-500/20",
+            timerType === 'duration' && "bg-primary/10 border border-primary/20"
           )}>
-            <p className={cn(
-              "text-3xl font-medium uppercase tracking-widest mb-4",
+            {/* Timer label */}
+            <span className={cn(
+              "text-xl font-semibold uppercase tracking-widest",
               isRest && "text-amber-400",
               timerType === 'work' && "text-emerald-400",
-              timerType === 'duration' && "text-blue-400"
+              timerType === 'duration' && "text-primary"
             )}>
               {isRest ? 'Rest' : timerType === 'work' ? 'Work' : 'Time'}
-              {isPaused && ' (Paused)'}
-            </p>
-            <p className={cn(
-              "text-[12rem] leading-none font-bold font-mono tracking-tight",
+            </span>
+
+            {/* Timer value - large but compact */}
+            <span className={cn(
+              "text-7xl font-bold font-mono tabular-nums",
               isRest && "text-amber-300",
               timerType === 'work' && "text-emerald-300",
-              timerType === 'duration' && "text-blue-300",
-              isPaused && "opacity-60 animate-pulse"
+              timerType === 'duration' && "text-primary",
+              isPaused && "opacity-50 animate-pulse"
             )}>
               {formatTime(timerSeconds)}
-            </p>
+            </span>
+
+            {/* Skip rest button */}
             {isRest && onSkipRest && !isPaused && (
               <Button
                 variant="ghost"
-                size="lg"
+                size="sm"
                 onClick={onSkipRest}
-                className="mt-6 text-xl text-amber-400 hover:text-amber-300"
+                className="text-amber-400 hover:text-amber-300"
               >
-                Skip Rest
+                Skip
               </Button>
+            )}
+
+            {/* Paused indicator */}
+            {isPaused && (
+              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                Paused
+              </span>
             )}
           </div>
         )}
+      </div>
 
-        {/* Current exercise display */}
+      {/* ============ MIDDLE SECTION: Exercise Demo (Primary Focus) ============ */}
+      <div className="flex-1 flex items-center justify-center px-8 py-4 min-h-0">
+        {currentExercise && (
+          <TVModeMedia
+            videoUrl={currentExercise.video_url_optional}
+            imageUrl={currentExercise.image_url}
+            exerciseName={currentExercise.name}
+            className="w-full h-full"
+          />
+        )}
+      </div>
+
+      {/* ============ BOTTOM SECTION: Exercise Info + Controls ============ */}
+      <div className="shrink-0 px-6 pb-6 pt-4 border-t border-border/20 bg-gradient-to-t from-background via-background to-transparent">
+        {/* Exercise info row */}
         {currentExercise && currentBlock && (
-          <Card className={cn(
-            "w-full max-w-4xl p-12 text-center",
-            !hasTimer && "gradient-primary border-4 border-primary"
-          )}>
-            {/* Block type badge */}
-            <p className="text-2xl font-medium text-muted-foreground uppercase tracking-widest mb-6">
-              {getBlockLabel(currentBlock.type)}
-            </p>
-            
-            {/* Exercise name - HUGE */}
-            <h1 className="text-6xl lg:text-7xl font-bold mb-8 leading-tight">
-              {currentExercise.name}
-            </h1>
-            
-            {/* Exercise metrics */}
-            <div className="flex items-center justify-center gap-16 text-4xl">
+          <div className="flex items-center justify-between mb-6">
+            {/* Left: Current exercise */}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                {getBlockLabel(currentBlock.type)}
+              </p>
+              <h1 className="text-4xl font-bold truncate">
+                {currentExercise.name}
+              </h1>
+            </div>
+
+            {/* Center: Metrics */}
+            <div className="flex items-center gap-10 px-8">
+              {/* Sets */}
               {currentBlock.type === 'strength' && currentExercise.sets && (
                 <div className="text-center">
-                  <span className="font-bold text-6xl text-primary">{currentSet}</span>
-                  <span className="text-muted-foreground">/{currentExercise.sets}</span>
-                  <p className="text-xl text-muted-foreground mt-2 uppercase tracking-wide">sets</p>
+                  <div className="flex items-baseline justify-center">
+                    <span className="text-5xl font-bold text-primary tabular-nums">{currentSet}</span>
+                    <span className="text-2xl text-muted-foreground">/{currentExercise.sets}</span>
+                  </div>
+                  <span className="text-sm text-muted-foreground uppercase tracking-wider">sets</span>
                 </div>
               )}
+              
+              {/* Reps */}
               {currentExercise.reps && (
                 <div className="text-center">
-                  <span className="font-bold text-6xl">{currentExercise.reps}</span>
-                  <p className="text-xl text-muted-foreground mt-2 uppercase tracking-wide">reps</p>
+                  <span className="text-5xl font-bold tabular-nums">{currentExercise.reps}</span>
+                  <span className="block text-sm text-muted-foreground uppercase tracking-wider">reps</span>
                 </div>
               )}
-              {currentExercise.duration_sec && currentBlock.type !== 'strength' && !hasTimer && (
+
+              {/* Duration (non-timer display) */}
+              {currentExercise.duration_sec && !hasTimer && (
                 <div className="text-center">
-                  <span className="font-bold text-6xl">{currentExercise.duration_sec}</span>
-                  <p className="text-xl text-muted-foreground mt-2 uppercase tracking-wide">seconds</p>
+                  <span className="text-5xl font-bold tabular-nums">{currentExercise.duration_sec}</span>
+                  <span className="block text-sm text-muted-foreground uppercase tracking-wider">sec</span>
                 </div>
               )}
             </div>
 
-            {/* Paused indicator */}
-            {isPaused && !hasTimer && (
-              <p className="mt-8 text-3xl font-semibold text-muted-foreground uppercase tracking-widest animate-pulse">
-                Paused
-              </p>
-            )}
-          </Card>
-        )}
-
-        {/* Next exercise preview */}
-        {nextExercise && (
-          <div className="text-center">
-            <p className="text-xl text-muted-foreground uppercase tracking-widest mb-2">Up Next</p>
-            <p className="text-3xl font-medium">
-              <span className="text-muted-foreground">{getBlockLabel(nextExercise.block)}: </span>
-              <span className="text-foreground">{nextExercise.name}</span>
-            </p>
+            {/* Right: Next exercise preview */}
+            <div className="flex-1 flex justify-end">
+              {nextExercise && (
+                <div className="text-right bg-muted/30 rounded-xl px-5 py-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-end gap-1">
+                    Up next <ChevronRight className="h-3 w-3" />
+                  </p>
+                  <p className="text-lg font-medium">{nextExercise.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {getBlockLabel(nextExercise.block)}
+                    {nextExercise.detail && ` • ${nextExercise.detail}`}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         )}
-      </div>
 
-      {/* Bottom controls - minimal, large touch targets */}
-      <div className="flex items-center justify-center gap-6 px-8 py-8 border-t border-border/30">
-        {/* Back/Skip Back button */}
-        <Button
-          variant="outline"
-          size="lg"
-          className="h-20 px-8 text-xl gap-3"
-          onClick={onSkipExercise}
-          disabled={currentBlockIndex === 0 && currentItemIndex === 0}
-        >
-          <SkipBack className="h-8 w-8" />
-          Previous
-        </Button>
+        {/* Progress bar */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
+            <span>Workout Progress</span>
+            <span className="font-medium tabular-nums">{Math.round(progress.percentage)}%</span>
+          </div>
+          <Progress value={progress.percentage} className="h-2" />
+        </div>
 
-        {/* Pause/Resume button - PRIMARY */}
-        <Button
-          size="lg"
-          className={cn(
-            "h-24 px-16 text-2xl gap-4",
-            isPaused && "bg-primary hover:bg-primary/90"
-          )}
-          onClick={onTogglePause}
-        >
-          {isPaused ? (
-            <>
-              <Play className="h-10 w-10" />
-              Resume
-            </>
-          ) : (
-            <>
-              <Pause className="h-10 w-10" />
-              Pause
-            </>
-          )}
-        </Button>
+        {/* Controls row */}
+        <div className="flex items-center justify-center gap-4">
+          {/* Skip Back (placeholder for now) */}
+          <Button
+            variant="outline"
+            size="lg"
+            className="h-16 px-6 text-lg"
+            onClick={onSkipExercise}
+            disabled={currentBlockIndex === 0 && currentItemIndex === 0}
+          >
+            Previous
+          </Button>
 
-        {/* Skip Forward button */}
-        <Button
-          variant="outline"
-          size="lg"
-          className="h-20 px-8 text-xl gap-3"
-          onClick={onSkipExercise}
-        >
-          Skip
-          <SkipForward className="h-8 w-8" />
-        </Button>
+          {/* Pause/Resume - Primary */}
+          <Button
+            size="lg"
+            className={cn(
+              "h-20 px-12 text-xl gap-3",
+              isPaused && "bg-primary hover:bg-primary/90"
+            )}
+            onClick={onTogglePause}
+          >
+            {isPaused ? (
+              <>
+                <Play className="h-8 w-8" />
+                Resume
+              </>
+            ) : (
+              <>
+                <Pause className="h-8 w-8" />
+                Pause
+              </>
+            )}
+          </Button>
 
-        {/* End Workout button */}
-        <Button
-          variant="destructive"
-          size="lg"
-          className="h-20 px-8 text-xl ml-8"
-          onClick={onEndWorkout}
-        >
-          End Workout
-        </Button>
+          {/* Skip Forward */}
+          <Button
+            variant="outline"
+            size="lg"
+            className="h-16 px-6 text-lg gap-2"
+            onClick={onSkipExercise}
+          >
+            Skip
+            <SkipForward className="h-5 w-5" />
+          </Button>
+
+          {/* End Workout */}
+          <Button
+            variant="destructive"
+            size="lg"
+            className="h-16 px-6 text-lg ml-4"
+            onClick={onEndWorkout}
+          >
+            End
+          </Button>
+        </div>
       </div>
     </div>
   );
