@@ -3,37 +3,54 @@ import { useEffect, useRef, useCallback } from 'react';
 /**
  * Detects if current device is iOS
  */
-function isIOS(): boolean {
+export function isIOS(): boolean {
   if (typeof window === 'undefined') return false;
   return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 }
 
 /**
- * Force-reset all scroll-lock styles on html and body
+ * Force-reset scroll-lock styles for authenticated app layout.
+ * In the authenticated app, html/body should be locked and scroll
+ * happens in AppLayout's main container. This cleans up any leftover
+ * modal/drawer scroll locks.
  */
 export function forceUnlockScroll() {
-  // Reset document element
+  // For authenticated app: html/body stay locked, 
+  // we just clean up modal-related locks
+  document.documentElement.style.touchAction = 'manipulation';
+  document.body.style.touchAction = 'manipulation';
+  
+  // Remove any Radix/Vaul data attributes that might affect scrolling
+  document.body.removeAttribute('data-scroll-locked');
+  document.body.style.pointerEvents = '';
+  
+  // Ensure body isn't stuck in fixed position from modals
+  // (AppLayout will set position: fixed, but modals might have changed it)
+  if (document.body.style.top && document.body.style.top !== '0px') {
+    document.body.style.top = '0';
+  }
+}
+
+/**
+ * Force-reset for pages that need body scroll (like onboarding)
+ * Call this when NOT using AppLayout
+ */
+export function forceUnlockBodyScroll() {
   document.documentElement.style.overflow = 'auto';
   document.documentElement.style.position = '';
-  document.documentElement.style.height = '';
-  document.documentElement.style.width = '';
+  document.documentElement.style.height = '100%';
   document.documentElement.style.touchAction = 'auto';
   
-  // Reset body element
   document.body.style.overflow = 'auto';
-  document.body.style.overflowY = '';
-  document.body.style.overflowX = '';
+  document.body.style.overflowY = 'auto';
   document.body.style.position = 'static';
   document.body.style.top = '';
   document.body.style.left = '';
-  document.body.style.right = '';
-  document.body.style.bottom = '';
   document.body.style.width = 'auto';
-  document.body.style.height = 'auto';
+  document.body.style.height = '100%';
   document.body.style.touchAction = 'auto';
   
-  // Remove any Radix/Vaul data attributes that might affect scrolling
   document.body.removeAttribute('data-scroll-locked');
   document.body.style.pointerEvents = '';
 }
@@ -111,16 +128,24 @@ function getScrollDebugInfo() {
 
 /**
  * Hook to handle iOS scroll unlock on page mount and route changes.
+ * For authenticated app (AppLayout): cleans up modal scroll locks.
  * Includes a failsafe that re-runs unlock logic if scrolling fails within 1500ms.
+ * 
+ * @param pageName - Name of the page for debug logging
+ * @param useBodyScroll - If true, enables body scroll (for pages without AppLayout)
  */
-export function useIOSScrollUnlock(pageName?: string) {
+export function useIOSScrollUnlock(pageName?: string, useBodyScroll = false) {
   const scrollCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasScrolledRef = useRef(false);
 
   const runUnlockSequence = useCallback(() => {
-    forceUnlockScroll();
+    if (useBodyScroll) {
+      forceUnlockBodyScroll();
+    } else {
+      forceUnlockScroll();
+    }
     removeInvisibleOverlays();
-  }, []);
+  }, [useBodyScroll]);
 
   // Track if user has scrolled/tapped
   const markScrollSuccess = useCallback(() => {

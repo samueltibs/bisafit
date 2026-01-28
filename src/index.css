@@ -125,19 +125,18 @@
   }
 
   /* 
-   * iOS Safari scroll fix:
-   * - html/body must have height: 100% and overflow: auto
-   * - Use auto (not visible or hidden) for reliable scrolling
-   * - Apply -webkit-overflow-scrolling: touch for momentum
+   * iOS Safari scroll fix for authenticated app:
+   * - html/body are locked (overflow: hidden) 
+   * - Scroll happens in AppLayout's <main> element only
+   * - This prevents iOS rubber-banding and scroll conflicts
    */
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     height: 100%;
-    overflow: auto;
-    overflow-y: auto;
-    touch-action: auto;
+    overflow: hidden;
+    touch-action: manipulation;
   }
 
   body {
@@ -146,21 +145,24 @@
     font-feature-settings: 'cv11', 'ss01';
     letter-spacing: -0.011em;
     line-height: 1.5;
-    /* iOS Safari scroll compatibility */
+    /* iOS Safari: body is fixed, scroll happens in app container */
     height: 100%;
     min-height: 100%;
-    overflow-x: hidden;
-    overflow-y: auto;
-    position: static;
-    touch-action: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow: hidden;
+    overscroll-behavior: none;
   }
 
-  /* Force restore scroll when no modals are open */
+  /* When modals close, ensure body doesn't get stuck */
   body:not([data-scroll-locked]) {
-    overflow-y: auto !important;
-    position: static !important;
-    touch-action: auto !important;
+    /* Keep overflow hidden for authenticated app - scroll is in AppLayout */
+    overflow: hidden;
+  }
+
+  /* Ensure closed overlays don't block interactions */
+  [vaul-drawer][data-state="closed"],
+  [data-radix-dialog-overlay][data-state="closed"] {
+    pointer-events: none !important;
+    display: none !important;
   }
 
   /* iOS-style heading hierarchy */
