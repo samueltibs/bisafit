@@ -2,7 +2,9 @@
  * Language utilities for BisaFit
  * 
  * Manages language detection, selection, and persistence.
- * Language is stored as ISO 639-1 code (e.g., 'en', 'lg', 'sw') or 'auto' for device language.
+ * Language is stored as ISO 639-1 code (e.g., 'en', 'es', 'zh') or 'auto' for device language.
+ * 
+ * Supported languages are easily extensible - just add to SUPPORTED_LANGUAGES array.
  */
 
 export interface Language {
@@ -11,11 +13,28 @@ export interface Language {
   nativeName: string;
 }
 
+/**
+ * Supported languages list
+ * To add a new language:
+ * 1. Add entry here with code, English name, and native name
+ * 2. Add translations in src/lib/i18n/translations.ts
+ * 3. That's it! No data model changes needed.
+ */
 export const SUPPORTED_LANGUAGES: Language[] = [
   { code: 'auto', name: 'Auto (device language)', nativeName: 'Auto' },
   { code: 'en', name: 'English', nativeName: 'English' },
-  { code: 'lg', name: 'Luganda', nativeName: 'Oluganda' },
+  { code: 'es', name: 'Spanish', nativeName: 'Español' },
+  { code: 'pt', name: 'Portuguese', nativeName: 'Português' },
+  { code: 'fr', name: 'French', nativeName: 'Français' },
+  { code: 'zh', name: 'Chinese (Simplified)', nativeName: '简体中文' },
+  { code: 'ja', name: 'Japanese', nativeName: '日本語' },
+  { code: 'ru', name: 'Russian', nativeName: 'Русский' },
+  { code: 'de', name: 'German', nativeName: 'Deutsch' },
+  { code: 'nl', name: 'Dutch', nativeName: 'Nederlands' },
+  { code: 'it', name: 'Italian', nativeName: 'Italiano' },
   { code: 'sw', name: 'Swahili', nativeName: 'Kiswahili' },
+  { code: 'af', name: 'Afrikaans', nativeName: 'Afrikaans' },
+  { code: 'lg', name: 'Luganda', nativeName: 'Oluganda' },
 ];
 
 /**

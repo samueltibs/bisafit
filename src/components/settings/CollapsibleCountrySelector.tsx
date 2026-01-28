@@ -1,16 +1,17 @@
 /**
  * Collapsible Country Selector for Settings page
  * 
- * A row that expands inline to reveal a searchable country list.
+ * A row that expands inline to reveal a searchable country list with flags.
+ * Full ISO-3166 country support with emoji flags.
  * Smooth animations and mobile-optimized.
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { Globe, Check, Search, Loader2, ChevronDown } from 'lucide-react';
+import { Globe, Check, Loader2, ChevronDown, Search } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { COUNTRIES, getCountryByCode } from '@/lib/countryUtils';
+import { ALL_COUNTRIES, getCountryFlag, getCountryFromCode } from '@/lib/countryFlags';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/lib/i18n';
 
@@ -32,16 +33,18 @@ export function CollapsibleCountrySelector({
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const selectedCountry = getCountryByCode(value);
-  const displayValue = selectedCountry?.name || 'Not set';
+  const selectedCountry = getCountryFromCode(value);
+  const displayValue = selectedCountry 
+    ? `${getCountryFlag(selectedCountry.code)} ${selectedCountry.name}` 
+    : 'Not set';
 
   // Filter countries based on search
   const filteredCountries = search.trim()
-    ? COUNTRIES.filter((country) =>
+    ? ALL_COUNTRIES.filter((country) =>
         country.name.toLowerCase().includes(search.toLowerCase()) ||
         country.code.toLowerCase().includes(search.toLowerCase())
       )
-    : COUNTRIES;
+    : ALL_COUNTRIES;
 
   // Handle click outside to collapse
   useEffect(() => {
@@ -108,7 +111,7 @@ export function CollapsibleCountrySelector({
         >
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <Globe className="h-5 w-5 text-muted-foreground shrink-0" />
-            <span className="font-medium">{t('onboarding.countryRegion')}</span>
+            <span className="font-medium">{t('settings.country')}</span>
           </div>
           
           <div className="flex items-center gap-2">
@@ -116,7 +119,7 @@ export function CollapsibleCountrySelector({
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             ) : (
               <>
-                <span className="text-sm text-muted-foreground truncate max-w-[120px]">
+                <span className="text-sm text-muted-foreground truncate max-w-[140px]">
                   {displayValue}
                 </span>
                 <ChevronDown 
@@ -147,8 +150,8 @@ export function CollapsibleCountrySelector({
               />
             </div>
             
-            {/* Country list */}
-            <ScrollArea className="h-[200px] rounded-lg border bg-background">
+            {/* Country list with flags */}
+            <ScrollArea className="h-[240px] rounded-lg border bg-background">
               <div className="p-1">
                 {filteredCountries.length === 0 ? (
                   <div className="py-6 text-center text-sm text-muted-foreground">
@@ -161,7 +164,7 @@ export function CollapsibleCountrySelector({
                       onClick={() => handleSelect(country.code)}
                       disabled={saving}
                       className={cn(
-                        "relative flex w-full items-center rounded-md py-3 px-3 text-sm",
+                        "relative flex w-full items-center gap-3 rounded-md py-3 px-3 text-sm",
                         "min-h-[44px] touch-manipulation",
                         "transition-colors duration-150",
                         "hover:bg-accent hover:text-accent-foreground",
@@ -169,9 +172,10 @@ export function CollapsibleCountrySelector({
                         value === country.code && "bg-primary/10 text-primary"
                       )}
                     >
+                      <span className="text-lg shrink-0">{getCountryFlag(country.code)}</span>
                       <span className="flex-1 text-left">{country.name}</span>
                       {value === country.code && (
-                        <Check className="h-4 w-4 text-primary shrink-0 ml-2" />
+                        <Check className="h-4 w-4 text-primary shrink-0" />
                       )}
                     </button>
                   ))

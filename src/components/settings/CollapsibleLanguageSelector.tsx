@@ -2,12 +2,14 @@
  * Collapsible Language Selector for Settings page
  * 
  * A row that expands inline to reveal language options.
+ * Shows both native name and English name for non-English languages.
  * Smooth animations and mobile-optimized.
  */
 
 import { useState, useRef, useEffect } from 'react';
 import { Languages, Check, Loader2, ChevronDown } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { SUPPORTED_LANGUAGES, getLanguageByCode } from '@/lib/languageUtils';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/lib/i18n';
@@ -29,7 +31,11 @@ export function CollapsibleLanguageSelector({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const selectedLanguage = getLanguageByCode(value || 'auto');
-  const displayValue = selectedLanguage?.name || 'Auto';
+  const displayValue = selectedLanguage
+    ? selectedLanguage.code === 'auto'
+      ? selectedLanguage.name
+      : `${selectedLanguage.nativeName}`
+    : 'Auto';
 
   // Handle click outside to collapse
   useEffect(() => {
@@ -110,35 +116,43 @@ export function CollapsibleLanguageSelector({
 
         <CollapsibleContent className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
           <div className="px-4 pb-4 pt-2">
-            <div className="rounded-lg border bg-background p-1">
-              {SUPPORTED_LANGUAGES.map((language) => (
-                <button
-                  key={language.code}
-                  onClick={() => handleSelect(language.code)}
-                  disabled={saving}
-                  className={cn(
-                    "relative flex w-full items-center rounded-md py-3 px-3 text-sm",
-                    "min-h-[44px] touch-manipulation",
-                    "transition-colors duration-150",
-                    "hover:bg-accent hover:text-accent-foreground",
-                    "active:scale-[0.98]",
-                    (value || 'auto') === language.code && "bg-primary/10 text-primary"
-                  )}
-                >
-                  <div className="flex-1 text-left">
-                    <span>{language.name}</span>
-                    {language.code !== 'auto' && language.nativeName !== language.name && (
-                      <span className="text-muted-foreground ml-1.5 text-xs">
-                        ({language.nativeName})
-                      </span>
+            <ScrollArea className="h-[280px] rounded-lg border bg-background">
+              <div className="p-1">
+                {SUPPORTED_LANGUAGES.map((language) => (
+                  <button
+                    key={language.code}
+                    onClick={() => handleSelect(language.code)}
+                    disabled={saving}
+                    className={cn(
+                      "relative flex w-full items-center rounded-md py-3 px-3 text-sm",
+                      "min-h-[44px] touch-manipulation",
+                      "transition-colors duration-150",
+                      "hover:bg-accent hover:text-accent-foreground",
+                      "active:scale-[0.98]",
+                      (value || 'auto') === language.code && "bg-primary/10 text-primary"
                     )}
-                  </div>
-                  {(value || 'auto') === language.code && (
-                    <Check className="h-4 w-4 text-primary shrink-0 ml-2" />
-                  )}
-                </button>
-              ))}
-            </div>
+                  >
+                    <div className="flex-1 text-left">
+                      {language.code === 'auto' ? (
+                        <span>{language.name}</span>
+                      ) : (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-medium">{language.nativeName}</span>
+                          {language.nativeName !== language.name && (
+                            <span className="text-xs text-muted-foreground">
+                              {language.name}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {(value || 'auto') === language.code && (
+                      <Check className="h-4 w-4 text-primary shrink-0 ml-2" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
           </div>
         </CollapsibleContent>
       </Collapsible>
