@@ -2,11 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { Dumbbell, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { lookupExerciseMedia } from '@/lib/exerciseMediaMap';
+import { type UserGender } from '@/lib/exerciseMediaData';
 
 interface ExerciseMediaProps {
   videoUrl?: string;
   imageUrl?: string;
   exerciseName: string;
+  /** User's gender for selecting appropriate demo image */
+  userGender?: UserGender;
   bigMode?: boolean;
   className?: string;
 }
@@ -15,6 +18,7 @@ export function ExerciseMedia({
   videoUrl,
   imageUrl,
   exerciseName,
+  userGender = 'unspecified',
   bigMode = false,
   className,
 }: ExerciseMediaProps) {
@@ -22,8 +26,8 @@ export function ExerciseMedia({
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Look up media from central map if not provided directly
-  const mediaLookup = lookupExerciseMedia(exerciseName);
+  // Look up media from central map with gender preference
+  const mediaLookup = lookupExerciseMedia(exerciseName, userGender);
   
   // Priority: direct videoUrl > direct imageUrl > lookup video > lookup image
   const resolvedVideoUrl = videoUrl || mediaLookup?.video_url_optional || null;
@@ -35,7 +39,7 @@ export function ExerciseMedia({
   useEffect(() => {
     setMediaError(false);
     setIsVideoLoaded(false);
-  }, [resolvedVideoUrl, resolvedImageUrl, exerciseName]);
+  }, [resolvedVideoUrl, resolvedImageUrl, exerciseName, userGender]);
 
   // Handle video autoplay on mount
   useEffect(() => {

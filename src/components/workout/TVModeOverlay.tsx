@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { WorkoutItem, WorkoutBlock, WorkoutJson } from '@/types/plan';
 import { TVModeMedia } from './TVModeMedia';
+import { type UserGender } from '@/lib/exerciseMediaData';
 
 interface TVModeOverlayProps {
   workout: WorkoutJson;
@@ -32,6 +33,8 @@ interface TVModeOverlayProps {
   onEndWorkout: () => void;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
+  /** User's gender for selecting appropriate demo image */
+  userGender?: UserGender;
 }
 
 /**
@@ -57,6 +60,7 @@ export function TVModeOverlay({
   onEndWorkout,
   isFullscreen,
   onToggleFullscreen,
+  userGender = 'unspecified',
 }: TVModeOverlayProps) {
   // Get next exercise preview
   const getNextExercise = (): { name: string; block: string; detail?: string } | null => {
@@ -212,6 +216,7 @@ export function TVModeOverlay({
             videoUrl={currentExercise.video_url_optional}
             imageUrl={currentExercise.image_url}
             exerciseName={currentExercise.name}
+            userGender={userGender}
             className="w-full h-full"
           />
         )}

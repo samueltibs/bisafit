@@ -3,9 +3,10 @@
  * 
  * Central lookup system for exercise demonstration assets and form tips.
  * Provides normalized name matching for flexible exercise lookups.
+ * Supports gender-specific demo image selection.
  */
 
-import { allExerciseMediaData, ExerciseMediaEntry } from './exerciseMediaData';
+import { allExerciseMediaData, ExerciseMediaEntry, UserGender } from './exerciseMediaData';
 
 export interface ExerciseMediaInfo {
   image_url: string;
@@ -42,33 +43,73 @@ function getExerciseMediaUrl(filename: string): string {
 }
 
 /**
- * Resolved media map cache
+ * Select the appropriate demo image based on user gender
+ * Priority: gender-specific > neutral > legacy filename
  */
-let resolvedMediaMap: Record<string, ExerciseMediaInfo> | null = null;
+function selectDemoImage(
+  entry: ExerciseMediaEntry,
+  gender: UserGender = 'unspecified'
+): string {
+  // If demoImages exists, use gender-specific selection
+  if (entry.demoImages) {
+    const { male, female, neutral } = entry.demoImages;
+    
+    switch (gender) {
+      case 'male':
+        return male || neutral || entry.filename;
+      case 'female':
+        return female || neutral || male || entry.filename;
+      case 'unspecified':
+      default:
+        return neutral || male || entry.filename;
+    }
+  }
+  
+  // Fallback to legacy filename
+  return entry.filename;
+}
 
 /**
- * Build the full media map with resolved URLs
+ * Resolved media map cache (per gender)
  */
-export function getExerciseMediaMap(): Record<string, ExerciseMediaInfo> {
-  if (resolvedMediaMap) {
-    return resolvedMediaMap;
+const resolvedMediaMapCache: Map<UserGender, Record<string, ExerciseMediaInfo>> = new Map();
+
+/**
+ * Build the full media map with resolved URLs for a specific gender
+ */
+export function getExerciseMediaMap(gender: UserGender = 'unspecified'): Record<string, ExerciseMediaInfo> {
+  // Check cache first
+  const cached = resolvedMediaMapCache.get(gender);
+  if (cached) {
+    return cached;
   }
 
-  resolvedMediaMap = {};
+  const resolvedMediaMap: Record<string, ExerciseMediaInfo> = {};
   
   for (const [key, value] of Object.entries(allExerciseMediaData)) {
+    const selectedFilename = selectDemoImage(value, gender);
     resolvedMediaMap[key] = {
-      image_url: getExerciseMediaUrl(value.filename),
+      image_url: getExerciseMediaUrl(selectedFilename),
       video_url_optional: value.video_url_optional,
       default_cues: value.default_cues,
     };
   }
 
+  // Cache the result
+  resolvedMediaMapCache.set(gender, resolvedMediaMap);
+
   return resolvedMediaMap;
 }
 
 /**
- * Look up exercise media by name
+ * Clear the media map cache (useful when assets are updated)
+ */
+export function clearMediaMapCache(): void {
+  resolvedMediaMapCache.clear();
+}
+
+/**
+ * Look up exercise media by name with optional gender preference
  * Returns null if not found
  * 
  * Uses multiple matching strategies:
@@ -76,9 +117,12 @@ export function getExerciseMediaMap(): Record<string, ExerciseMediaInfo> {
  * 2. Partial match (exercise name contains key or key contains exercise name)
  * 3. Word-based matching for compound names
  */
-export function lookupExerciseMedia(exerciseName: string): ExerciseMediaInfo | null {
+export function lookupExerciseMedia(
+  exerciseName: string,
+  gender: UserGender = 'unspecified'
+): ExerciseMediaInfo | null {
   const normalized = normalizeExerciseName(exerciseName);
-  const mediaMap = getExerciseMediaMap();
+  const mediaMap = getExerciseMediaMap(gender);
   
   // Direct lookup
   if (mediaMap[normalized]) {

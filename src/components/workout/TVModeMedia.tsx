@@ -2,12 +2,15 @@ import { useState, useRef, useEffect } from 'react';
 import { Dumbbell, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { lookupExerciseMedia } from '@/lib/exerciseMediaMap';
+import { type UserGender } from '@/lib/exerciseMediaData';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface TVModeMediaProps {
   videoUrl?: string;
   imageUrl?: string;
   exerciseName: string;
+  /** User's gender for selecting appropriate demo image */
+  userGender?: UserGender;
   className?: string;
 }
 
@@ -15,11 +18,13 @@ interface TVModeMediaProps {
  * Large-scale exercise media for TV Mode.
  * Occupies ~40-50% of screen height with 16:9 aspect ratio.
  * Designed to be clearly visible from 8-12 feet away.
+ * Supports gender-specific demo images.
  */
 export function TVModeMedia({
   videoUrl,
   imageUrl,
   exerciseName,
+  userGender = 'unspecified',
   className,
 }: TVModeMediaProps) {
   const [mediaError, setMediaError] = useState(false);
@@ -27,8 +32,8 @@ export function TVModeMedia({
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Look up media from central map if not provided directly
-  const mediaLookup = lookupExerciseMedia(exerciseName);
+  // Look up media from central map with gender preference
+  const mediaLookup = lookupExerciseMedia(exerciseName, userGender);
   
   // Priority: direct videoUrl > direct imageUrl > lookup video > lookup image
   const resolvedVideoUrl = videoUrl || mediaLookup?.video_url_optional || null;
@@ -41,7 +46,7 @@ export function TVModeMedia({
     setMediaError(false);
     setIsVideoLoaded(false);
     setIsImageLoaded(false);
-  }, [resolvedVideoUrl, resolvedImageUrl, exerciseName]);
+  }, [resolvedVideoUrl, resolvedImageUrl, exerciseName, userGender]);
 
   // Handle video autoplay
   useEffect(() => {
