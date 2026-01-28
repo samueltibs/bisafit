@@ -49,14 +49,24 @@ export function StepSchedule({
   const [timeOpen, setTimeOpen] = useState(false);
 
   const handleDayToggle = (day: string) => {
+    if (import.meta.env.DEV) {
+      console.log('[StepSchedule] handleDayToggle called:', day, 'current workoutDays:', workoutDays);
+    }
+    
     if (workoutDays.includes(day)) {
       const newDays = workoutDays.filter(d => d !== day);
+      if (import.meta.env.DEV) {
+        console.log('[StepSchedule] Removing day, new days:', newDays);
+      }
       onWorkoutDaysChange(newDays);
       onDaysChange(newDays.length);
     } else {
       const newDays = [...workoutDays, day].sort((a, b) => 
         ALL_DAYS.indexOf(a) - ALL_DAYS.indexOf(b)
       );
+      if (import.meta.env.DEV) {
+        console.log('[StepSchedule] Adding day, new days:', newDays);
+      }
       onWorkoutDaysChange(newDays);
       onDaysChange(newDays.length);
     }
