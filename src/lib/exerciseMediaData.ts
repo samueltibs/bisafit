@@ -304,6 +304,11 @@ export const lowerBodyExercises: Record<string, ExerciseMediaEntry> = {
   },
   'forward lunge': {
     filename: 'lunge.png',
+    demoImages: {
+      male: null,
+      female: null,
+      neutral: 'lunge.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Step forward with control',
@@ -351,6 +356,11 @@ export const lowerBodyExercises: Record<string, ExerciseMediaEntry> = {
   // Hip Hinge
   'romanian deadlift': {
     filename: 'romanian-deadlift.png',
+    demoImages: {
+      male: 'male/romanian-deadlift.png',
+      female: 'female/romanian-deadlift.png',
+      neutral: 'romanian-deadlift.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Maintain slight knee bend',
@@ -360,10 +370,29 @@ export const lowerBodyExercises: Record<string, ExerciseMediaEntry> = {
   },
   'dumbbell romanian deadlift': {
     filename: 'romanian-deadlift.png',
+    demoImages: {
+      male: 'male/romanian-deadlift.png',
+      female: 'female/romanian-deadlift.png',
+      neutral: 'romanian-deadlift.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Keep dumbbells close to legs',
       'Hinge until tension in hamstrings',
+      'Squeeze glutes to stand',
+    ],
+  },
+  'rdl dumbbells': {
+    filename: 'romanian-deadlift.png',
+    demoImages: {
+      male: null,
+      female: null,
+      neutral: 'romanian-deadlift.png',
+    },
+    video_url_optional: null,
+    default_cues: [
+      'Keep dumbbells close to legs',
+      'Hinge at hips with flat back',
       'Squeeze glutes to stand',
     ],
   },
@@ -398,6 +427,11 @@ export const lowerBodyExercises: Record<string, ExerciseMediaEntry> = {
   // Glutes
   'glute bridge': {
     filename: 'glute-bridge.png',
+    demoImages: {
+      male: 'male/glute-bridge.png',
+      female: 'female/glute-bridge.png',
+      neutral: 'glute-bridge.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Press through heels',
@@ -416,6 +450,11 @@ export const lowerBodyExercises: Record<string, ExerciseMediaEntry> = {
   },
   'hip thrust': {
     filename: 'hip-thrust.png',
+    demoImages: {
+      male: 'male/hip-thrust.png',
+      female: 'female/hip-thrust.png',
+      neutral: 'hip-thrust.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Upper back on bench',
@@ -454,6 +493,11 @@ export const lowerBodyExercises: Record<string, ExerciseMediaEntry> = {
   // Calves
   'calf raise': {
     filename: 'calf-raise.png',
+    demoImages: {
+      male: 'male/calf-raise.png',
+      female: 'female/calf-raise.png',
+      neutral: 'calf-raise.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Rise onto balls of feet',
@@ -463,6 +507,11 @@ export const lowerBodyExercises: Record<string, ExerciseMediaEntry> = {
   },
   'standing calf raise': {
     filename: 'calf-raise.png',
+    demoImages: {
+      male: 'male/calf-raise.png',
+      female: 'female/calf-raise.png',
+      neutral: 'calf-raise.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Stand tall with feet hip-width',
@@ -483,6 +532,11 @@ export const lowerBodyExercises: Record<string, ExerciseMediaEntry> = {
   // Step-ups
   'step up': {
     filename: 'step-up.png',
+    demoImages: {
+      male: null,
+      female: null,
+      neutral: 'step-up.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Step onto elevated surface',
@@ -519,6 +573,11 @@ export const upperBodyPushExercises: Record<string, ExerciseMediaEntry> = {
   // Push-ups
   'push-up': {
     filename: 'push-up.png',
+    demoImages: {
+      male: 'male/push-up.png',
+      female: 'female/push-up.png',
+      neutral: 'push-up.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Keep body in a straight line',
@@ -528,6 +587,11 @@ export const upperBodyPushExercises: Record<string, ExerciseMediaEntry> = {
   },
   'pushup': {
     filename: 'push-up.png',
+    demoImages: {
+      male: 'male/push-up.png',
+      female: 'female/push-up.png',
+      neutral: 'push-up.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Keep body in a straight line',
@@ -584,6 +648,11 @@ export const upperBodyPushExercises: Record<string, ExerciseMediaEntry> = {
   // Chest press
   'dumbbell bench press': {
     filename: 'db-bench-press.png',
+    demoImages: {
+      male: 'male/db-bench-press.png',
+      female: 'female/db-bench-press.png',
+      neutral: 'db-bench-press.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Keep shoulder blades squeezed together',
@@ -593,6 +662,11 @@ export const upperBodyPushExercises: Record<string, ExerciseMediaEntry> = {
   },
   'dumbbell chest press': {
     filename: 'db-bench-press.png',
+    demoImages: {
+      male: 'male/db-bench-press.png',
+      female: 'female/db-bench-press.png',
+      neutral: 'db-bench-press.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Back flat on bench',
@@ -611,6 +685,11 @@ export const upperBodyPushExercises: Record<string, ExerciseMediaEntry> = {
   },
   'dumbbell fly': {
     filename: 'dumbbell-fly.png',
+    demoImages: {
+      male: 'male/dumbbell-fly.png',
+      female: 'female/dumbbell-fly.png',
+      neutral: 'dumbbell-fly.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Slight bend in elbows',
@@ -622,6 +701,11 @@ export const upperBodyPushExercises: Record<string, ExerciseMediaEntry> = {
   // Shoulder press
   'dumbbell standing overhead press': {
     filename: 'db-overhead-press.png',
+    demoImages: {
+      male: 'male/db-overhead-press.png',
+      female: 'female/db-overhead-press.png',
+      neutral: 'db-overhead-press.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Brace your core',
@@ -631,11 +715,30 @@ export const upperBodyPushExercises: Record<string, ExerciseMediaEntry> = {
   },
   'dumbbell shoulder press': {
     filename: 'db-overhead-press.png',
+    demoImages: {
+      male: null,
+      female: null,
+      neutral: 'db-overhead-press.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Start at shoulder height',
       'Press directly overhead',
       'Lower with control',
+    ],
+  },
+  'db shoulder press': {
+    filename: 'db-overhead-press.png',
+    demoImages: {
+      male: null,
+      female: null,
+      neutral: 'db-overhead-press.png',
+    },
+    video_url_optional: null,
+    default_cues: [
+      'Start at shoulder height',
+      'Press directly overhead',
+      'Keep core braced',
     ],
   },
   'seated dumbbell press': {
@@ -669,6 +772,11 @@ export const upperBodyPushExercises: Record<string, ExerciseMediaEntry> = {
   // Lateral raises
   'lateral raise': {
     filename: 'lateral-raise.png',
+    demoImages: {
+      male: 'male/lateral-raise.png',
+      female: 'female/lateral-raise.png',
+      neutral: 'lateral-raise.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Slight bend in elbows',
@@ -678,6 +786,11 @@ export const upperBodyPushExercises: Record<string, ExerciseMediaEntry> = {
   },
   'dumbbell lateral raise': {
     filename: 'lateral-raise.png',
+    demoImages: {
+      male: 'male/lateral-raise.png',
+      female: 'female/lateral-raise.png',
+      neutral: 'lateral-raise.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Keep slight elbow bend',
@@ -714,8 +827,41 @@ export const upperBodyPushExercises: Record<string, ExerciseMediaEntry> = {
       'Keep elbows pointed up',
     ],
   },
+  'triceps overhead extension': {
+    filename: 'overhead-triceps-extension.png',
+    demoImages: {
+      male: null,
+      female: null,
+      neutral: 'overhead-triceps-extension.png',
+    },
+    video_url_optional: null,
+    default_cues: [
+      'Hold weight overhead with both hands',
+      'Lower behind head keeping elbows up',
+      'Extend arms fully and squeeze',
+    ],
+  },
   'triceps dip': {
     filename: 'triceps-dip.png',
+    demoImages: {
+      male: 'male/tricep-dip.png',
+      female: 'female/tricep-dip.png',
+      neutral: 'tricep-dip.png',
+    },
+    video_url_optional: null,
+    default_cues: [
+      'Hands on bench behind you',
+      'Lower body by bending elbows',
+      'Press back up',
+    ],
+  },
+  'tricep dip': {
+    filename: 'tricep-dip.png',
+    demoImages: {
+      male: 'male/tricep-dip.png',
+      female: 'female/tricep-dip.png',
+      neutral: 'tricep-dip.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Hands on bench behind you',
@@ -853,6 +999,11 @@ export const upperBodyPullExercises: Record<string, ExerciseMediaEntry> = {
   // Biceps
   'bicep curl': {
     filename: 'bicep-curl.png',
+    demoImages: {
+      male: 'male/bicep-curl.png',
+      female: 'female/bicep-curl.png',
+      neutral: 'bicep-curl.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Keep elbows at sides',
@@ -862,6 +1013,11 @@ export const upperBodyPullExercises: Record<string, ExerciseMediaEntry> = {
   },
   'dumbbell curl': {
     filename: 'bicep-curl.png',
+    demoImages: {
+      male: 'male/bicep-curl.png',
+      female: 'female/bicep-curl.png',
+      neutral: 'bicep-curl.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Stand with arms at sides',
@@ -954,6 +1110,11 @@ export const coreExercises: Record<string, ExerciseMediaEntry> = {
   // Planks
   'plank': {
     filename: 'plank.png',
+    demoImages: {
+      male: 'male/plank.png',
+      female: 'female/plank.png',
+      neutral: 'plank.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Straight line from head to heels',
@@ -963,6 +1124,11 @@ export const coreExercises: Record<string, ExerciseMediaEntry> = {
   },
   'forearm plank': {
     filename: 'plank.png',
+    demoImages: {
+      male: 'male/plank.png',
+      female: 'female/plank.png',
+      neutral: 'plank.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Elbows under shoulders',
@@ -972,6 +1138,11 @@ export const coreExercises: Record<string, ExerciseMediaEntry> = {
   },
   'side plank': {
     filename: 'side-plank.png',
+    demoImages: {
+      male: 'male/side-plank.png',
+      female: 'female/side-plank.png',
+      neutral: 'side-plank.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Stack feet or stagger',
@@ -1019,6 +1190,11 @@ export const coreExercises: Record<string, ExerciseMediaEntry> = {
   },
   'bicycle crunch': {
     filename: 'bicycle-crunch.png',
+    demoImages: {
+      male: 'male/bicycle-crunch.png',
+      female: 'female/bicycle-crunch.png',
+      neutral: 'bicycle-crunch.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Rotate elbow to opposite knee',
@@ -1057,6 +1233,11 @@ export const coreExercises: Record<string, ExerciseMediaEntry> = {
   // Dead bugs and Bird dogs
   'dead bug': {
     filename: 'dead-bug.png',
+    demoImages: {
+      male: 'male/dead-bug.png',
+      female: 'female/dead-bug.png',
+      neutral: 'dead-bug.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Press lower back into floor',
@@ -1066,6 +1247,11 @@ export const coreExercises: Record<string, ExerciseMediaEntry> = {
   },
   'bird dog': {
     filename: 'bird-dog.png',
+    demoImages: {
+      male: null,
+      female: null,
+      neutral: 'bird-dog.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Extend opposite arm and leg',
@@ -1115,6 +1301,11 @@ export const coreExercises: Record<string, ExerciseMediaEntry> = {
   // Mountain climbers and similar
   'mountain climber': {
     filename: 'mountain-climbers.png',
+    demoImages: {
+      male: 'male/mountain-climbers.png',
+      female: 'female/mountain-climbers.png',
+      neutral: 'mountain-climbers.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Keep hips down',
@@ -1124,6 +1315,11 @@ export const coreExercises: Record<string, ExerciseMediaEntry> = {
   },
   'mountain climbers': {
     filename: 'mountain-climbers.png',
+    demoImages: {
+      male: 'male/mountain-climbers.png',
+      female: 'female/mountain-climbers.png',
+      neutral: 'mountain-climbers.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Keep hips down',
@@ -1144,6 +1340,11 @@ export const coreExercises: Record<string, ExerciseMediaEntry> = {
   // Twists
   'russian twist': {
     filename: 'russian-twist.png',
+    demoImages: {
+      male: 'male/russian-twist.png',
+      female: 'female/russian-twist.png',
+      neutral: 'russian-twist.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Lean back slightly',
@@ -1182,6 +1383,11 @@ export const coreExercises: Record<string, ExerciseMediaEntry> = {
   },
   'superman': {
     filename: 'superman.png',
+    demoImages: {
+      male: 'male/superman.png',
+      female: 'female/superman.png',
+      neutral: 'superman.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Lie face down',
@@ -1206,6 +1412,11 @@ export const coreExercises: Record<string, ExerciseMediaEntry> = {
 export const conditioningExercises: Record<string, ExerciseMediaEntry> = {
   'burpee': {
     filename: 'burpees.png',
+    demoImages: {
+      male: 'male/burpee.png',
+      female: 'female/burpee.png',
+      neutral: 'burpee.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Squat, jump back, push-up',
@@ -1215,6 +1426,11 @@ export const conditioningExercises: Record<string, ExerciseMediaEntry> = {
   },
   'burpees': {
     filename: 'burpees.png',
+    demoImages: {
+      male: 'male/burpee.png',
+      female: 'female/burpee.png',
+      neutral: 'burpee.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Squat, jump back, push-up',
@@ -1393,6 +1609,11 @@ export const mobilityExercises: Record<string, ExerciseMediaEntry> = {
   },
   'hamstring stretch': {
     filename: 'hamstring-stretch.png',
+    demoImages: {
+      male: null,
+      female: null,
+      neutral: 'hamstring-stretch.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Keep leg straight',
@@ -1420,6 +1641,11 @@ export const mobilityExercises: Record<string, ExerciseMediaEntry> = {
   },
   'hip flexor stretch': {
     filename: 'hip-flexor-stretch.png',
+    demoImages: {
+      male: null,
+      female: null,
+      neutral: 'hip-flexor-stretch.png',
+    },
     video_url_optional: null,
     default_cues: [
       'Half-kneeling position',
