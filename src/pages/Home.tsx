@@ -260,7 +260,7 @@ export default function Home() {
             </Link>
           )}
           
-          <Link to="/nutrition">
+        <Link to="/nutrition?openLogMeal=1">
             <Card className="cursor-pointer border-border transition-all hover:border-primary/50 hover:shadow-md">
               <CardContent className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
