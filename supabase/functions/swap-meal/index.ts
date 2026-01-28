@@ -95,7 +95,9 @@ serve(async (req) => {
 RULES:
 1. STRICTLY respect dietary restrictions
 2. Match similar calorie and protein content
-3. Return ONLY valid JSON`;
+3. Include detailed step-by-step instructions (8-15 steps)
+4. Include gourmet_notes with chef tips and variations
+5. Return ONLY valid JSON`;
 
     const userPrompt = `Generate an alternative for this meal:
 
@@ -112,10 +114,16 @@ Return ONLY this JSON:
 {
   "name": "${currentMeal.name}",
   "recipe_title": "...",
-  "ingredients": ["..."],
-  "instructions": "...",
+  "ingredients": ["ingredient with amount", ...],
+  "instructions": "Brief 3-5 step summary...",
+  "detailed_instructions": ["Step 1: ...", "Step 2: ...", ...],
   "protein_g_est": <similar to ${currentMeal.protein_g_est}>,
-  "calories_est": <similar to ${currentMeal.calories_est}>
+  "calories_est": <similar to ${currentMeal.calories_est}>,
+  "prep_time_minutes": <number>,
+  "cook_time_minutes": <number>,
+  "servings": 1,
+  "meal_prep_notes": "Storage and reheating tips...",
+  "gourmet_notes": "Chef tips, technique variations, plating ideas..."
 }`;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");

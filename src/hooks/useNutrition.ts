@@ -14,12 +14,15 @@ export interface NutritionTargets {
   source?: 'ai' | 'fallback';
 }
 
+export type InstructionStyle = 'simple' | 'detailed' | 'gourmet';
+
 export interface Meal {
   name: string;
   recipe_title: string;
   ingredients: string[];
   instructions: string;
   detailed_instructions?: string[];
+  gourmet_notes?: string;
   protein_g_est: number;
   calories_est: number;
   cuisine_style?: string;
