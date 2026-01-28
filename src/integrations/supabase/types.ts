@@ -869,6 +869,59 @@ export type Database = {
           },
         ]
       }
+      weekly_summaries: {
+        Row: {
+          badge_line: string | null
+          bullets: Json
+          created_at: string | null
+          generated_at: string
+          headline: string
+          id: string
+          next_suggestion: string | null
+          stats_snapshot: Json
+          updated_at: string | null
+          user_id: string
+          week_end_date: string
+          week_start_date: string
+        }
+        Insert: {
+          badge_line?: string | null
+          bullets?: Json
+          created_at?: string | null
+          generated_at?: string
+          headline: string
+          id?: string
+          next_suggestion?: string | null
+          stats_snapshot?: Json
+          updated_at?: string | null
+          user_id: string
+          week_end_date: string
+          week_start_date: string
+        }
+        Update: {
+          badge_line?: string | null
+          bullets?: Json
+          created_at?: string | null
+          generated_at?: string
+          headline?: string
+          id?: string
+          next_suggestion?: string | null
+          stats_snapshot?: Json
+          updated_at?: string | null
+          user_id?: string
+          week_end_date?: string
+          week_start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_summaries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workout_logs: {
         Row: {
           calories_burned: number | null

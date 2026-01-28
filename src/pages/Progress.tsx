@@ -19,8 +19,7 @@ import {
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { cn } from '@/lib/utils';
-import { WorkoutHistoryList } from '@/components/progress/WorkoutHistoryList';
-import { NonScaleProgress } from '@/components/progress/NonScaleProgress';
+import { WorkoutHistoryList, NonScaleProgress, WeeklyStoryCard } from '@/components/progress';
 import { useProgressMetrics } from '@/hooks/useProgressMetrics';
 
 const weightData = [
@@ -119,7 +118,11 @@ export default function Progress() {
           </TabsList>
 
           {/* Non-Scale Progress Tab */}
-          <TabsContent value="progress" className="mt-4">
+          <TabsContent value="progress" className="mt-4 space-y-4">
+            {/* Weekly Story Card */}
+            <WeeklyStoryCard />
+            
+            {/* Non-Scale Progress */}
             <NonScaleProgress summary={summary} loading={metricsLoading} />
           </TabsContent>
 

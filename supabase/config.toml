@@ -41,3 +41,9 @@ verify_jwt = false
 
 [functions.detect-meal-from-photo]
 verify_jwt = false
+
+[functions.generate-weekly-story]
+verify_jwt = false
+
+[functions.cleanup-workout-titles]
+verify_jwt = false
