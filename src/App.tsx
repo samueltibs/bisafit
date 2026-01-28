@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SubscriptionGate } from "@/components/subscription/SubscriptionGate";
 import { AnalyticsDebugPanel } from "@/components/debug/AnalyticsDebugPanel";
 import { OverlayDebugPanel } from "@/components/debug/OverlayDebugPanel";
+import { IOSScrollDebugPanel } from "@/components/debug/IOSScrollDebugPanel";
 import { AppLanguageProvider } from "@/components/AppLanguageProvider";
 
 import Index from "./pages/Index";
@@ -124,6 +125,7 @@ const App = () => (
           </Routes>
             <AnalyticsDebugPanel />
             <OverlayDebugPanel />
+            <IOSScrollDebugPanel />
           </BrowserRouter>
         </TooltipProvider>
       </AppLanguageProvider>
