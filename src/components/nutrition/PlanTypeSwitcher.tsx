@@ -38,10 +38,11 @@ export function PlanTypeSwitcher({
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
   const handleGenericClick = () => {
-    if (currentMode === 'ingredients') {
-      // Show confirmation when switching away from ingredients mode
-      setConfirmDialogOpen(true);
-    }
+    // Don't do anything if already on generic
+    if (currentMode === 'generic') return;
+    
+    // Show confirmation when switching away from ingredients mode
+    setConfirmDialogOpen(true);
   };
 
   const handleConfirmSwitch = () => {
@@ -50,14 +51,14 @@ export function PlanTypeSwitcher({
   };
 
   const handleIngredientsClick = () => {
-    if (currentMode !== 'ingredients') {
-      onSwitchToIngredients();
-    }
+    // Don't do anything if already on ingredients
+    if (currentMode === 'ingredients') return;
+    
+    onSwitchToIngredients();
   };
 
-  // Determine if options are truly disabled (only during loading)
-  const isGenericDisabled = isLoading || currentMode === 'generic';
-  const isIngredientsDisabled = isLoading || currentMode === 'ingredients';
+  // Only disable options during loading - NOT when they are selected
+  const isDisabled = isLoading;
 
   return (
     <>
@@ -85,7 +86,7 @@ export function PlanTypeSwitcher({
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuItem 
             onClick={handleGenericClick}
-            disabled={isGenericDisabled}
+            disabled={isDisabled}
             className="gap-2 cursor-pointer"
           >
             <UtensilsCrossed className="h-4 w-4" />
@@ -101,7 +102,7 @@ export function PlanTypeSwitcher({
           </DropdownMenuItem>
           <DropdownMenuItem 
             onClick={handleIngredientsClick}
-            disabled={isIngredientsDisabled}
+            disabled={isDisabled}
             className="gap-2 cursor-pointer"
           >
             <ShoppingBasket className="h-4 w-4" />
