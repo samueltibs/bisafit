@@ -35,6 +35,7 @@ import {
 import { cn } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics';
 import { hasExerciseMedia } from '@/lib/exerciseMediaMap';
+import { type UserGender } from '@/lib/exerciseMediaData';
 
 export default function Workout() {
   const { id } = useParams();
@@ -387,6 +388,7 @@ export default function Workout() {
           }}
           isFullscreen={isFullscreen}
           onToggleFullscreen={toggleFullscreen}
+          userGender={(profile?.gender as UserGender) || 'unspecified'}
         />
       )}
 
@@ -460,6 +462,7 @@ export default function Workout() {
                     videoUrl={currentExercise.video_url_optional}
                     imageUrl={currentExercise.image_url}
                     exerciseName={currentExercise.name}
+                    userGender={(profile?.gender as UserGender) || 'unspecified'}
                     className="animate-fade-in"
                   />
 

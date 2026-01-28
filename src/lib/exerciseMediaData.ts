@@ -3,10 +3,22 @@
  * 
  * Central repository of exercise demonstration assets and form tips.
  * Organized by category for maintainability.
+ * Supports gender-specific demo images.
  */
 
+export type UserGender = 'male' | 'female' | 'unspecified' | null;
+
+export interface GenderDemoImages {
+  male: string | null;
+  female: string | null;
+  neutral?: string;
+}
+
 export interface ExerciseMediaEntry {
+  /** @deprecated Use demoImages for gender-specific assets */
   filename: string;
+  /** Gender-specific demo images */
+  demoImages?: GenderDemoImages;
   video_url_optional: string | null;
   default_cues: string[];
 }

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Dumbbell, Play, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { lookupExerciseMedia, hasExerciseMedia } from '@/lib/exerciseMediaMap';
+import { type UserGender } from '@/lib/exerciseMediaData';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Button } from '@/components/ui/button';
 import { FormTipsModal } from './FormTipsModal';
@@ -11,6 +12,8 @@ interface LargeDemoPanelProps {
   imageUrl?: string;
   exerciseName: string;
   formTips?: string[];
+  /** User's gender for selecting appropriate demo image */
+  userGender?: UserGender;
   className?: string;
 }
 
@@ -18,12 +21,14 @@ interface LargeDemoPanelProps {
  * Large exercise demonstration panel for normal workout mode.
  * Takes ~35-50% of screen height with 16:9 aspect ratio.
  * Matches TV Mode styling but sized for phone/laptop.
+ * Supports gender-specific demo images.
  */
 export function LargeDemoPanel({
   videoUrl,
   imageUrl,
   exerciseName,
   formTips = [],
+  userGender = 'unspecified',
   className,
 }: LargeDemoPanelProps) {
   const [mediaError, setMediaError] = useState(false);
@@ -32,8 +37,8 @@ export function LargeDemoPanel({
   const [showFormTips, setShowFormTips] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Look up media from central map if not provided directly
-  const mediaLookup = lookupExerciseMedia(exerciseName);
+  // Look up media from central map with gender preference
+  const mediaLookup = lookupExerciseMedia(exerciseName, userGender);
   
   // Priority: direct videoUrl > direct imageUrl > lookup video > lookup image
   const resolvedVideoUrl = videoUrl || mediaLookup?.video_url_optional || null;
@@ -48,7 +53,7 @@ export function LargeDemoPanel({
     setMediaError(false);
     setIsVideoLoaded(false);
     setIsImageLoaded(false);
-  }, [resolvedVideoUrl, resolvedImageUrl, exerciseName]);
+  }, [resolvedVideoUrl, resolvedImageUrl, exerciseName, userGender]);
 
   // Handle video autoplay
   useEffect(() => {
