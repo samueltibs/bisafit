@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner';
+import { WeekRecapBanner } from '@/components/progress/WeekRecapBanner';
 import { IntroTour } from '@/components/onboarding/IntroTour';
 import { WhatsNew } from '@/components/onboarding/WhatsNew';
 import { Flame, Droplets, Footprints, Dumbbell, Apple, ChevronRight, Trophy, User, Bed } from 'lucide-react';
@@ -112,6 +113,9 @@ export default function Home() {
 
         {/* Subscription Banner - handles all subscription states */}
         <SubscriptionBanner />
+
+        {/* Week Recap Banner - shows on weekends */}
+        <WeekRecapBanner />
 
         {/* Daily Progress Card */}
         <Card className="gradient-primary text-primary-foreground animate-slide-up">
