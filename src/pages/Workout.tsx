@@ -5,11 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { 
   Play, 
-  Pause, 
-  SkipForward, 
-  Timer, 
-  ChevronLeft,
-  Check,
   Loader2
 } from 'lucide-react';
 import { useWorkoutPlayer } from '@/hooks/useWorkoutPlayer';
@@ -21,26 +16,35 @@ import { useMusicSettings } from '@/hooks/useMusicSettings';
 import { musicService } from '@/lib/musicService';
 import { PremiumFeatureModal } from '@/components/subscription';
 import {
-  WorkoutTimer,
-  ExerciseCard,
+  WorkoutComplete,
   SetLogDialog,
   SkipConfirmDialog,
-  WorkoutComplete,
   ResumeWorkoutDialog,
-  WorkoutControls,
   ProgressIndicator,
+  ActiveWorkoutHeader,
+  ActiveWorkoutTimer,
+  ActiveWorkoutExercise,
+  ActiveWorkoutControls,
+  NextExercisePreview,
+  MusicMiniPlayer,
+  CastModeSheet,
+  ExitWorkoutDialog,
+  TVModeOverlay,
+  CoachingCues,
 } from '@/components/workout';
-import { TVModeOverlay } from '@/components/workout/TVModeOverlay';
-import { WorkoutMusicButton } from '@/components/workout/WorkoutMusicButton';
 import { cn } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics';
 
 export default function Workout() {
   const { id } = useParams();
   const navigate = useNavigate();
+  
+  // UI state
   const [showSetLog, setShowSetLog] = useState(false);
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
-  const [bigMode, setBigMode] = useState(false);
+  const [showExitDialog, setShowExitDialog] = useState(false);
+  const [showCastSheet, setShowCastSheet] = useState(false);
+  const [showMusicPanel, setShowMusicPanel] = useState(false);
   const [tvMode, setTvMode] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -114,6 +118,44 @@ export default function Workout() {
     return { currentExerciseNumber: current, totalExercises: total };
   }, [workout, currentBlockIndex, currentItemIndex]);
 
+  // Get next exercise info
+  const nextExerciseInfo = useMemo(() => {
+    if (!workout) return null;
+    
+    const block = workout.blocks[currentBlockIndex];
+    
+    // Check if there's a next item in current block
+    if (currentItemIndex < block.items.length - 1) {
+      const nextItem = block.items[currentItemIndex + 1];
+      return { 
+        name: nextItem.name, 
+        blockType: block.type,
+        detail: nextItem.sets && nextItem.reps 
+          ? `${nextItem.sets}×${nextItem.reps}`
+          : nextItem.duration_sec 
+            ? `${nextItem.duration_sec}s`
+            : undefined
+      };
+    }
+    
+    // Check if there's a next block
+    if (currentBlockIndex < workout.blocks.length - 1) {
+      const nextBlock = workout.blocks[currentBlockIndex + 1];
+      const nextItem = nextBlock.items[0];
+      return { 
+        name: nextItem.name, 
+        blockType: nextBlock.type,
+        detail: nextItem.sets && nextItem.reps 
+          ? `${nextItem.sets}×${nextItem.reps}`
+          : nextItem.duration_sec 
+            ? `${nextItem.duration_sec}s`
+            : undefined
+      };
+    }
+    
+    return null;
+  }, [workout, currentBlockIndex, currentItemIndex]);
+
   // Fullscreen API handling
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -129,7 +171,7 @@ export default function Workout() {
     }
   }, []);
 
-  // Listen for fullscreen changes (e.g., user pressing Escape)
+  // Listen for fullscreen changes
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -178,7 +220,6 @@ export default function Workout() {
   // Voice cue: rest timer
   useEffect(() => {
     if (timerType === 'rest' && timerSeconds > 0 && playerState === 'active') {
-      // Announce rest only when it starts (timer just set)
       if (currentExercise?.rest_sec === timerSeconds || timerSeconds === 60) {
         voiceCues.announceRest(timerSeconds);
       }
@@ -197,7 +238,7 @@ export default function Workout() {
     voiceCues.announceTimerWarning(seconds);
   };
 
-  // Voice cue: workout complete + analytics
+  // Voice cue: workout complete
   useEffect(() => {
     if (playerState === 'completed') {
       trackEvent('workout_completed');
@@ -205,43 +246,22 @@ export default function Workout() {
     }
   }, [playerState, voiceCues]);
 
-  // Loading state
-  if (isLoading || isChecking) {
-    return (
-      <AppLayout showNav={false}>
-        <div className="flex min-h-screen items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </AppLayout>
-    );
-  }
+  // Navigation handlers
+  const handleBackClick = () => {
+    if (playerState === 'active' || playerState === 'paused') {
+      setShowExitDialog(true);
+    } else {
+      navigate(-1);
+    }
+  };
 
-  // No workout found
-  if (!workout) {
-    return (
-      <AppLayout showNav={false}>
-        <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-4">
-          <p className="text-muted-foreground">Workout not found</p>
-          <Button onClick={() => navigate(-1)}>Go Back</Button>
-        </div>
-      </AppLayout>
-    );
-  }
-
-  // Workout completed
-  if (playerState === 'completed') {
-    return (
-      <AppLayout showNav={false}>
-        <div className="container px-4 py-6">
-          <WorkoutComplete workoutTitle={workout.title} sessionLog={sessionLog} />
-        </div>
-      </AppLayout>
-    );
-  }
+  const handleExitConfirm = () => {
+    setShowExitDialog(false);
+    navigate(-1);
+  };
 
   const handlePrimaryAction = () => {
     if (playerState === 'idle') {
-      // Gate starting workout behind premium
       if (!checkPremiumAccess()) return;
       handleStart();
       return;
@@ -255,8 +275,7 @@ export default function Workout() {
       return;
     }
 
-    // For warmup/cooldown with timer, we auto-advance
-    // But allow manual advance if timer is at 0
+    // For warmup/cooldown with timer, allow manual advance if timer is at 0
     if (timerSeconds === 0 || !timerType) {
       completeSet();
     }
@@ -305,230 +324,47 @@ export default function Workout() {
   };
 
   const isPaused = playerState === 'paused';
+  const isActive = playerState === 'active' || playerState === 'paused';
+  const hasMusicProvider = musicSettings.provider !== 'none';
+
+  // Loading state
+  if (isLoading || isChecking) {
+    return (
+      <AppLayout showNav={false}>
+        <div className="flex min-h-screen items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // No workout found
+  if (!workout) {
+    return (
+      <AppLayout showNav={false}>
+        <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-4">
+          <p className="text-muted-foreground">Workout not found</p>
+          <Button onClick={() => navigate(-1)}>Go Back</Button>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // Workout completed
+  if (playerState === 'completed') {
+    return (
+      <AppLayout showNav={false}>
+        <div className="container px-4 py-6">
+          <WorkoutComplete workoutTitle={workout.title} sessionLog={sessionLog} />
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
-    <AppLayout showNav={false}>
-      <div className={cn(
-        "container flex min-h-[calc(100vh-3.5rem)] flex-col px-4 py-6",
-        bigMode && "px-6 py-8"
-      )}>
-        {/* Header */}
-        {!bigMode && (
-          <div className="mb-6 flex items-center gap-4 animate-fade-in">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <div className="flex-1">
-              <h1 className="text-xl font-bold">{workout.title}</h1>
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Timer className="h-4 w-4" /> {workout.total_estimated_minutes} min
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {/* Music button - only show during active workout */}
-              {playerState !== 'idle' && (
-                <WorkoutMusicButton compact />
-              )}
-              {playerState !== 'idle' && (
-                <Button variant="ghost" size="icon" onClick={togglePause}>
-                  {isPaused ? (
-                    <Play className="h-5 w-5" />
-                  ) : (
-                    <Pause className="h-5 w-5" />
-                  )}
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Controls (voice + big mode + TV mode toggles) */}
-        {playerState !== 'idle' && (
-          <div className={cn(
-            "mb-4 flex items-center justify-between",
-            bigMode && "mb-6"
-          )}>
-            <WorkoutControls
-              voiceEnabled={voiceCues.isEnabled}
-              onVoiceToggle={voiceCues.setIsEnabled}
-              voiceAvailable={voiceCues.isAvailable}
-              bigModeEnabled={bigMode}
-              onBigModeToggle={setBigMode}
-              tvModeEnabled={tvMode}
-              onTVModeToggle={setTvMode}
-              onFullscreenToggle={toggleFullscreen}
-              isFullscreen={isFullscreen}
-            />
-            {bigMode && (
-              <Button variant="ghost" size="sm" onClick={togglePause}>
-                {isPaused ? (
-                  <><Play className="h-4 w-4 mr-2" /> Resume</>
-                ) : (
-                  <><Pause className="h-4 w-4 mr-2" /> Pause</>
-                )}
-              </Button>
-            )}
-          </div>
-        )}
-
-        {/* Progress */}
-        {playerState !== 'idle' && !bigMode && (
-          <div className="mb-6 animate-slide-up">
-            <div className="mb-2 flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Progress</span>
-              <span className="font-medium">{Math.round(progress.percentage)}%</span>
-            </div>
-            <Progress value={progress.percentage} className="h-2" />
-          </div>
-        )}
-
-        {/* Progress Indicator (exercise X of Y) */}
-        {playerState !== 'idle' && (
-          <ProgressIndicator
-            currentExercise={currentExerciseNumber}
-            totalExercises={totalExercises}
-            currentSet={currentBlock?.type === 'strength' ? currentSet : undefined}
-            totalSets={currentBlock?.type === 'strength' ? currentExercise?.sets : undefined}
-            bigMode={bigMode}
-            className={cn("mb-4", bigMode && "mb-6")}
-          />
-        )}
-
-        {/* Timer (when active) */}
-        {playerState !== 'idle' && timerType && timerSeconds > 0 && (
-          <div className={cn("mb-6 animate-scale-in", bigMode && "mb-8")}>
-            <WorkoutTimer
-              seconds={timerSeconds}
-              type={timerType}
-              onSkip={timerType === 'rest' ? skipRest : undefined}
-              bigMode={bigMode}
-              isPaused={isPaused}
-              onCountdownTick={handleCountdownTick}
-            />
-          </div>
-        )}
-
-        {/* Current Exercise */}
-        {playerState !== 'idle' && currentExercise && currentBlock && (
-          <div className={cn("mb-6 animate-scale-in", bigMode && "mb-8 flex-1 flex items-center")}>
-            <ExerciseCard
-              item={currentExercise}
-              block={currentBlock}
-              currentSet={currentSet}
-              currentRound={currentRound}
-              isActive
-              isPaused={isPaused}
-              bigMode={bigMode}
-            />
-          </div>
-        )}
-
-        {/* Idle state - workout overview */}
-        {playerState === 'idle' && (
-          <div className="mb-6 flex-1 space-y-4 animate-slide-up">
-            <h2 className="text-lg font-semibold">Workout Overview</h2>
-            {workout.blocks.map((block, blockIndex) => (
-              <div key={blockIndex} className="space-y-2">
-                <h3 className="text-sm font-medium text-muted-foreground capitalize">
-                  {block.type} ({block.items.length} exercises)
-                </h3>
-                {block.items.map((item, itemIndex) => (
-                  <div 
-                    key={itemIndex} 
-                    className="flex items-center justify-between rounded-lg border p-3 text-sm"
-                  >
-                    <span>{item.name}</span>
-                    <span className="text-muted-foreground">
-                      {item.sets && item.reps 
-                        ? `${item.sets}×${item.reps}`
-                        : item.duration_sec 
-                          ? `${item.duration_sec}s`
-                          : ''
-                      }
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Controls */}
-        <div className={cn(
-          "mt-auto space-y-4 pb-safe animate-slide-up",
-          bigMode && "space-y-6"
-        )}>
-          {/* Primary action button */}
-          <Button
-            size="lg"
-            className={cn(
-              "w-full",
-              bigMode ? "h-20 text-2xl" : "h-14 text-lg"
-            )}
-            onClick={handlePrimaryAction}
-            disabled={isPrimaryDisabled()}
-          >
-            {playerState === 'idle' ? (
-              <>
-                <Play className={cn("mr-2", bigMode ? "h-7 w-7" : "h-5 w-5")} />
-                {getPrimaryButtonText()}
-              </>
-            ) : (
-              <>
-                <Check className={cn("mr-2", bigMode ? "h-7 w-7" : "h-5 w-5")} />
-                {getPrimaryButtonText()}
-              </>
-            )}
-          </Button>
-
-          {/* Skip button (when active) */}
-          {playerState !== 'idle' && currentExercise && !bigMode && (
-            <Button
-              variant="ghost"
-              className="w-full text-muted-foreground"
-              onClick={() => setShowSkipConfirm(true)}
-            >
-              <SkipForward className="mr-2 h-4 w-4" />
-              Skip Exercise
-            </Button>
-          )}
-        </div>
-
-        {/* Dialogs */}
-        <SetLogDialog
-          open={showSetLog}
-          onOpenChange={setShowSetLog}
-          exerciseName={currentExercise?.name || ''}
-          setNumber={currentSet}
-          prescribedReps={currentExercise?.reps || '10'}
-          onComplete={handleSetComplete}
-        />
-
-        <SkipConfirmDialog
-          open={showSkipConfirm}
-          onOpenChange={setShowSkipConfirm}
-          exerciseName={currentExercise?.name || ''}
-          onConfirm={handleSkipConfirm}
-        />
-
-        <ResumeWorkoutDialog
-          open={showResumeModal}
-          onResume={handleResume}
-          onDiscard={discardSession}
-          startedAt={incompleteSession?.started_at || ''}
-          setsCompleted={incompleteSession?.session_log_json?.sets?.length}
-        />
-
-        <PremiumFeatureModal
-          open={showPremiumModal}
-          onOpenChange={setShowPremiumModal}
-        />
-      </div>
-
+    <>
       {/* TV Mode Overlay - renders on top when active */}
-      {tvMode && playerState !== 'idle' && workout && (
+      {tvMode && isActive && (
         <TVModeOverlay
           workout={workout}
           currentExercise={currentExercise}
@@ -546,12 +382,216 @@ export default function Workout() {
           onExit={() => setTvMode(false)}
           onEndWorkout={() => {
             setTvMode(false);
-            navigate(-1);
+            setShowExitDialog(true);
           }}
           isFullscreen={isFullscreen}
           onToggleFullscreen={toggleFullscreen}
         />
       )}
-    </AppLayout>
+
+      {/* Main workout screen (hidden during TV mode) */}
+      {!tvMode && (
+        <div className="fixed inset-0 flex flex-col bg-background">
+          {/* Top App Bar */}
+          <ActiveWorkoutHeader
+            workoutTitle={workout.title}
+            onBack={handleBackClick}
+            onMusicClick={() => setShowMusicPanel(!showMusicPanel)}
+            onCastClick={() => setShowCastSheet(true)}
+            hasMusicProvider={hasMusicProvider}
+          />
+
+          {/* Music Mini Player (collapsible) */}
+          {showMusicPanel && hasMusicProvider && isActive && (
+            <div className="px-4 py-2 animate-fade-in">
+              <MusicMiniPlayer
+                provider={musicSettings.provider}
+                playlistName={musicSettings.playlistName}
+              />
+            </div>
+          )}
+
+          {/* Main content area */}
+          <div className="flex-1 overflow-auto pb-40">
+            <div className="container max-w-lg mx-auto px-4 py-6">
+              
+              {/* Active workout state */}
+              {isActive && (
+                <>
+                  {/* Progress bar */}
+                  <div className="mb-6 animate-fade-in">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+                      <span>Progress</span>
+                      <span className="font-medium tabular-nums">{Math.round(progress.percentage)}%</span>
+                    </div>
+                    <Progress value={progress.percentage} className="h-1.5" />
+                  </div>
+
+                  {/* Exercise counter */}
+                  <ProgressIndicator
+                    currentExercise={currentExerciseNumber}
+                    totalExercises={totalExercises}
+                    currentSet={currentBlock?.type === 'strength' ? currentSet : undefined}
+                    totalSets={currentBlock?.type === 'strength' ? currentExercise?.sets : undefined}
+                    className="mb-6"
+                  />
+
+                  {/* Hero Timer */}
+                  {timerType && timerSeconds > 0 && (
+                    <div className="mb-6 animate-scale-in">
+                      <ActiveWorkoutTimer
+                        seconds={timerSeconds}
+                        type={timerType}
+                        isPaused={isPaused}
+                        onCountdownTick={handleCountdownTick}
+                      />
+                      {timerType === 'rest' && (
+                        <div className="text-center mt-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={skipRest}
+                            className="text-muted-foreground"
+                          >
+                            Skip Rest
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Current Exercise */}
+                  {currentExercise && currentBlock && (
+                    <div className="animate-fade-in">
+                      <ActiveWorkoutExercise
+                        item={currentExercise}
+                        block={currentBlock}
+                        currentSet={currentSet}
+                        currentRound={currentRound}
+                        isPaused={isPaused}
+                        className="mb-6"
+                      />
+
+                      {/* Coaching cues */}
+                      <div className="mb-6">
+                        <CoachingCues
+                          exerciseName={currentExercise.name}
+                          instructions={currentExercise.instructions}
+                          coachingCues={currentExercise.coaching_cues}
+                          isActiveCard={!isPaused}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Next exercise preview */}
+                  {nextExerciseInfo && (
+                    <NextExercisePreview
+                      exerciseName={nextExerciseInfo.name}
+                      blockType={nextExerciseInfo.blockType}
+                      setsOrDuration={nextExerciseInfo.detail}
+                      className="animate-slide-up"
+                    />
+                  )}
+                </>
+              )}
+
+              {/* Idle state - workout overview */}
+              {playerState === 'idle' && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="text-center">
+                    <h1 className="text-2xl font-bold mb-2">{workout.title}</h1>
+                    <p className="text-muted-foreground">
+                      {workout.total_estimated_minutes} min • {totalExercises} exercises
+                    </p>
+                  </div>
+
+                  {workout.blocks.map((block, blockIndex) => (
+                    <div key={blockIndex} className="space-y-2">
+                      <h3 className="text-sm font-medium text-muted-foreground capitalize">
+                        {block.type} ({block.items.length} exercises)
+                      </h3>
+                      {block.items.map((item, itemIndex) => (
+                        <div 
+                          key={itemIndex} 
+                          className="flex items-center justify-between rounded-xl border border-border/50 bg-card/50 p-3 text-sm"
+                        >
+                          <span className="font-medium">{item.name}</span>
+                          <span className="text-muted-foreground">
+                            {item.sets && item.reps 
+                              ? `${item.sets}×${item.reps}`
+                              : item.duration_sec 
+                                ? `${item.duration_sec}s`
+                                : ''
+                            }
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Sticky bottom controls */}
+          <ActiveWorkoutControls
+            isPaused={isPaused}
+            isIdle={playerState === 'idle'}
+            primaryLabel={getPrimaryButtonText()}
+            primaryDisabled={isPrimaryDisabled()}
+            onPrimaryAction={handlePrimaryAction}
+            onTogglePause={togglePause}
+            onSkipForward={() => setShowSkipConfirm(true)}
+            onEndWorkout={() => setShowExitDialog(true)}
+          />
+        </div>
+      )}
+
+      {/* Dialogs & Sheets */}
+      <SetLogDialog
+        open={showSetLog}
+        onOpenChange={setShowSetLog}
+        exerciseName={currentExercise?.name || ''}
+        setNumber={currentSet}
+        prescribedReps={currentExercise?.reps || '10'}
+        onComplete={handleSetComplete}
+      />
+
+      <SkipConfirmDialog
+        open={showSkipConfirm}
+        onOpenChange={setShowSkipConfirm}
+        exerciseName={currentExercise?.name || ''}
+        onConfirm={handleSkipConfirm}
+      />
+
+      <ResumeWorkoutDialog
+        open={showResumeModal}
+        onResume={handleResume}
+        onDiscard={discardSession}
+        startedAt={incompleteSession?.started_at || ''}
+        setsCompleted={incompleteSession?.session_log_json?.sets?.length}
+      />
+
+      <ExitWorkoutDialog
+        open={showExitDialog}
+        onOpenChange={setShowExitDialog}
+        onConfirm={handleExitConfirm}
+        progressPercentage={progress.percentage}
+      />
+
+      <CastModeSheet
+        open={showCastSheet}
+        onOpenChange={setShowCastSheet}
+        onTVModeEnable={() => setTvMode(true)}
+        onFullscreen={toggleFullscreen}
+        isFullscreen={isFullscreen}
+      />
+
+      <PremiumFeatureModal
+        open={showPremiumModal}
+        onOpenChange={setShowPremiumModal}
+      />
+    </>
   );
 }
