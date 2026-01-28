@@ -50,23 +50,23 @@ export function ExerciseMedia({
     setMediaError(true);
   };
 
-  // No media available - show placeholder
+  // No media available - show subtle placeholder
   if (!hasMedia) {
     return (
       <div
         className={cn(
-          "flex flex-col items-center justify-center rounded-xl bg-muted/50 border border-dashed border-muted-foreground/30",
-          bigMode ? "p-6 gap-3" : "p-4 gap-2",
+          "flex items-center justify-center rounded-xl bg-muted/30",
+          bigMode ? "p-4 gap-2" : "p-2 gap-1.5",
           className
         )}
       >
         <Dumbbell className={cn(
-          "text-muted-foreground/50",
-          bigMode ? "h-12 w-12" : "h-8 w-8"
+          "text-muted-foreground/40",
+          bigMode ? "h-5 w-5" : "h-4 w-4"
         )} />
         <p className={cn(
-          "text-muted-foreground/70 text-center",
-          bigMode ? "text-base" : "text-xs"
+          "text-muted-foreground/50",
+          bigMode ? "text-xs" : "text-[10px]"
         )}>
           Form guide coming soon
         </p>

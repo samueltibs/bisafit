@@ -1,8 +1,12 @@
+import { useState } from 'react';
 import { WorkoutItem, WorkoutBlock } from '@/types/plan';
 import { Badge } from '@/components/ui/badge';
-import { Dumbbell, Timer, RotateCcw, Zap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dumbbell, Timer, RotateCcw, Zap, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ExerciseMedia } from './ExerciseMedia';
+import { FormTipsModal } from './FormTipsModal';
+import { getDefaultCues } from '@/lib/exerciseMediaMap';
 
 interface ActiveWorkoutExerciseProps {
   item: WorkoutItem;
@@ -25,10 +29,16 @@ export function ActiveWorkoutExercise({
   isPaused = false,
   className,
 }: ActiveWorkoutExerciseProps) {
+  const [showFormTips, setShowFormTips] = useState(false);
+  
   const isStrength = block.type === 'strength';
   const isConditioning = block.type === 'conditioning';
   const hasRounds = block.protocol && block.protocol.rounds > 1;
   const totalSets = item.sets || 1;
+
+  // Get form tips from the exercise data or central map
+  const formTips = getDefaultCues(item.name);
+  const hasFormTips = formTips.length > 0;
 
   const getBlockIcon = () => {
     const iconClass = "h-3.5 w-3.5";
@@ -80,11 +90,24 @@ export function ActiveWorkoutExercise({
 
       {/* Exercise name - hero text */}
       <h1 className={cn(
-        "text-3xl font-bold mb-4 leading-tight px-4",
+        "text-3xl font-bold mb-2 leading-tight px-4",
         isPaused && "opacity-60"
       )}>
         {item.name}
       </h1>
+
+      {/* Form tips button */}
+      {hasFormTips && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mb-4 h-8 text-xs text-muted-foreground hover:text-foreground gap-1.5"
+          onClick={() => setShowFormTips(true)}
+        >
+          <Info className="h-3.5 w-3.5" />
+          Form Tips
+        </Button>
+      )}
 
       {/* Metrics row */}
       <div className="flex items-center justify-center gap-8">
@@ -160,6 +183,14 @@ export function ActiveWorkoutExercise({
           Tempo: {item.tempo}
         </p>
       )}
+
+      {/* Form Tips Modal */}
+      <FormTipsModal
+        open={showFormTips}
+        onOpenChange={setShowFormTips}
+        exerciseName={item.name}
+        tips={formTips}
+      />
     </div>
   );
 }

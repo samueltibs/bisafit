@@ -1,3 +1,12 @@
+/**
+ * Exercise Media Map
+ * 
+ * Central lookup system for exercise demonstration assets and form tips.
+ * Provides normalized name matching for flexible exercise lookups.
+ */
+
+import { allExerciseMediaData, ExerciseMediaEntry } from './exerciseMediaData';
+
 export interface ExerciseMediaInfo {
   image_url: string;
   video_url_optional: string | null;
@@ -18,7 +27,9 @@ export function normalizeExerciseName(name: string): string {
     .replace(/\s+/g, ' ')
     .replace(/^db\s+/i, 'dumbbell ')
     .replace(/^bb\s+/i, 'barbell ')
-    .replace(/^kb\s+/i, 'kettlebell ');
+    .replace(/^kb\s+/i, 'kettlebell ')
+    .replace(/-/g, ' ') // Normalize hyphens to spaces for matching
+    .replace(/\s+/g, ' '); // Clean up any double spaces
 }
 
 /**
@@ -31,272 +42,13 @@ function getExerciseMediaUrl(filename: string): string {
 }
 
 /**
- * Central exercise media map
- * Key: normalized exercise name
- * Value: media info with image, video, and default coaching cues
+ * Resolved media map cache
  */
-const exerciseMediaMapData: Record<string, Omit<ExerciseMediaInfo, 'image_url'> & { filename: string }> = {
-  // Upper Body - Push
-  'dumbbell standing overhead press': {
-    filename: 'db-overhead-press.png',
-    video_url_optional: null,
-    default_cues: [
-      'Brace your core',
-      'Press straight overhead',
-      'Do not arch lower back',
-    ],
-  },
-  'dumbbell bench press': {
-    filename: 'db-bench-press.png',
-    video_url_optional: null,
-    default_cues: [
-      'Keep shoulder blades squeezed together',
-      'Lower with control to chest level',
-      'Press up and slightly in',
-    ],
-  },
-  'push-up': {
-    filename: 'push-up.png',
-    video_url_optional: null,
-    default_cues: [
-      'Keep body in a straight line',
-      'Elbows at 45-degree angle',
-      'Full range of motion',
-    ],
-  },
-  'pushup': {
-    filename: 'push-up.png',
-    video_url_optional: null,
-    default_cues: [
-      'Keep body in a straight line',
-      'Elbows at 45-degree angle',
-      'Full range of motion',
-    ],
-  },
-
-  // Upper Body - Pull
-  'dumbbell row': {
-    filename: 'db-row.png',
-    video_url_optional: null,
-    default_cues: [
-      'Keep back flat and core tight',
-      'Pull elbow toward hip',
-      'Squeeze shoulder blade at top',
-    ],
-  },
-  'dumbbell bent over row': {
-    filename: 'db-row.png',
-    video_url_optional: null,
-    default_cues: [
-      'Hinge at hips with flat back',
-      'Pull elbows past torso',
-      'Control the lowering phase',
-    ],
-  },
-  'lat pulldown': {
-    filename: 'lat-pulldown.png',
-    video_url_optional: null,
-    default_cues: [
-      'Lead with your elbows',
-      'Pull to upper chest',
-      'Squeeze lats at bottom',
-    ],
-  },
-
-  // Lower Body
-  'goblet squat': {
-    filename: 'goblet-squat.png',
-    video_url_optional: null,
-    default_cues: [
-      'Keep chest tall',
-      'Sit between your hips',
-      'Drive through heels',
-    ],
-  },
-  'dumbbell goblet squat': {
-    filename: 'goblet-squat.png',
-    video_url_optional: null,
-    default_cues: [
-      'Hold weight at chest height',
-      'Elbows inside knees at bottom',
-      'Stand tall at the top',
-    ],
-  },
-  'romanian deadlift': {
-    filename: 'romanian-deadlift.png',
-    video_url_optional: null,
-    default_cues: [
-      'Maintain slight knee bend',
-      'Push hips back, not down',
-      'Feel stretch in hamstrings',
-    ],
-  },
-  'dumbbell romanian deadlift': {
-    filename: 'romanian-deadlift.png',
-    video_url_optional: null,
-    default_cues: [
-      'Keep dumbbells close to legs',
-      'Hinge until tension in hamstrings',
-      'Squeeze glutes to stand',
-    ],
-  },
-  'lunge': {
-    filename: 'lunge.png',
-    video_url_optional: null,
-    default_cues: [
-      'Take a long stride',
-      'Lower back knee toward floor',
-      'Keep torso upright',
-    ],
-  },
-  'reverse lunge': {
-    filename: 'lunge.png',
-    video_url_optional: null,
-    default_cues: [
-      'Step backward with control',
-      'Front knee tracks over toes',
-      'Push through front heel to stand',
-    ],
-  },
-  'split squat': {
-    filename: 'lunge.png',
-    video_url_optional: null,
-    default_cues: [
-      'Keep front shin vertical',
-      'Lower straight down',
-      'Maintain balance throughout',
-    ],
-  },
-
-  // Core
-  'plank': {
-    filename: 'plank.png',
-    video_url_optional: null,
-    default_cues: [
-      'Straight line from head to heels',
-      'Squeeze glutes and abs',
-      'Breathe steadily',
-    ],
-  },
-  'dead bug': {
-    filename: 'dead-bug.png',
-    video_url_optional: null,
-    default_cues: [
-      'Press lower back into floor',
-      'Move opposite arm and leg',
-      'Exhale as you extend',
-    ],
-  },
-  'bird dog': {
-    filename: 'bird-dog.png',
-    video_url_optional: null,
-    default_cues: [
-      'Extend opposite arm and leg',
-      'Keep hips level',
-      'Move slowly with control',
-    ],
-  },
-
-  // Warmup / Mobility
-  'arm circles': {
-    filename: 'arm-circles.png',
-    video_url_optional: null,
-    default_cues: [
-      'Keep arms straight',
-      'Start with small circles',
-      'Gradually increase range',
-    ],
-  },
-  'hip circles': {
-    filename: 'hip-circles.png',
-    video_url_optional: null,
-    default_cues: [
-      'Stand on one leg',
-      'Draw circles with knee',
-      'Keep core stable',
-    ],
-  },
-  'leg swings': {
-    filename: 'leg-swings.png',
-    video_url_optional: null,
-    default_cues: [
-      'Hold onto something for balance',
-      'Swing leg forward and back',
-      'Keep leg relatively straight',
-    ],
-  },
-  'world\'s greatest stretch': {
-    filename: 'worlds-greatest-stretch.png',
-    video_url_optional: null,
-    default_cues: [
-      'Lunge position with hands down',
-      'Rotate torso and reach up',
-      'Feel the full body stretch',
-    ],
-  },
-  'cat cow': {
-    filename: 'cat-cow.png',
-    video_url_optional: null,
-    default_cues: [
-      'Arch and round your spine',
-      'Move with your breath',
-      'Feel each vertebra move',
-    ],
-  },
-  'child\'s pose': {
-    filename: 'childs-pose.png',
-    video_url_optional: null,
-    default_cues: [
-      'Sit back on heels',
-      'Reach arms forward',
-      'Relax and breathe deeply',
-    ],
-  },
-
-  // Conditioning
-  'jumping jacks': {
-    filename: 'jumping-jacks.png',
-    video_url_optional: null,
-    default_cues: [
-      'Land softly',
-      'Keep core engaged',
-      'Maintain steady rhythm',
-    ],
-  },
-  'mountain climbers': {
-    filename: 'mountain-climbers.png',
-    video_url_optional: null,
-    default_cues: [
-      'Keep hips down',
-      'Drive knees toward chest',
-      'Maintain plank position',
-    ],
-  },
-  'burpees': {
-    filename: 'burpees.png',
-    video_url_optional: null,
-    default_cues: [
-      'Squat, jump back, push-up',
-      'Jump feet to hands',
-      'Explode up with arms overhead',
-    ],
-  },
-  'high knees': {
-    filename: 'high-knees.png',
-    video_url_optional: null,
-    default_cues: [
-      'Drive knees to hip height',
-      'Pump arms',
-      'Stay light on your feet',
-    ],
-  },
-};
+let resolvedMediaMap: Record<string, ExerciseMediaInfo> | null = null;
 
 /**
  * Build the full media map with resolved URLs
  */
-let resolvedMediaMap: Record<string, ExerciseMediaInfo> | null = null;
-
 export function getExerciseMediaMap(): Record<string, ExerciseMediaInfo> {
   if (resolvedMediaMap) {
     return resolvedMediaMap;
@@ -304,7 +56,7 @@ export function getExerciseMediaMap(): Record<string, ExerciseMediaInfo> {
 
   resolvedMediaMap = {};
   
-  for (const [key, value] of Object.entries(exerciseMediaMapData)) {
+  for (const [key, value] of Object.entries(allExerciseMediaData)) {
     resolvedMediaMap[key] = {
       image_url: getExerciseMediaUrl(value.filename),
       video_url_optional: value.video_url_optional,
@@ -318,6 +70,11 @@ export function getExerciseMediaMap(): Record<string, ExerciseMediaInfo> {
 /**
  * Look up exercise media by name
  * Returns null if not found
+ * 
+ * Uses multiple matching strategies:
+ * 1. Direct match after normalization
+ * 2. Partial match (exercise name contains key or key contains exercise name)
+ * 3. Word-based matching for compound names
  */
 export function lookupExerciseMedia(exerciseName: string): ExerciseMediaInfo | null {
   const normalized = normalizeExerciseName(exerciseName);
@@ -328,15 +85,43 @@ export function lookupExerciseMedia(exerciseName: string): ExerciseMediaInfo | n
     return mediaMap[normalized];
   }
 
+  // Try without hyphens as well
+  const withoutHyphens = normalized.replace(/-/g, ' ');
+  if (mediaMap[withoutHyphens]) {
+    return mediaMap[withoutHyphens];
+  }
+
   // Try partial matching for variations
+  let bestMatch: ExerciseMediaInfo | null = null;
+  let bestMatchLength = 0;
+
   for (const [key, value] of Object.entries(mediaMap)) {
+    const normalizedKey = normalizeExerciseName(key);
+    
     // Check if the exercise name contains the key or vice versa
-    if (normalized.includes(key) || key.includes(normalized)) {
-      return value;
+    if (normalized.includes(normalizedKey) || normalizedKey.includes(normalized)) {
+      // Prefer longer matches (more specific)
+      if (normalizedKey.length > bestMatchLength) {
+        bestMatch = value;
+        bestMatchLength = normalizedKey.length;
+      }
+    }
+
+    // Word-based matching - check if key words appear in name
+    const keyWords = normalizedKey.split(' ').filter(w => w.length > 2);
+    const nameWords = normalized.split(' ');
+    const matchingWords = keyWords.filter(kw => nameWords.some(nw => nw.includes(kw) || kw.includes(nw)));
+    
+    if (matchingWords.length >= Math.ceil(keyWords.length * 0.7) && matchingWords.length > 0) {
+      const matchScore = matchingWords.join('').length;
+      if (matchScore > bestMatchLength) {
+        bestMatch = value;
+        bestMatchLength = matchScore;
+      }
     }
   }
 
-  return null;
+  return bestMatch;
 }
 
 /**
@@ -346,4 +131,18 @@ export function lookupExerciseMedia(exerciseName: string): ExerciseMediaInfo | n
 export function getDefaultCues(exerciseName: string): string[] {
   const media = lookupExerciseMedia(exerciseName);
   return media?.default_cues || [];
+}
+
+/**
+ * Check if an exercise has media available
+ */
+export function hasExerciseMedia(exerciseName: string): boolean {
+  return lookupExerciseMedia(exerciseName) !== null;
+}
+
+/**
+ * Get total count of exercises with media
+ */
+export function getExerciseMediaCount(): number {
+  return Object.keys(getExerciseMediaMap()).length;
 }
