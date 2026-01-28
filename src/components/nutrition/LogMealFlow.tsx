@@ -11,35 +11,29 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Camera, PenLine, X, Loader2, Plus, Trash2, 
   Clock, UtensilsCrossed, CheckCircle2, Copy, Edit2,
-  Coffee, Moon, Apple, ImageIcon
+  Coffee, Moon, Apple, ImageIcon, AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { trackEvent } from '@/lib/analytics';
-import { useUserProfile } from '@/hooks/useUserProfile';
-
-interface FoodItem {
-  id: string;
-  name: string;
-  portion: string;
-  calories: number;
-  protein_g: number;
-  carbs_g: number;
-  fat_g: number;
-  confidence?: number;
-}
+import { useMealLog, calculateTotals, createFoodLogItem, detectedItemToFoodLogItem } from '@/hooks/useMealLog';
+import type { 
+  FoodLogItem, 
+  MealType, 
+  EntryMethod,
+  FoodUnit,
+} from '@/types/mealLog';
+import { getDefaultUnits, formatQuantityWithUnit, getUnitLabel } from '@/lib/foodUnits';
 
 interface RecentMealLog {
   id: string;
   logged_at: string;
   meal_type: string;
-  items_json: FoodItem[];
+  items_json: any[];
   total_calories: number;
 }
 
 type FlowStep = 'select-method' | 'photo-capture' | 'photo-review' | 'manual-entry' | 'meal-context' | 'copy-recent';
-type MealType = 'Breakfast' | 'Lunch' | 'Dinner' | 'Snack';
 
 const mealTypeIcons: Record<MealType, typeof Coffee> = {
   Breakfast: Coffee,
@@ -59,16 +53,24 @@ function generateId() {
 }
 
 export function LogMealFlow({ open, onOpenChange, onMealLogged }: LogMealFlowProps) {
-  const { profile } = useUserProfile();
+  const { 
+    measurementSystem, 
+    defaultUnits, 
+    primaryWeightUnit,
+    saving,
+    createMealLog,
+    detectFoodsFromPhoto,
+  } = useMealLog();
+
   const [step, setStep] = useState<FlowStep>('select-method');
-  const [entryMethod, setEntryMethod] = useState<'photo' | 'manual' | 'copy'>('manual');
+  const [entryMethod, setEntryMethod] = useState<EntryMethod>('manual');
   
   // Photo flow state
   const [image, setImage] = useState<string | null>(null);
   const [detecting, setDetecting] = useState(false);
   
   // Items state
-  const [items, setItems] = useState<FoodItem[]>([]);
+  const [items, setItems] = useState<FoodLogItem[]>([]);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   
   // Meal context
@@ -78,7 +80,6 @@ export function LogMealFlow({ open, onOpenChange, onMealLogged }: LogMealFlowPro
     return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
   });
   const [notes, setNotes] = useState('');
-  const [saving, setSaving] = useState(false);
   
   // Recent meals for copy feature
   const [recentMeals, setRecentMeals] = useState<RecentMealLog[]>([]);
@@ -86,12 +87,17 @@ export function LogMealFlow({ open, onOpenChange, onMealLogged }: LogMealFlowPro
   
   // New item form
   const [newItemName, setNewItemName] = useState('');
-  const [newItemPortion, setNewItemPortion] = useState('');
+  const [newItemQuantity, setNewItemQuantity] = useState('');
+  const [newItemUnit, setNewItemUnit] = useState<FoodUnit>(primaryWeightUnit);
   const [newItemCalories, setNewItemCalories] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const unitSystem = profile?.unit_preference === 'imperial' ? 'imperial' : 'metric';
+
+  // Calculate totals
+  const totals = calculateTotals(items);
+
+  // Check if any item has AI confidence (is estimated)
+  const hasEstimatedItems = items.some(item => item.confidence !== undefined && item.confidence < 1);
 
   const resetFlow = () => {
     setStep('select-method');
@@ -105,7 +111,8 @@ export function LogMealFlow({ open, onOpenChange, onMealLogged }: LogMealFlowPro
     });
     setNotes('');
     setNewItemName('');
-    setNewItemPortion('');
+    setNewItemQuantity('');
+    setNewItemUnit(primaryWeightUnit);
     setNewItemCalories('');
     setRecentMeals([]);
   };
@@ -133,7 +140,7 @@ export function LogMealFlow({ open, onOpenChange, onMealLogged }: LogMealFlowPro
       
       setRecentMeals((data || []).map(d => ({
         ...d,
-        items_json: (d.items_json as unknown) as FoodItem[],
+        items_json: (d.items_json as unknown) as any[],
       })));
     } catch (err) {
       console.error('Failed to load recent meals:', err);
@@ -151,42 +158,18 @@ export function LogMealFlow({ open, onOpenChange, onMealLogged }: LogMealFlowPro
     const reader = new FileReader();
     reader.onload = () => {
       setImage(reader.result as string);
-      detectFoodsFromPhoto(reader.result as string);
+      handlePhotoDetection(reader.result as string);
     };
     reader.readAsDataURL(file);
   };
 
-  const detectFoodsFromPhoto = async (imageData: string) => {
+  const handlePhotoDetection = async (imageData: string) => {
     setDetecting(true);
     setStep('photo-review');
     
     try {
-      const { data, error } = await supabase.functions.invoke('detect-meal-from-photo', {
-        body: { image: imageData },
-      });
-
-      if (error) throw error;
-
-      if (data?.error && (!data?.items || data.items.length === 0)) {
-        toast.error(data.error);
-        return;
-      }
-
-      const detectedItems: FoodItem[] = (data.items || []).map((item: Omit<FoodItem, 'id'>) => ({
-        ...item,
-        id: generateId(),
-      }));
-
+      const detectedItems = await detectFoodsFromPhoto(imageData);
       setItems(detectedItems);
-      trackEvent('meal_photo_scanned', { item_count: detectedItems.length });
-
-      if (detectedItems.length === 0) {
-        toast.info('No foods detected. Add items manually.');
-      }
-    } catch (err) {
-      console.error('Detection error:', err);
-      toast.error('Failed to analyze photo. Try again or add manually.');
-      trackEvent('meal_scan_error', { reason: err instanceof Error ? err.message : 'unknown' });
     } finally {
       setDetecting(false);
     }
@@ -196,26 +179,45 @@ export function LogMealFlow({ open, onOpenChange, onMealLogged }: LogMealFlowPro
   const addNewItem = () => {
     if (!newItemName.trim()) return;
 
-    const newItem: FoodItem = {
-      id: generateId(),
+    const quantity = parseFloat(newItemQuantity) || undefined;
+    const calories = parseInt(newItemCalories) || undefined;
+
+    const newItem = createFoodLogItem({
       name: newItemName.trim(),
-      portion: newItemPortion.trim() || '1 serving',
-      calories: parseInt(newItemCalories) || 0,
-      protein_g: 0,
-      carbs_g: 0,
-      fat_g: 0,
-    };
+      quantity,
+      unit: quantity ? newItemUnit : undefined,
+      calories,
+      portionDisplay: quantity 
+        ? formatQuantityWithUnit(quantity, newItemUnit)
+        : '1 serving',
+      source: 'user_added',
+    });
 
     setItems(prev => [...prev, newItem]);
     setNewItemName('');
-    setNewItemPortion('');
+    setNewItemQuantity('');
     setNewItemCalories('');
   };
 
-  const updateItem = (id: string, updates: Partial<FoodItem>) => {
+  const updateItem = (id: string, updates: Partial<FoodLogItem>) => {
     setItems(prev => prev.map(item => 
       item.id === id ? { ...item, ...updates } : item
     ));
+  };
+
+  const updateItemMacro = (id: string, macro: 'protein' | 'carbs' | 'fat', value: number) => {
+    setItems(prev => prev.map(item => {
+      if (item.id !== id) return item;
+      return {
+        ...item,
+        macros: {
+          protein: item.macros?.protein || 0,
+          carbs: item.macros?.carbs || 0,
+          fat: item.macros?.fat || 0,
+          [macro]: value,
+        },
+      };
+    }));
   };
 
   const removeItem = (id: string) => {
@@ -223,26 +225,30 @@ export function LogMealFlow({ open, onOpenChange, onMealLogged }: LogMealFlowPro
   };
 
   const copyFromRecent = (meal: RecentMealLog) => {
-    const copiedItems = meal.items_json.map(item => ({
-      ...item,
+    // Convert old format items to new FoodLogItem format
+    const copiedItems: FoodLogItem[] = meal.items_json.map((item: any) => ({
       id: generateId(),
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      grams: item.grams,
+      calories: item.calories,
+      macros: item.macros || {
+        protein: item.protein_g || 0,
+        carbs: item.carbs_g || 0,
+        fat: item.fat_g || 0,
+      },
+      confidence: undefined, // Not estimated since it's copied
+      source: 'copied' as const,
+      portionDisplay: item.portionDisplay || item.portion || '1 serving',
     }));
+    
     setItems(copiedItems);
     setMealType(meal.meal_type as MealType);
+    setEntryMethod('copy');
     setStep('meal-context');
     toast.success('Copied from recent meal');
   };
-
-  // Calculate totals
-  const totals = items.reduce(
-    (acc, item) => ({
-      calories: acc.calories + (item.calories || 0),
-      protein: acc.protein + (item.protein_g || 0),
-      carbs: acc.carbs + (item.carbs_g || 0),
-      fat: acc.fat + (item.fat_g || 0),
-    }),
-    { calories: 0, protein: 0, carbs: 0, fat: 0 }
-  );
 
   // Save meal log
   const saveMealLog = async () => {
@@ -251,48 +257,32 @@ export function LogMealFlow({ open, onOpenChange, onMealLogged }: LogMealFlowPro
       return;
     }
 
-    setSaving(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+    // Parse time and create logged_at timestamp
+    const [hours, minutes] = mealTime.split(':').map(Number);
+    const loggedAt = new Date();
+    loggedAt.setHours(hours, minutes, 0, 0);
 
-      // Parse time and create logged_at timestamp
-      const [hours, minutes] = mealTime.split(':').map(Number);
-      const loggedAt = new Date();
-      loggedAt.setHours(hours, minutes, 0, 0);
+    const result = await createMealLog({
+      mealType,
+      source: entryMethod,
+      items: items.map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit,
+        calories: item.calories,
+        macros: item.macros,
+        portionDisplay: item.portionDisplay,
+        confidence: item.confidence,
+        source: item.source,
+      })),
+      timestamp: loggedAt.toISOString(),
+      photoUrl: image || undefined,
+      notes: notes || undefined,
+    });
 
-      const { error } = await supabase
-        .from('meal_logs')
-        .insert([{
-          user_id: user.id,
-          logged_at: loggedAt.toISOString(),
-          meal_type: mealType,
-          photo_url: image || null,
-          items_json: JSON.parse(JSON.stringify(items)),
-          total_calories: Math.round(totals.calories),
-          total_protein_g: Math.round(totals.protein * 10) / 10,
-          total_carbs_g: Math.round(totals.carbs * 10) / 10,
-          total_fat_g: Math.round(totals.fat * 10) / 10,
-          notes: notes || null,
-          entry_method: entryMethod,
-        }]);
-
-      if (error) throw error;
-
-      trackEvent('meal_logged', { 
-        method: entryMethod, 
-        item_count: items.length,
-        meal_type: mealType,
-      });
-
-      toast.success('Meal logged!');
+    if (result) {
       onMealLogged?.();
       handleClose();
-    } catch (err) {
-      console.error('Save meal log error:', err);
-      toast.error('Failed to save meal. Please try again.');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -411,6 +401,16 @@ export function LogMealFlow({ open, onOpenChange, onMealLogged }: LogMealFlowPro
 
             {!detecting && (
               <>
+                {/* Estimated warning */}
+                {hasEstimatedItems && (
+                  <Alert className="bg-warning/10 border-warning/30">
+                    <AlertCircle className="h-4 w-4 text-warning" />
+                    <AlertDescription className="text-warning-foreground">
+                      These values are <strong>AI estimates</strong>. Please review and adjust as needed.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 {/* Detected items */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -431,12 +431,19 @@ export function LogMealFlow({ open, onOpenChange, onMealLogged }: LogMealFlowPro
                         <Card key={item.id} className="p-3">
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm truncate">{item.name}</p>
-                              <p className="text-xs text-muted-foreground">{item.portion}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-sm truncate">{item.name}</p>
+                                {item.confidence !== undefined && item.confidence < 0.8 && (
+                                  <Badge variant="outline" className="text-xs bg-warning/10 text-warning border-warning/30">
+                                    Low confidence
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground">{item.portionDisplay}</p>
                             </div>
                             <div className="flex items-center gap-2">
                               <Badge variant="outline" className="shrink-0">
-                                {item.calories} kcal
+                                {item.calories || 0} kcal
                               </Badge>
                               <Button
                                 variant="ghost"
@@ -467,8 +474,8 @@ export function LogMealFlow({ open, onOpenChange, onMealLogged }: LogMealFlowPro
                               />
                               <div className="grid grid-cols-2 gap-2">
                                 <Input
-                                  value={item.portion}
-                                  onChange={(e) => updateItem(item.id, { portion: e.target.value })}
+                                  value={item.portionDisplay || ''}
+                                  onChange={(e) => updateItem(item.id, { portionDisplay: e.target.value })}
                                   placeholder="Portion"
                                 />
                                 <Input
@@ -477,6 +484,32 @@ export function LogMealFlow({ open, onOpenChange, onMealLogged }: LogMealFlowPro
                                   onChange={(e) => updateItem(item.id, { calories: parseInt(e.target.value) || 0 })}
                                   placeholder="Calories"
                                 />
+                              </div>
+                              <div className="grid grid-cols-3 gap-2">
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Protein (g)</Label>
+                                  <Input
+                                    type="number"
+                                    value={item.macros?.protein || ''}
+                                    onChange={(e) => updateItemMacro(item.id, 'protein', parseFloat(e.target.value) || 0)}
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Carbs (g)</Label>
+                                  <Input
+                                    type="number"
+                                    value={item.macros?.carbs || ''}
+                                    onChange={(e) => updateItemMacro(item.id, 'carbs', parseFloat(e.target.value) || 0)}
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Fat (g)</Label>
+                                  <Input
+                                    type="number"
+                                    value={item.macros?.fat || ''}
+                                    onChange={(e) => updateItemMacro(item.id, 'fat', parseFloat(e.target.value) || 0)}
+                                  />
+                                </div>
                               </div>
                             </div>
                           )}
@@ -513,13 +546,15 @@ export function LogMealFlow({ open, onOpenChange, onMealLogged }: LogMealFlowPro
                   <Card className="bg-primary/5 border-primary/20">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium">Total</span>
-                        <span className="text-lg font-bold">{Math.round(totals.calories)} kcal</span>
+                        <span className="font-medium">
+                          Total {hasEstimatedItems && <span className="text-xs text-muted-foreground">(Estimated)</span>}
+                        </span>
+                        <span className="text-lg font-bold">{totals.calories} kcal</span>
                       </div>
                       <div className="flex gap-4 text-sm text-muted-foreground mt-1">
-                        <span>P: {Math.round(totals.protein)}g</span>
-                        <span>C: {Math.round(totals.carbs)}g</span>
-                        <span>F: {Math.round(totals.fat)}g</span>
+                        <span>P: {Math.round(totals.macros.protein)}g</span>
+                        <span>C: {Math.round(totals.macros.carbs)}g</span>
+                        <span>F: {Math.round(totals.macros.fat)}g</span>
                       </div>
                     </CardContent>
                   </Card>
@@ -554,10 +589,10 @@ export function LogMealFlow({ open, onOpenChange, onMealLogged }: LogMealFlowPro
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">{item.portion}</p>
+                        <p className="text-xs text-muted-foreground">{item.portionDisplay}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        {item.calories > 0 && (
+                        {(item.calories || 0) > 0 && (
                           <Badge variant="outline" className="shrink-0">
                             {item.calories} kcal
                           </Badge>
@@ -584,19 +619,35 @@ export function LogMealFlow({ open, onOpenChange, onMealLogged }: LogMealFlowPro
                 onChange={(e) => setNewItemName(e.target.value)}
                 placeholder="Food name (required)"
               />
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <Input
-                  value={newItemPortion}
-                  onChange={(e) => setNewItemPortion(e.target.value)}
-                  placeholder={`Amount (e.g., 1 ${unitSystem === 'imperial' ? 'cup' : 'serving'})`}
+                  type="number"
+                  value={newItemQuantity}
+                  onChange={(e) => setNewItemQuantity(e.target.value)}
+                  placeholder="Qty"
                 />
+                <Select value={newItemUnit} onValueChange={(v) => setNewItemUnit(v as FoodUnit)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {defaultUnits.map(unit => (
+                      <SelectItem key={unit} value={unit}>
+                        {unit}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Input
                   type="number"
                   value={newItemCalories}
                   onChange={(e) => setNewItemCalories(e.target.value)}
-                  placeholder="Calories (optional)"
+                  placeholder="Calories"
                 />
               </div>
+              <p className="text-xs text-muted-foreground">
+                Calories and macros are optional. You can add them later.
+              </p>
               <Button
                 variant="secondary"
                 onClick={addNewItem}
@@ -614,7 +665,7 @@ export function LogMealFlow({ open, onOpenChange, onMealLogged }: LogMealFlowPro
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Total</span>
-                    <span className="text-lg font-bold">{Math.round(totals.calories)} kcal</span>
+                    <span className="text-lg font-bold">{totals.calories} kcal</span>
                   </div>
                 </CardContent>
               </Card>
@@ -751,7 +802,8 @@ export function LogMealFlow({ open, onOpenChange, onMealLogged }: LogMealFlowPro
                   <div className="flex-1">
                     <p className="font-medium">{mealType}</p>
                     <p className="text-sm text-muted-foreground">
-                      {items.length} items • {Math.round(totals.calories)} kcal
+                      {items.length} items • {totals.calories} kcal
+                      {hasEstimatedItems && ' (estimated)'}
                     </p>
                   </div>
                 </div>

@@ -21,6 +21,8 @@ export type AnalyticsEventName =
   | 'meal_logged'
   | 'meal_photo_scanned'
   | 'meal_scan_error'
+  | 'meal_log_deleted'
+  | 'meal_log_updated'
   // Notifications
   | 'notification_scheduled'
   | 'notification_delivered'
