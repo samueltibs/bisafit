@@ -1,10 +1,9 @@
 import { ReactNode, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { BottomNav } from './BottomNav';
 import { Header } from './Header';
 import { TrialBanner } from '@/components/subscription/TrialBanner';
 import { PageTransition } from '@/components/ui/page-transition';
-import { useScrollRestore } from '@/hooks/useScrollRestore';
-import { useIOSScrollUnlock } from '@/hooks/useIOSScrollUnlock';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -13,92 +12,90 @@ interface AppLayoutProps {
 }
 
 /**
- * AppLayout - Main authenticated app shell with iOS Safari scroll fix
+ * Dev-only diagnostic for scroll debugging
+ */
+function logScrollDiagnostics(context: string, scrollContainerRef: React.RefObject<HTMLElement>) {
+  if (!import.meta.env.DEV) return;
+  
+  const scrollEl = scrollContainerRef.current;
+  const htmlStyle = window.getComputedStyle(document.documentElement);
+  const bodyStyle = window.getComputedStyle(document.body);
+  
+  console.log(`[Scroll Debug: ${context}]`, {
+    html: {
+      overflow: htmlStyle.overflow,
+      height: htmlStyle.height,
+    },
+    body: {
+      overflow: bodyStyle.overflow,
+      position: bodyStyle.position,
+      height: bodyStyle.height,
+    },
+    mainContainer: scrollEl ? {
+      overflowY: window.getComputedStyle(scrollEl).overflowY,
+      height: window.getComputedStyle(scrollEl).height,
+      scrollHeight: scrollEl.scrollHeight,
+      clientHeight: scrollEl.clientHeight,
+    } : 'not mounted',
+  });
+}
+
+/**
+ * AppLayout - Main authenticated app shell
  * 
- * Layout structure:
- * - Shell root: height: 100vh, overflow: hidden (prevents body scroll)
- * - Main content area: flex: 1, overflow-y: auto (THE scroll container)
- * - Fixed header (sticky) and fixed bottom nav
+ * SCROLLING STRATEGY (Option A: App-shell scrolling):
+ * - html, body: height: 100%, overflow: hidden (set in CSS)
+ * - Shell root: height: 100vh, display: flex, flex-direction: column, overflow: hidden
+ * - Main content (<main>): flex: 1, overflow-y: auto (THE ONLY scroll container)
+ * - Pages render inside <main> and should NOT create nested scroll containers
+ * 
+ * This prevents iOS Safari rubber-banding issues and scroll conflicts.
  */
 export function AppLayout({ children, title = 'BisaFit', showNav = true }: AppLayoutProps) {
   const scrollContainerRef = useRef<HTMLElement>(null);
-  
-  // Restore scroll behavior on route changes
-  useScrollRestore();
-  
-  // iOS scroll unlock with 1500ms failsafe
-  const { forceUnlock } = useIOSScrollUnlock('AppLayout');
+  const location = useLocation();
 
-  // On mount, ensure html/body don't interfere with scroll
+  // Route change diagnostic
   useEffect(() => {
-    // Set html/body to fixed dimensions, no scroll
-    document.documentElement.style.height = '100%';
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.height = '100%';
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
-    document.body.style.top = '0';
-    document.body.style.left = '0';
-
-    // Dev diagnostic for iOS
-    if (import.meta.env.DEV) {
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      
-      if (isIOS) {
-        setTimeout(() => {
-          const scrollEl = scrollContainerRef.current;
-          console.log('[AppLayout iOS Debug]', {
-            html: {
-              overflow: getComputedStyle(document.documentElement).overflow,
-              height: getComputedStyle(document.documentElement).height,
-            },
-            body: {
-              overflow: getComputedStyle(document.body).overflow,
-              position: getComputedStyle(document.body).position,
-              height: getComputedStyle(document.body).height,
-            },
-            scrollContainer: scrollEl ? {
-              overflow: getComputedStyle(scrollEl).overflow,
-              overflowY: getComputedStyle(scrollEl).overflowY,
-              height: getComputedStyle(scrollEl).height,
-              touchAction: getComputedStyle(scrollEl).touchAction,
-            } : 'not mounted',
-          });
-        }, 500);
-      }
+    logScrollDiagnostics(`Route: ${location.pathname}`, scrollContainerRef);
+    
+    // Scroll to top on route change
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
     }
+    
+    // Clean up any lingering modal scroll locks
+    document.body.removeAttribute('data-scroll-locked');
+    document.body.style.pointerEvents = '';
+  }, [location.pathname]);
 
-    return () => {
-      // Cleanup: reset body styles (for modals/other pages)
-      document.body.style.position = '';
-      document.body.style.width = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-    };
+  // Initial mount: ensure clean scroll state
+  useEffect(() => {
+    // Log initial state
+    setTimeout(() => {
+      logScrollDiagnostics('Initial mount', scrollContainerRef);
+    }, 100);
   }, []);
 
   return (
     <>
       {/* 
-        iOS Safari scroll fix:
-        - Shell root: height 100vh, overflow hidden
-        - Scroll happens ONLY in <main> with overflow-y: auto
-        - Header is sticky (scrolls with content initially, then sticks)
-        - BottomNav is fixed at bottom
+        App shell container:
+        - Fixed height (100vh) prevents body scroll
+        - Flex column layout with header, main content, and bottom nav
+        - Only <main> scrolls
       */}
       <div 
-        className="h-screen bg-background flex flex-col"
+        className="flex flex-col bg-background"
         style={{ 
-          height: '100vh',
+          height: '100dvh', // Dynamic viewport height for mobile browsers, falls back to 100vh
           overflow: 'hidden',
         }}
       >
         <TrialBanner />
         <Header title={title} />
         
-        {/* Main scroll container - THE ONLY scrollable element */}
+        {/* Main scroll container - THE ONLY scrollable element in authenticated app */}
         <main 
           ref={scrollContainerRef}
           className="flex-1 pb-20"
@@ -107,8 +104,7 @@ export function AppLayout({ children, title = 'BisaFit', showNav = true }: AppLa
             overflowX: 'hidden',
             WebkitOverflowScrolling: 'touch',
             touchAction: 'pan-y',
-            // Ensure it fills available space
-            minHeight: 0, // Important for flex children to scroll properly
+            minHeight: 0, // Critical: allows flex child to shrink and enable scrolling
           }}
         >
           <PageTransition>

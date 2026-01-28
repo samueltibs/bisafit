@@ -179,29 +179,19 @@ export function IOSScrollDebugPanel() {
     // Find and fix the main scroll container
     const main = document.querySelector('main') as HTMLElement;
     if (main) {
-      main.style.height = 'calc(100vh - 120px)'; // Account for header + nav
+      main.style.flex = '1';
       main.style.overflowY = 'auto';
       main.style.setProperty('-webkit-overflow-scrolling', 'touch');
       main.style.touchAction = 'pan-y';
+      main.style.minHeight = '0'; // Critical for flex scroll
       console.log('[iOS Debug] Fixed main container styles');
     }
 
-    // Remove overflow hidden from ancestors
-    let el: HTMLElement | null = main;
-    while (el && el !== document.body) {
-      const style = window.getComputedStyle(el);
-      if (style.overflow === 'hidden' && el !== main) {
-        console.log('[iOS Debug] Removing overflow:hidden from:', el.tagName, el.className);
-        el.style.overflow = 'visible';
-      }
-      el = el.parentElement;
-    }
-
-    // Reset body styles
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
+    // Ensure html/body are locked (app-shell scrolling)
+    document.documentElement.style.height = '100%';
+    document.documentElement.style.overflow = 'hidden';
     document.body.style.height = '100%';
+    document.body.style.overflow = 'hidden';
     document.body.removeAttribute('data-scroll-locked');
     document.body.style.pointerEvents = '';
 

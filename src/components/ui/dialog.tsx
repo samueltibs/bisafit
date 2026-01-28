@@ -5,28 +5,27 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * Dialog Root wrapper that handles scroll restoration on close.
- * Radix Dialog locks body scroll by default - we restore it on close.
+ * Dialog Root wrapper that handles modal cleanup on close.
+ * For app-shell scrolling: html/body stay locked, we just clean up modal attributes.
  */
-function Dialog({ onOpenChange, ...props }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>) {
+const Dialog = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>
+>(({ onOpenChange, ...props }, _ref) => {
   const handleOpenChange = React.useCallback((open: boolean) => {
     if (!open) {
-      // Restore scroll after dialog closes - use requestAnimationFrame for timing
+      // Clean up modal-related attributes (don't touch html/body scroll - app-shell handles that)
       requestAnimationFrame(() => {
-        document.body.style.overflow = 'auto';
-        document.body.style.position = 'static';
-        document.body.style.pointerEvents = '';
-        document.body.style.touchAction = 'auto';
         document.body.removeAttribute('data-scroll-locked');
-        document.documentElement.style.overflow = 'auto';
-        document.documentElement.style.touchAction = 'auto';
+        document.body.style.pointerEvents = '';
       });
     }
     onOpenChange?.(open);
   }, [onOpenChange]);
 
+  // Note: DialogPrimitive.Root doesn't accept refs, we just forward props
   return <DialogPrimitive.Root onOpenChange={handleOpenChange} {...props} />;
-}
+});
 Dialog.displayName = "Dialog";
 
 const DialogTrigger = DialogPrimitive.Trigger;
