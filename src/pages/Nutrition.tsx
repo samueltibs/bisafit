@@ -10,7 +10,7 @@ import {
   Flame, Beef, Wheat, Droplets, Loader2, Sparkles, 
   ChevronDown, ShoppingCart, Lightbulb, RefreshCw, 
   Coffee, UtensilsCrossed, Moon, Apple, AlertTriangle, Target,
-  Camera, ShoppingBasket, Lock, Shuffle
+  Camera, ShoppingBasket, Lock, Shuffle, Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -22,6 +22,7 @@ import { IngredientModeModal } from '@/components/nutrition/IngredientModeModal'
 import { PlanTypeSwitcher } from '@/components/nutrition/PlanTypeSwitcher';
 import { PlanModeBadge } from '@/components/nutrition/PlanModeBadge';
 import { OptionalAdditionsList } from '@/components/nutrition/OptionalAdditionsList';
+import { MealDetailSheet } from '@/components/nutrition/MealDetailSheet';
 import { useIngredientSession, type IngredientMode } from '@/hooks/useIngredientSession';
 import { usePremiumFeature } from '@/hooks/usePremiumFeature';
 import { PremiumFeatureModal } from '@/components/subscription';
@@ -49,7 +50,8 @@ function MealCard({
   mealIndex, 
   isSnack, 
   onSwap, 
-  swapping 
+  swapping,
+  onOpenDetail,
 }: { 
   meal: Meal; 
   dayIndex: number; 
@@ -57,79 +59,49 @@ function MealCard({
   isSnack: boolean;
   onSwap: (dayIndex: number, mealIndex: number, isSnack: boolean) => void;
   swapping: boolean;
+  onOpenDetail: (meal: Meal, dayIndex: number, mealIndex: number, isSnack: boolean) => void;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
   const Icon = mealIcons[meal.name] || UtensilsCrossed;
+  const totalTime = (meal.prep_time_minutes || 0) + (meal.cook_time_minutes || 0);
   
-  // Type assertion for cuisine_style since it's a new field
-  const cuisineStyle = (meal as Meal & { cuisine_style?: string }).cuisine_style;
-
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <Card className="border-border">
-        <CardContent className="p-4">
-          <CollapsibleTrigger asChild>
-            <div className="flex items-center gap-4 cursor-pointer">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent shrink-0">
-                <Icon className="h-5 w-5 text-accent-foreground" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-medium truncate">{meal.recipe_title}</p>
-                  {cuisineStyle && (
-                    <Badge variant="outline" className="text-xs shrink-0">
-                      {cuisineStyle}
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <span>{meal.calories_est} kcal</span>
+    <Card 
+      className="border-border cursor-pointer hover:bg-muted/30 transition-colors"
+      onClick={() => onOpenDetail(meal, dayIndex, mealIndex, isSnack)}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-center gap-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent shrink-0">
+            <Icon className="h-5 w-5 text-accent-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-medium truncate">{meal.recipe_title}</p>
+              {meal.cuisine_style && (
+                <Badge variant="outline" className="text-xs shrink-0">
+                  {meal.cuisine_style}
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <span>{meal.calories_est} kcal</span>
+              <span>•</span>
+              <span>{meal.protein_g_est}g protein</span>
+              {totalTime > 0 && (
+                <>
                   <span>•</span>
-                  <span>{meal.protein_g_est}g protein</span>
-                </div>
-              </div>
-              <ChevronDown className={cn(
-                "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
-                isOpen && "rotate-180"
-              )} />
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {totalTime}m
+                  </span>
+                </>
+              )}
             </div>
-          </CollapsibleTrigger>
-          
-          <CollapsibleContent>
-            <div className="mt-4 space-y-4 border-t pt-4">
-              <div>
-                <p className="text-sm font-medium mb-2">Ingredients</p>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  {meal.ingredients.map((ing, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-primary">•</span>
-                      <span>{ing}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <p className="text-sm font-medium mb-2">Instructions</p>
-                <p className="text-sm text-muted-foreground">{meal.instructions}</p>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="gap-2"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSwap(dayIndex, mealIndex, isSnack);
-                }}
-                disabled={swapping}
-              >
-                {swapping ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                Swap Meal
-              </Button>
-            </div>
-          </CollapsibleContent>
-        </CardContent>
-      </Card>
-    </Collapsible>
+          </div>
+          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground -rotate-90" />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -137,12 +109,14 @@ function DayMeals({
   day, 
   dayIndex, 
   onSwap, 
-  swapping 
+  swapping,
+  onOpenDetail,
 }: { 
   day: DayPlan; 
   dayIndex: number;
   onSwap: (dayIndex: number, mealIndex: number, isSnack: boolean) => void;
   swapping: boolean;
+  onOpenDetail: (meal: Meal, dayIndex: number, mealIndex: number, isSnack: boolean) => void;
 }) {
   return (
     <div className="space-y-3">
@@ -157,6 +131,7 @@ function DayMeals({
           isSnack={false}
           onSwap={onSwap}
           swapping={swapping}
+          onOpenDetail={onOpenDetail}
         />
       ))}
       
@@ -169,6 +144,7 @@ function DayMeals({
           isSnack={true}
           onSwap={onSwap}
           swapping={swapping}
+          onOpenDetail={onOpenDetail}
         />
       ))}
     </div>
@@ -230,6 +206,24 @@ export default function Nutrition() {
   const [weekCuisineTheme, setWeekCuisineTheme] = useState<string | null>(null);
   const [modeModalOpen, setModeModalOpen] = useState(false);
   const [pendingGeneration, setPendingGeneration] = useState(false);
+  
+  // Meal detail sheet state
+  const [detailMeal, setDetailMeal] = useState<Meal | null>(null);
+  const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+  const [detailContext, setDetailContext] = useState<{ dayIndex: number; mealIndex: number; isSnack: boolean } | null>(null);
+  
+  const handleOpenMealDetail = useCallback((meal: Meal, dayIndex: number, mealIndex: number, isSnack: boolean) => {
+    setDetailMeal(meal);
+    setDetailContext({ dayIndex, mealIndex, isSnack });
+    setDetailSheetOpen(true);
+  }, []);
+  
+  const handleSwapFromSheet = useCallback(() => {
+    if (detailContext) {
+      swapMeal(detailContext.dayIndex, detailContext.mealIndex, detailContext.isSnack);
+      setDetailSheetOpen(false);
+    }
+  }, [detailContext, swapMeal]);
   
   const { 
     hasActiveSession, 
@@ -840,6 +834,7 @@ export default function Nutrition() {
                       dayIndex={selectedDay}
                       onSwap={swapMeal}
                       swapping={swappingMeal}
+                      onOpenDetail={handleOpenMealDetail}
                     />
                   )}
                 </TabsContent>
@@ -878,6 +873,14 @@ export default function Nutrition() {
             )}
           </div>
         )}
+
+        <MealDetailSheet
+          meal={detailMeal}
+          open={detailSheetOpen}
+          onOpenChange={setDetailSheetOpen}
+          onSwap={handleSwapFromSheet}
+          swapping={swappingMeal}
+        />
 
         <PremiumFeatureModal
           open={showPremiumModal}

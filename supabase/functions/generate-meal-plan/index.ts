@@ -11,9 +11,15 @@ interface Meal {
   recipe_title: string;
   ingredients: string[];
   instructions: string;
+  detailed_instructions?: string[];
   protein_g_est: number;
   calories_est: number;
   cuisine_style?: string;
+  prep_time_minutes?: number;
+  cook_time_minutes?: number;
+  servings?: number;
+  recipe_source_url?: string;
+  meal_prep_notes?: string;
 }
 
 interface DayPlan {
@@ -134,22 +140,34 @@ serve(async (req) => {
 - List any additions separately in recipe notes`
       : ""; // No ingredient constraints - cuisine theme applies freely
 
-    const systemPrompt = `You are a nutrition expert creating meal plans. Generate practical, delicious meals that meet nutritional targets.
+    const systemPrompt = `You are a nutrition expert creating detailed meal plans. Generate practical, delicious meals that meet nutritional targets.
 
 CRITICAL RULES:
 1. STRICTLY respect dietary restrictions (allergies, vegetarian, vegan, halal, etc.) - NEVER violate these
 2. Match the calorie and protein targets
-3. Keep recipes simple and practical
+3. Create recipes with BOTH quick summary AND detailed step-by-step instructions
 4. Consider budget level for ingredient choices
 5. Return ONLY valid JSON, no markdown
 6. Cuisine preferences are FLEXIBLE - never fail due to cuisine mismatch
 
 ${cuisineInstructions}
 
-MEAL STRUCTURE:
-- Each meal needs: name, recipe_title, ingredients (array), instructions (brief), protein_g_est, calories_est, cuisine_style (optional)
-- Distribute calories across meals appropriately
-- Include variety across the week`;
+MEAL STRUCTURE - Each meal MUST include:
+- name: meal type (Breakfast, Lunch, Dinner, Snack)
+- recipe_title: descriptive recipe name
+- ingredients: array of ingredients with amounts (e.g., "2 chicken breasts, 400g")
+- instructions: brief 2-4 sentence summary for quick reference
+- detailed_instructions: array of 8-15 detailed steps including:
+  * Prep steps (mise en place, cutting, marinating)
+  * Cooking steps with specific temperatures and times
+  * Finishing steps (resting, plating, garnishing)
+- protein_g_est: estimated protein in grams
+- calories_est: estimated calories
+- prep_time_minutes: time for preparation
+- cook_time_minutes: time for cooking
+- servings: number of portions
+- cuisine_style: cuisine type or null
+- meal_prep_notes: storage time, reheating tips, make-ahead instructions (optional, include for suitable meals)`;
 
     const userPrompt = `Generate a ${days}-day meal plan:
 
@@ -173,10 +191,55 @@ Return ONLY this JSON structure:
     {
       "day": "Monday",
       "meals": [
-        { "name": "Breakfast", "recipe_title": "...", "ingredients": ["..."], "instructions": "...", "protein_g_est": 35, "calories_est": 550, "cuisine_style": "Indian-inspired" }
+        { 
+          "name": "Breakfast", 
+          "recipe_title": "High-Protein Greek Yogurt Bowl", 
+          "ingredients": ["200g Greek yogurt", "30g honey", "50g mixed berries", "25g granola"],
+          "instructions": "Layer Greek yogurt in a bowl, drizzle with honey, top with berries and granola. Serve immediately.",
+          "detailed_instructions": [
+            "Gather all ingredients and ensure yogurt is well-chilled",
+            "Spoon 200g of Greek yogurt into a serving bowl, spreading evenly",
+            "Drizzle 30g of honey in a zigzag pattern over the yogurt",
+            "Wash and pat dry 50g of mixed berries",
+            "Arrange berries on top of the yogurt in an even layer",
+            "Sprinkle 25g of granola over the berries for crunch",
+            "Optional: add a pinch of cinnamon for extra flavor",
+            "Serve immediately for best texture"
+          ],
+          "protein_g_est": 25, 
+          "calories_est": 380,
+          "prep_time_minutes": 5,
+          "cook_time_minutes": 0,
+          "servings": 1,
+          "cuisine_style": null,
+          "meal_prep_notes": "Prep yogurt and berries the night before, add granola just before eating to keep it crunchy"
+        }
       ],
       "snacks": [
-        { "name": "Snack 1", "recipe_title": "...", "ingredients": ["..."], "instructions": "...", "protein_g_est": 10, "calories_est": 150, "cuisine_style": null }
+        { 
+          "name": "Snack 1", 
+          "recipe_title": "Protein Energy Balls", 
+          "ingredients": ["100g oats", "60g peanut butter", "30g honey", "25g protein powder"],
+          "instructions": "Mix all ingredients, roll into balls, refrigerate for 30 minutes.",
+          "detailed_instructions": [
+            "Add oats to a large mixing bowl",
+            "Add peanut butter and mix until oats are coated",
+            "Drizzle in honey and continue mixing",
+            "Add protein powder and combine until a sticky dough forms",
+            "If too dry, add 1 tsp water; if too wet, add more oats",
+            "Using slightly wet hands, roll mixture into 8-10 balls",
+            "Place on parchment-lined tray",
+            "Refrigerate for at least 30 minutes until firm",
+            "Store in airtight container in fridge for up to 1 week"
+          ],
+          "protein_g_est": 8, 
+          "calories_est": 120,
+          "prep_time_minutes": 10,
+          "cook_time_minutes": 0,
+          "servings": 10,
+          "cuisine_style": null,
+          "meal_prep_notes": "Make a batch on Sunday for the whole week. Keep refrigerated up to 7 days or freeze for 1 month."
+        }
       ]
     }
   ],
