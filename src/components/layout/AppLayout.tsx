@@ -4,6 +4,7 @@ import { Header } from './Header';
 import { TrialBanner } from '@/components/subscription/TrialBanner';
 import { PageTransition } from '@/components/ui/page-transition';
 import { useScrollRestore } from '@/hooks/useScrollRestore';
+import { useIOSScrollUnlock } from '@/hooks/useIOSScrollUnlock';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -14,6 +15,9 @@ interface AppLayoutProps {
 export function AppLayout({ children, title = 'BisaFit', showNav = true }: AppLayoutProps) {
   // Restore scroll behavior on route changes
   useScrollRestore();
+  
+  // iOS scroll unlock with 1500ms failsafe
+  useIOSScrollUnlock('AppLayout');
 
   return (
     <>

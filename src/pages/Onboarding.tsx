@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { trackEvent } from '@/lib/analytics';
 import { SUPPORT_MESSAGE_SHORT, EMAIL_SUPPORT } from '@/lib/branding';
 import { type CoachTone, normalizeCoachTone } from '@/lib/coachTone';
-import { restoreBodyScroll } from '@/hooks/useScrollRestore';
+import { useIOSScrollUnlock } from '@/hooks/useIOSScrollUnlock';
 
 import { OnboardingProgress, StepAboutYou } from '@/components/onboarding';
 import { StepGoals } from '@/components/onboarding/StepGoals';
@@ -106,10 +106,14 @@ export default function Onboarding() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
 
-  // Restore body scroll on mount (in case navigating from a modal-locked state)
+  // iOS scroll unlock: force-reset scroll-lock styles on mount and step change
+  // Includes 1500ms failsafe for iOS devices
+  const { forceUnlock } = useIOSScrollUnlock(`Onboarding-Step${currentStep}`);
+
+  // Re-run unlock on step change (especially for Goals step)
   useEffect(() => {
-    restoreBodyScroll();
-  }, []);
+    forceUnlock();
+  }, [currentStep, forceUnlock]);
 
   // Pre-fill form with existing profile data
   useEffect(() => {
@@ -305,7 +309,13 @@ export default function Onboarding() {
   return (
     <div 
       className="min-h-screen flex flex-col bg-background p-4"
-      style={{ WebkitOverflowScrolling: 'touch' }}
+      style={{ 
+        WebkitOverflowScrolling: 'touch',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        touchAction: 'auto',
+        position: 'relative',
+      }}
     >
       {/* Header */}
       <div className="mb-4 flex items-center gap-2">
@@ -329,9 +339,16 @@ export default function Onboarding() {
       {/* Progress */}
       <OnboardingProgress currentStep={currentStep} />
 
-      {/* Content */}
-      <Card className="flex-1 overflow-hidden border-border">
-        <CardContent className="p-4 h-full overflow-y-auto">
+      {/* Content - Single scroll container with iOS-compatible styles */}
+      <Card className="flex-1 border-border" style={{ overflow: 'visible' }}>
+        <CardContent 
+          className="p-4" 
+          style={{ 
+            minHeight: 'auto',
+            overflow: 'visible',
+            touchAction: 'auto',
+          }}
+        >
           {currentStep === 1 && (
             <StepAboutYou
               fullName={formData.fullName}
