@@ -129,22 +129,22 @@ export function ProgressPhotosGrid({
                     : "border-border w-24 h-36 opacity-60"
                 )}
               >
-                {photo.photo_base64 ? (
+                {photo.photo_url ? (
                   <>
                     <img
-                      src={photo.photo_base64}
-                      alt={`Progress ${format(new Date(photo.taken_at), 'MMM d, yyyy')}`}
+                      src={photo.photo_url}
+                      alt={`Progress ${format(new Date(photo.entry_date), 'MMM d, yyyy')}`}
                       className="w-full h-full object-cover"
                     />
                     {isSelected && (
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="absolute bottom-0 left-0 right-0 p-2 space-y-1">
                           <p className="text-xs font-medium text-white">
-                            {format(new Date(photo.taken_at), 'MMM d, yyyy')}
+                            {format(new Date(photo.entry_date), 'MMM d, yyyy')}
                           </p>
-                          {photo.notes && (
+                          {photo.pose && (
                             <p className="text-xs text-white/80 line-clamp-2">
-                              {photo.notes}
+                              {photo.pose}
                             </p>
                           )}
                           <Button
@@ -170,7 +170,7 @@ export function ProgressPhotosGrid({
                 {!isSelected && (
                   <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-1">
                     <p className="text-xs font-medium text-white text-center">
-                      {format(new Date(photo.taken_at), 'MMM d')}
+                      {format(new Date(photo.entry_date), 'MMM d')}
                     </p>
                   </div>
                 )}
