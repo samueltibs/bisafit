@@ -78,9 +78,10 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
   const selectedPlanDetails = SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan);
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-background via-background to-muted/20 px-4 py-8">
-      {/* Promo Banner */}
-      <div className="mb-6 animate-fade-in">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 px-4 py-8 overflow-y-auto">
+      <div className="max-w-md mx-auto pb-safe">
+        {/* Promo Banner */}
+        <div className="mb-6 animate-fade-in">
         <Card className="border-2 border-primary bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -245,6 +246,7 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
       <p className="mt-6 text-center text-xs text-muted-foreground/70">
         By starting your trial, you agree to our Terms of Service and Privacy Policy.
       </p>
+      </div>
     </div>
   );
 }
