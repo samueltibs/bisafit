@@ -118,22 +118,27 @@ export default function Home() {
         {/* Week Recap Banner - shows on weekends */}
         <WeekRecapBanner />
 
-        {/* Daily Progress Card */}
-        <Card className="gradient-primary text-primary-foreground animate-slide-up">
-          <CardContent className="p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Today's Progress</p>
-                <p className="text-2xl font-bold">72%</p>
+        {/* Daily Progress Card - Navigate to full Progress page on click */}
+        <Link to="/progress" className="block">
+          <Card className="gradient-primary text-primary-foreground animate-slide-up cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]">
+            <CardContent className="p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm opacity-90">Progress</p>
+                  <p className="text-2xl font-bold">72%</p>
+                </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-foreground/20">
+                  <Trophy className="h-6 w-6" />
+                </div>
               </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-foreground/20">
-                <Trophy className="h-6 w-6" />
+              <Progress value={72} className="h-2 bg-primary-foreground/20" />
+              <div className="mt-2 flex items-center justify-between">
+                <p className="text-sm opacity-90">Keep going! You're doing great today.</p>
+                <ChevronRight className="h-5 w-5 opacity-70" />
               </div>
-            </div>
-            <Progress value={72} className="h-2 bg-primary-foreground/20" />
-            <p className="mt-2 text-sm opacity-90">Keep going! You're doing great today.</p>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </Link>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-3 gap-3 animate-slide-up">
