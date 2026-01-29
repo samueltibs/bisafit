@@ -430,7 +430,7 @@ export default function Plan() {
           </Alert>
         )}
 
-        {/* Plan Header */}
+        {/* Plan Header - Coach Notes */}
         {displayCoachNotes && (
           <Card className="border-primary/20 bg-primary/5 animate-fade-in">
             <CardContent className="p-4">
@@ -438,9 +438,9 @@ export default function Plan() {
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
                   <Sparkles className="h-4 w-4 text-primary" />
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-primary">Coach Notes</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{displayCoachNotes}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-primary mb-1">Coach Notes</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{displayCoachNotes}</p>
                 </div>
               </div>
             </CardContent>
