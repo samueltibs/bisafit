@@ -326,7 +326,13 @@ test_plan:
     - "User settings and profile management"
     - "Mobile navigation optimization"
     - "Home page progress navigation"
-  stuck_tasks: []
+  stuck_tasks:
+    - "Authentication flow (Supabase)"
+    - "Onboarding process"
+    - "Subscription/Trial system"
+    - "Workout plan generation and tracking"
+    - "User settings and profile management"
+    - "Progress tracking - Date display issue"
   test_all: true
   test_priority: "high_first"
 
