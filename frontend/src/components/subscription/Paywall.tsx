@@ -79,6 +79,23 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-background via-background to-muted/20 px-4 py-8">
+      {/* Promo Banner */}
+      <div className="mb-6 animate-fade-in">
+        <Card className="border-2 border-primary bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary flex-shrink-0">
+                <Sparkles className="h-5 w-5 text-primary-foreground animate-pulse" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-foreground">🎁 LIMITED TIME OFFER</p>
+                <p className="text-xs text-muted-foreground">Pay annually & get 3 months FREE!</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Header */}
       <div className="mb-8 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 shadow-lg">
