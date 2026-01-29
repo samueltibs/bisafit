@@ -245,15 +245,18 @@ frontend:
 
   - task: "User settings and profile management"
     implemented: true
-    working: "NA"
+    working: false
     file: "frontend/src/pages/Settings.tsx"
-    stuck_count: 0
+    stuck_count: 1
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Test profile updates, settings changes"
+      - working: false
+        agent: "testing"
+        comment: "❌ SECURITY ISSUE: Settings page is accessible without authentication. Users can potentially access and modify settings without being logged in, which is a security vulnerability."
 
   - task: "Apple Health integration"
     implemented: true
