@@ -14,6 +14,7 @@ import { AppLanguageProvider } from "@/components/AppLanguageProvider";
 
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import EmailVerification from "./pages/EmailVerification";
 import Onboarding from "./pages/Onboarding";
 import PlanPreview from "./pages/PlanPreview";
 import PaywallPage from "./pages/PaywallPage";
@@ -42,6 +43,14 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            
+            {/* Email Verification - requires auth but not email verification */}
+            <Route path="/verify-email" element={
+              <ProtectedRoute requireVerifiedEmail={false}>
+                <EmailVerification />
+              </ProtectedRoute>
+            } />
+            
             <Route path="/onboarding" element={
               <ProtectedRoute>
                 <Onboarding />
