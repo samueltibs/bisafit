@@ -31,6 +31,7 @@ import {
   TVModeOverlay,
   CoachingCues,
   LargeDemoPanel,
+  EnhancedExerciseDisplay,
 } from '@/components/workout';
 import { cn } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics';
@@ -49,6 +50,7 @@ export default function Workout() {
   const [showMusicPanel, setShowMusicPanel] = useState(false);
   const [tvMode, setTvMode] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [useEnhancedView, setUseEnhancedView] = useState(true); // New: Enhanced TV-style view
 
   // Premium feature gating
   const { showModal: showPremiumModal, setShowModal: setShowPremiumModal, checkPremiumAccess } = usePremiumFeature();
