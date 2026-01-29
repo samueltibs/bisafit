@@ -25,14 +25,33 @@ interface UseWorkoutImagesReturn {
 // In-memory cache for workout images
 const imageCache: Record<string, WorkoutImage> = {};
 
+// Initialize from window cache if available (set by WorkoutPreparation)
+if (typeof window !== 'undefined') {
+  const windowCache = (window as any).__workoutImageCache;
+  if (windowCache) {
+    Object.assign(imageCache, windowCache);
+  }
+}
+
 export function useWorkoutImages(userGender: string = 'male'): UseWorkoutImagesReturn {
-  const [cache, setCache] = useState<Record<string, WorkoutImage>>(imageCache);
+  const [cache, setCache] = useState<Record<string, WorkoutImage>>(() => {
+    // Check window cache on initialization
+    if (typeof window !== 'undefined') {
+      const windowCache = (window as any).__workoutImageCache;
+      if (windowCache) {
+        Object.assign(imageCache, windowCache);
+      }
+    }
+    return imageCache;
+  });
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Get image from cache
   const getImageForExercise = useCallback((exerciseName: string, muscleGroup?: string): string | null => {
     const cacheKey = `${exerciseName.toLowerCase()}_${userGender}`;
-    return imageCache[cacheKey]?.image_base64 || null;
+    // Check both memory cache and window cache
+    const cached = imageCache[cacheKey] || (typeof window !== 'undefined' && (window as any).__workoutImageCache?.[cacheKey]);
+    return cached?.image_base64 || null;
   }, [userGender]);
 
   // Generate new image
@@ -84,6 +103,13 @@ export function useWorkoutImages(userGender: string = 'male'): UseWorkoutImagesR
       
       // Store in cache
       imageCache[cacheKey] = data;
+      
+      // Also store in window cache for persistence
+      if (typeof window !== 'undefined') {
+        (window as any).__workoutImageCache = (window as any).__workoutImageCache || {};
+        (window as any).__workoutImageCache[cacheKey] = data;
+      }
+      
       setCache({ ...imageCache });
 
       toast.success(`Form guide ready for ${exerciseName}`);
