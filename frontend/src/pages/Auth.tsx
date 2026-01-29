@@ -66,12 +66,14 @@ export default function Auth() {
     
     if (error) {
       toast.error(error.message);
+      setIsLoading(false);
     } else {
       trackEvent('signup_completed');
-      toast.success(`Account created! Welcome to ${APP_NAME}!`);
+      toast.success('Account created! Check your email to verify your account.', {
+        duration: 5000,
+      });
+      // Don't set loading to false - let the redirect happen
     }
-    
-    setIsLoading(false);
   };
 
   return (
