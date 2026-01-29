@@ -302,16 +302,20 @@ frontend:
       - working: true
         agent: "main"
         comment: "IMPLEMENTED: Made progress card on home page clickable. Navigates to full /progress page. Renamed 'Today's Progress' to 'Progress'. Added hover effects and chevron icon."
+  - task: "Plan page - Cramped text issue"
     implemented: true
-    working: "NA"
-    file: "frontend/src/pages/Store.tsx"
+    working: true
+    file: "frontend/src/pages/Plan.tsx"
     stuck_count: 0
-    priority: "low"
-    needs_retesting: true
+    priority: "high"
+    needs_retesting: false
     status_history:
-      - working: "NA"
+      - working: false
         agent: "main"
-        comment: "Currently shows 'coming soon' page. Test interest signup flow."
+        comment: "BUG FOUND: User reported cramped text in Plan tab, specifically progression notes and coach notes being hard to read on mobile."
+      - working: true
+        agent: "main"
+        comment: "FIXED: Made progression notes collapsible (tap to expand/collapse). Improved Coach Notes layout with better spacing (flex-1 min-w-0 for text wrapping). Added leading-relaxed for better readability on mobile."
 
 metadata:
   created_by: "main_agent"
