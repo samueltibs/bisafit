@@ -146,15 +146,18 @@ backend:
 frontend:
   - task: "Authentication flow (Supabase)"
     implemented: true
-    working: "NA"
+    working: false
     file: "frontend/src/hooks/useAuth.tsx"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Test login, signup, logout flows"
+      - working: false
+        agent: "testing"
+        comment: "🚨 CRITICAL SECURITY ISSUE: Authentication system has major flaws. Multiple protected routes (/workout/today, /progress, /settings, /store, /onboarding, /paywall) are accessible without authentication. Auth page has intermittent loading issues with form elements not appearing consistently. Getting 429 rate limit errors from Supabase. Only /home, /plan, /nutrition are properly protected. This is a critical security vulnerability that must be fixed immediately."
 
   - task: "Onboarding process"
     implemented: true
