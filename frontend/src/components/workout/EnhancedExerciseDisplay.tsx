@@ -69,7 +69,8 @@ export function EnhancedExerciseDisplay({
 
   // Auto-generate image on mount if not in cache
   useEffect(() => {
-    if (!formImage && !imageRequested && !isGenerating) {
+    if (!formImage && !imageRequested && !isGenerating && exerciseName) {
+      console.log('Auto-generating workout image for:', exerciseName);
       setImageRequested(true);
       generateImage(exerciseName, muscleGroup);
     }
