@@ -420,8 +420,40 @@ export default function Workout() {
           <div className="flex-1 overflow-auto pb-40">
             <div className="container max-w-lg mx-auto px-4 py-6">
               
-              {/* Active workout state */}
-              {isActive && currentExercise && currentBlock && (
+              {/* Active workout state - Enhanced TV-Style View */}
+              {isActive && currentExercise && currentBlock && useEnhancedView && (
+                <div className="fixed inset-0 top-14 flex flex-col bg-background">
+                  <EnhancedExerciseDisplay
+                    exerciseName={currentExercise.name}
+                    currentSet={currentSet}
+                    totalSets={currentExercise.sets || 1}
+                    repsTarget={currentExercise.reps || 0}
+                    currentExerciseNum={currentExerciseNumber}
+                    totalExercises={totalExercises}
+                    timerSeconds={timerSeconds}
+                    timerType={timerType || 'work'}
+                    nextExerciseName={nextExerciseInfo?.name}
+                    nextExerciseSets={nextExerciseInfo?.sets}
+                    nextExerciseReps={nextExerciseInfo?.reps}
+                    isPaused={isPaused}
+                    muscleGroup={currentBlock.type}
+                    onPlayPause={togglePause}
+                    onSkipForward={() => {
+                      if (timerType === 'rest') {
+                        skipRest();
+                      } else {
+                        setShowSetLog(true);
+                      }
+                    }}
+                    onSkipBack={() => {
+                      // Could implement going back to previous exercise
+                    }}
+                  />
+                </div>
+              )}
+              
+              {/* Active workout state - Classic View */}
+              {isActive && currentExercise && currentBlock && !useEnhancedView && (
                 <div className="space-y-4 animate-fade-in">
                   {/* Compact progress indicator */}
                   <div className="flex items-center justify-between text-sm">
