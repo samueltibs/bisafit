@@ -191,15 +191,18 @@ frontend:
 
   - task: "Workout plan generation and tracking"
     implemented: true
-    working: "NA"
+    working: false
     file: "frontend/src/hooks/usePlan.ts"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Test workout plan creation and daily workout tracking"
+      - working: false
+        agent: "testing"
+        comment: "❌ SECURITY ISSUE: /workout/today route is accessible without authentication. This allows unauthorized access to workout content that should be protected behind authentication and subscription."
 
   - task: "Nutrition tracking"
     implemented: true
