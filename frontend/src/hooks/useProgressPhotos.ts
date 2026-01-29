@@ -13,11 +13,10 @@ import { toast } from 'sonner';
 export interface ProgressPhoto {
   id: string;
   user_id: string;
-  photo_url: string;
-  photo_base64?: string; // For immediate display before upload completes
-  taken_at: string; // ISO date string
-  notes?: string;
-  created_at: string;
+  photo_url: string; // Will store base64 here
+  entry_date: string; // Date string (YYYY-MM-DD)
+  pose?: string | null; // Using this for notes
+  created_at: string | null;
 }
 
 interface UseProgressPhotosReturn {
@@ -52,7 +51,7 @@ export function useProgressPhotos(): UseProgressPhotosReturn {
         .from('progress_photos')
         .select('*')
         .eq('user_id', user.id)
-        .order('taken_at', { ascending: false });
+        .order('entry_date', { ascending: false });
 
       if (fetchError) throw fetchError;
 
@@ -97,15 +96,14 @@ export function useProgressPhotos(): UseProgressPhotosReturn {
       // Convert image to base64 for storage
       const base64 = await fileToBase64(file);
       
-      // Save to database with base64
+      // Save to database with base64 in photo_url field
       const { data: photoData, error: dbError } = await supabase
         .from('progress_photos')
         .insert({
           user_id: user.id,
-          photo_base64: base64,
-          photo_url: '', // Keep for backwards compatibility
-          taken_at: new Date().toISOString(),
-          notes: notes || null,
+          photo_url: base64, // Store base64 directly in photo_url
+          entry_date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+          pose: notes || null, // Use pose field for notes
         })
         .select()
         .single();
