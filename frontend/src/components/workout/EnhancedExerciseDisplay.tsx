@@ -36,6 +36,7 @@ interface ExerciseDisplayProps {
   nextExerciseReps?: number;
   isPaused: boolean;
   muscleGroup?: string;
+  userGender?: string;
   onPlayPause: () => void;
   onSkipForward: () => void;
   onSkipBack: () => void;
@@ -56,12 +57,13 @@ export function EnhancedExerciseDisplay({
   nextExerciseReps,
   isPaused,
   muscleGroup = 'full body',
+  userGender = 'male',
   onPlayPause,
   onSkipForward,
   onSkipBack,
   onGenerateImage,
 }: ExerciseDisplayProps) {
-  const { getImageForExercise, generateImage, isGenerating } = useWorkoutImages();
+  const { getImageForExercise, generateImage, isGenerating } = useWorkoutImages(userGender);
   const [showImage, setShowImage] = useState(true);
   const [imageRequested, setImageRequested] = useState(false);
 
@@ -70,11 +72,11 @@ export function EnhancedExerciseDisplay({
   // Auto-generate image on mount if not in cache
   useEffect(() => {
     if (!formImage && !imageRequested && !isGenerating && exerciseName) {
-      console.log('Auto-generating workout image for:', exerciseName);
+      console.log('Auto-generating workout image for:', exerciseName, 'Gender:', userGender);
       setImageRequested(true);
-      generateImage(exerciseName, muscleGroup);
+      generateImage(exerciseName, muscleGroup, userGender);
     }
-  }, [formImage, exerciseName, muscleGroup, imageRequested, isGenerating, generateImage]);
+  }, [formImage, exerciseName, muscleGroup, userGender, imageRequested, isGenerating, generateImage]);
 
   // Format timer display
   const formatTime = (seconds: number) => {
@@ -167,7 +169,7 @@ export function EnhancedExerciseDisplay({
                       size="sm"
                       onClick={() => {
                         setImageRequested(true);
-                        generateImage(exerciseName, muscleGroup);
+                        generateImage(exerciseName, muscleGroup, userGender);
                       }}
                       disabled={isGenerating}
                       className="text-xs h-7"
