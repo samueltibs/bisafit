@@ -7,7 +7,7 @@
 
 export type SubscriptionStatus = 'preview' | 'trialing' | 'active' | 'expired' | 'lifetime';
 export type SubscriptionProvider = 'mock' | 'revenuecat' | 'stripe';
-export type SubscriptionPlan = 'monthly' | 'annual' | 'lifetime';
+export type SubscriptionPlan = 'monthly' | 'annual';
 
 export interface SubscriptionState {
   status: SubscriptionStatus;
@@ -25,13 +25,13 @@ export interface SubscriptionPlanOption {
   name: string;
   price: string;
   pricePerMonth: string;
-  interval: 'month' | 'year' | 'lifetime';
+  interval: 'month' | 'year';
   badge?: string;
   savings?: string;
   popular?: boolean;
 }
 
-// UPDATED PRICING - Current Promotional Offer
+// CURRENT PRICING - Promotional Offer
 export const SUBSCRIPTION_PLANS: SubscriptionPlanOption[] = [
   {
     id: 'monthly',
@@ -50,26 +50,16 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlanOption[] = [
     savings: 'Limited Time Offer',
     popular: true,
   },
-  {
-    id: 'lifetime',
-    name: 'Lifetime',
-    price: '$249.99',
-    pricePerMonth: 'One-time payment',
-    interval: 'lifetime',
-    badge: 'PREMIUM',
-    savings: 'Never pay again',
-  },
 ];
 
-// RevenueCat Product IDs (will be configured when RevenueCat is set up)
+// RevenueCat Product IDs (configure these in your RevenueCat dashboard)
 export const REVENUECAT_CONFIG = {
-  apiKey: '', // Will be set via environment variable
+  apiKey: '', // Set via environment variable: VITE_REVENUECAT_API_KEY
   products: {
-    monthly: 'bisafit_monthly_9.99', // Product ID in RevenueCat
-    annual: 'bisafit_annual_79.99',  // Product ID in RevenueCat
-    lifetime: 'bisafit_lifetime_199.99', // Product ID in RevenueCat
+    monthly: 'bisafit_monthly_14.99', // Product ID in RevenueCat
+    annual: 'bisafit_annual_134.99',  // Product ID in RevenueCat
   },
-  entitlementId: 'premium', // Entitlement identifier
+  entitlementId: 'premium', // Entitlement identifier in RevenueCat
 };
 
 // Stripe config placeholders (backup for web payments)
