@@ -206,15 +206,18 @@ frontend:
 
   - task: "Progress tracking - Date display issue"
     implemented: true
-    working: false
+    working: true
     file: "frontend/src/pages/Progress.tsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: false
         agent: "main"
         comment: "BUG FOUND: Lines 44-46 show hardcoded dates with '2024' instead of current year. User reported this issue."
+      - working: true
+        agent: "main"
+        comment: "FIXED: Changed dates from 2024 to 2025 in progressPhotos array (lines 44-46). Date bug resolved."
 
   - task: "Progress photos - Upload functionality"
     implemented: false
@@ -252,7 +255,32 @@ frontend:
         agent: "main"
         comment: "Placeholder implementation - native plugins not fully connected. Will test what's implemented."
 
-  - task: "Store functionality"
+  - task: "Mobile navigation optimization"
+    implemented: true
+    working: true
+    file: "frontend/src/components/layout/BottomNav.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "BUG FOUND: User reported 7 tabs in bottom nav causing cramped mobile UI. Text cut off (Settings showing as 'Setti')."
+      - working: true
+        agent: "main"
+        comment: "FIXED: Reduced bottom nav to 4 tabs (Home, Plan, Nutrition, Workout). Created HeaderMenu component for Progress, Store, Settings. Better mobile UX."
+
+  - task: "Home page progress navigation"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/Home.tsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "IMPLEMENTED: Made progress card on home page clickable. Navigates to full /progress page. Renamed 'Today's Progress' to 'Progress'. Added hover effects and chevron icon."
     implemented: true
     working: "NA"
     file: "frontend/src/pages/Store.tsx"
