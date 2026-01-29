@@ -106,22 +106,22 @@ export function EnhancedExerciseDisplay({
       {/* Main Content Area */}
       <div className="flex-1 px-4 pb-4 overflow-y-auto">
         {/* Timer - Large and Prominent */}
-        <div className="text-center mb-4">
-          <div className={cn("text-6xl font-bold tabular-nums", timerColor)}>
+        <div className="text-center mb-3">
+          <div className={cn("text-5xl font-bold tabular-nums", timerColor)}>
             {formatTime(timerSeconds)}
           </div>
         </div>
 
         {/* Exercise Info */}
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold mb-2">{exerciseName}</h2>
-          <p className="text-lg text-muted-foreground">
+        <div className="text-center mb-4">
+          <h2 className="text-xl font-bold mb-1">{exerciseName}</h2>
+          <p className="text-base text-muted-foreground">
             Set {currentSet} of {totalSets} • {repsTarget} Reps
           </p>
         </div>
 
         {/* Progress Indicator */}
-        <div className="flex items-center justify-center gap-1 mb-6">
+        <div className="flex items-center justify-center gap-1 mb-4">
           {Array.from({ length: totalExercises }, (_, i) => (
             <div
               key={i}
@@ -137,30 +137,30 @@ export function EnhancedExerciseDisplay({
           ))}
         </div>
 
-        {/* Form Guide Image */}
+        {/* Form Guide Image - Compact for Mobile */}
         {showImage && (
-          <Card className="mb-6 overflow-hidden border-2 border-primary/20">
-            <div className="relative aspect-[4/3] bg-muted">
+          <Card className="mb-4 overflow-hidden border border-border/50">
+            <div className="relative aspect-video bg-muted">
               {formImage ? (
                 <img
                   src={formImage}
                   alt={`${exerciseName} form guide`}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
               ) : isGenerating ? (
-                <div className="flex flex-col items-center justify-center h-full gap-3">
-                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                  <p className="text-sm text-muted-foreground">
-                    Generating form guide...
+                <div className="flex flex-col items-center justify-center h-full gap-2 p-4">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-xs text-muted-foreground text-center">
+                    Generating AI form guide...
                   </p>
-                  <p className="text-xs text-muted-foreground px-4 text-center">
-                    This takes 30-60 seconds • Using AI to create your personalized guide
+                  <p className="text-xs text-muted-foreground/70 text-center">
+                    30-60 seconds
                   </p>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center h-full gap-3">
-                  <Sparkles className="h-12 w-12 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">No form guide yet</p>
+                <div className="flex flex-col items-center justify-center h-full gap-2 p-4">
+                  <Sparkles className="h-8 w-8 text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground">No form guide</p>
                   {onGenerateImage && (
                     <Button
                       size="sm"
@@ -169,9 +169,10 @@ export function EnhancedExerciseDisplay({
                         generateImage(exerciseName, muscleGroup);
                       }}
                       disabled={isGenerating}
+                      className="text-xs h-7"
                     >
                       <Sparkles className="h-3 w-3 mr-1" />
-                      Generate Form Guide
+                      Generate
                     </Button>
                   )}
                 </div>
@@ -181,22 +182,22 @@ export function EnhancedExerciseDisplay({
         )}
 
         {/* Toggle Image Button */}
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-center mb-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowImage(!showImage)}
-            className="text-xs"
+            className="text-xs h-7"
           >
             {showImage ? (
               <>
                 <EyeOff className="h-3 w-3 mr-1" />
-                Hide Form Guide
+                Hide Guide
               </>
             ) : (
               <>
                 <Eye className="h-3 w-3 mr-1" />
-                Show Form Guide
+                Show Guide
               </>
             )}
           </Button>
@@ -205,13 +206,15 @@ export function EnhancedExerciseDisplay({
         {/* Next Exercise Preview */}
         {nextExerciseName && (
           <Card className="bg-muted/50 border-border/50">
-            <div className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background">
-                  <SkipForward className="h-5 w-5 text-muted-foreground" />
+            <div className="p-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background flex-shrink-0">
+                  <SkipForward className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-muted-foreground font-medium">Next: {nextExerciseName}</p>
+                  <p className="text-xs text-muted-foreground font-medium truncate">
+                    Next: {nextExerciseName}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {nextExerciseSets} Sets • {nextExerciseReps} Reps
                   </p>
