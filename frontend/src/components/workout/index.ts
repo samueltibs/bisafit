@@ -8,6 +8,9 @@ export { ProgressIndicator } from './ProgressIndicator';
 export { WorkoutComplete } from './WorkoutComplete';
 export { WorkoutTimer } from './WorkoutTimer';
 
+// Enhanced workout display with AI images
+export { EnhancedExerciseDisplay } from './EnhancedExerciseDisplay';
+
 // Active workout premium components
 export { ActiveWorkoutHeader } from './ActiveWorkoutHeader';
 export { ActiveWorkoutTimer } from './ActiveWorkoutTimer';
