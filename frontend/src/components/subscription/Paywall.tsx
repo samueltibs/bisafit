@@ -224,9 +224,7 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
           <span className="font-semibold text-foreground">
             {selectedPlanDetails?.price}
           </span>
-          {selectedPlan !== 'lifetime' && (
-            <> {selectedPlanDetails?.interval === 'year' ? ' per year' : ' per month'}</>
-          )}
+          {' '}{selectedPlanDetails?.interval === 'year' ? 'per year' : 'per month'}
         </p>
         <p className="text-xs text-muted-foreground">
           Cancel anytime during your free trial. You won't be charged until the trial ends.
