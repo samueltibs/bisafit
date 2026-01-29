@@ -610,14 +610,29 @@ export default function Plan() {
           )}
         </div>
 
-        {/* Progression Notes */}
+        {/* Progression Notes - Collapsible for mobile */}
         {planJson?.progression_notes && (
           <Card className="border-border/50">
             <CardContent className="p-4">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                Progression Notes
-              </p>
-              <p className="text-sm text-foreground">{planJson.progression_notes}</p>
+              <button 
+                className="w-full text-left"
+                onClick={() => setShowProgressionNotes(!showProgressionNotes)}
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Progression Notes
+                  </p>
+                  <ChevronRight className={cn(
+                    "h-4 w-4 text-muted-foreground transition-transform",
+                    showProgressionNotes && "rotate-90"
+                  )} />
+                </div>
+              </button>
+              {showProgressionNotes && (
+                <p className="text-sm text-foreground mt-3 leading-relaxed">
+                  {planJson.progression_notes}
+                </p>
+              )}
             </CardContent>
           </Card>
         )}
