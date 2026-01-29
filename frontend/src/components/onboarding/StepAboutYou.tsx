@@ -28,7 +28,6 @@ interface StepAboutYouProps {
 const genderOptions: { value: string; labelKey: TranslationKey }[] = [
   { value: 'male', labelKey: 'gender.male' },
   { value: 'female', labelKey: 'gender.female' },
-  { value: 'other', labelKey: 'gender.other' },
   { value: 'prefer_not_to_say', labelKey: 'gender.preferNotToSay' },
 ];
 
