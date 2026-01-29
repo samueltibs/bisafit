@@ -319,13 +319,6 @@ metadata:
 test_plan:
   current_focus:
     - "Authentication flow (Supabase)"
-    - "Onboarding process"
-    - "Subscription/Trial system"
-    - "Workout plan generation and tracking"
-    - "Nutrition tracking"
-    - "User settings and profile management"
-    - "Mobile navigation optimization"
-    - "Home page progress navigation"
   stuck_tasks:
     - "Authentication flow (Supabase)"
     - "Onboarding process"
