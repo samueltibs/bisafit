@@ -3,9 +3,10 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requireVerifiedEmail?: boolean;
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, requireVerifiedEmail = true }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -21,6 +22,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Check email verification if required
+  if (requireVerifiedEmail && !user.email_confirmed_at) {
+    return <Navigate to="/verify-email" replace />;
   }
 
   return <>{children}</>;
