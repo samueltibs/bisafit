@@ -1,296 +1,329 @@
 /**
  * Apple Health Service
  * 
- * Capacitor-ready service for Apple Health (HealthKit) integration.
- * Provides placeholder methods that will be implemented by a native plugin.
- * 
- * Native plugin expected: window.Capacitor?.Plugins?.BisaHealth
+ * Complete HealthKit integration for reading and writing health data.
+ * Requires @perfood/capacitor-healthkit plugin (install when building iOS).
  */
 
-import type { ExternalWorkoutData } from '@/types/workoutLog';
-import { normalizeAppleWorkoutType } from '@/lib/healthPlatforms';
+// Type definitions for HealthKit plugin
+interface HealthKitPlugin {
+  isAvailable(): Promise<{ available: boolean }>;
+  requestAuthorization(options: {
+    read: string[];
+    write: string[];
+  }): Promise<{ granted: boolean }>;
+  queryHKitSampleType(options: {
+    sampleName: string;
+    startDate: string;
+    endDate: string;
+    limit?: number;
+  }): Promise<{ data: any[] }>;
+  multipleQueryHKitSampleType(options: {
+    sampleNames: string[];
+    startDate: string;
+    endDate: string;
+  }): Promise<{ data: Record<string, any[]> }>;
+  saveWorkout(options: {
+    activityType: string;
+    startDate: string;
+    endDate: string;
+    energyBurned?: number;
+    distance?: number;
+  }): Promise<{ success: boolean }>;
+}
 
-export type AppleHealthPermissionStatus = 'not_determined' | 'authorized' | 'denied' | 'unavailable';
-
-export interface AppleHealthConnectionStatus {
-  available: boolean;
-  connected: boolean;
-  permissionStatus: AppleHealthPermissionStatus;
-  lastSyncAt: Date | null;
-  error?: string;
+// Get plugin instance
+function getHealthKitPlugin(): HealthKitPlugin | null {
+  if (typeof window === 'undefined') return null;
+  
+  // Check if Capacitor and plugin are available
+  const capacitor = (window as any).Capacitor;
+  if (!capacitor?.Plugins?.CapacitorHealthkit) {
+    console.log('[AppleHealth] Plugin not available (web or not installed)');
+    return null;
+  }
+  
+  return capacitor.Plugins.CapacitorHealthkit as HealthKitPlugin;
 }
 
 export interface AppleHealthPermissions {
-  steps: boolean;
-  workouts: boolean;
-  activeEnergy: boolean;
-  heartRate: boolean;
+  read: string[];
+  write: string[];
 }
 
-export interface DailyStepsData {
-  date: string; // YYYY-MM-DD
+export interface HealthKitData {
   steps: number;
-  source: 'apple_health';
+  activeCalories: number;
+  restingHeartRate: number | null;
+  weight: number | null;
+  sleep: number | null; // hours
 }
 
-export interface AppleHealthWorkout {
-  externalId: string;
-  workoutType: string;
-  startTime: Date;
-  endTime: Date;
-  durationMinutes: number;
-  caloriesBurned?: number;
-  heartRateAvg?: number;
-  distanceMeters?: number;
+export interface WorkoutData {
+  id: string;
+  name: string;
+  type: string;
+  startDate: Date;
+  endDate: Date;
+  duration: number; // minutes
+  calories: number;
+  distance?: number; // meters
+  source: string;
 }
 
-export interface SyncProgress {
-  phase: 'idle' | 'steps' | 'workouts' | 'complete' | 'error';
-  message: string;
-  imported: number;
-  skipped: number;
-}
-
-export type SyncProgressCallback = (progress: SyncProgress) => void;
-
-/**
- * Check if we're running in a native iOS context with Capacitor
- */
-function isNativeIOS(): boolean {
-  return typeof (window as any).Capacitor !== 'undefined' &&
-    (window as any).Capacitor?.isNativePlatform?.() === true &&
-    (window as any).Capacitor?.getPlatform?.() === 'ios';
-}
-
-/**
- * Get the BisaHealth plugin if available
- */
-function getPlugin(): any {
-  if (!isNativeIOS()) return null;
-  return (window as any).Capacitor?.Plugins?.BisaHealth || null;
-}
-
-/**
- * Apple Health Service - Capacitor-ready
- */
-export const AppleHealthService = {
+export class AppleHealthService {
+  private static plugin: HealthKitPlugin | null = null;
+  
+  /**
+   * Initialize plugin
+   */
+  private static getPlugin(): HealthKitPlugin | null {
+    if (!this.plugin) {
+      this.plugin = getHealthKitPlugin();
+    }
+    return this.plugin;
+  }
+  
   /**
    * Check if Apple Health is available on this device
    */
-  async isAvailable(): Promise<boolean> {
-    const plugin = getPlugin();
-    
-    if (plugin?.isAvailable) {
-      try {
-        const result = await plugin.isAvailable();
-        return result?.available ?? false;
-      } catch (error) {
-        console.error('[AppleHealth] isAvailable error:', error);
-        return false;
-      }
-    }
-    
-    // Not available on non-iOS platforms
-    return false;
-  },
-
-  /**
-   * Get the current permission status
-   */
-  async getPermissionStatus(): Promise<AppleHealthPermissions> {
-    const plugin = getPlugin();
-    
-    if (plugin?.getPermissionStatus) {
-      try {
-        return await plugin.getPermissionStatus();
-      } catch (error) {
-        console.error('[AppleHealth] getPermissionStatus error:', error);
-      }
-    }
-    
-    // Default: no permissions
-    return {
-      steps: false,
-      workouts: false,
-      activeEnergy: false,
-      heartRate: false,
-    };
-  },
-
-  /**
-   * Request permissions from the user
-   * On iOS, this opens the native HealthKit permission dialog
-   */
-  async requestPermissions(permissions: AppleHealthPermissions): Promise<AppleHealthPermissions> {
-    const plugin = getPlugin();
-    
-    if (plugin?.requestPermissions) {
-      try {
-        return await plugin.requestPermissions(permissions);
-      } catch (error) {
-        console.error('[AppleHealth] requestPermissions error:', error);
-        throw new Error('Failed to request permissions');
-      }
-    }
-    
-    // Web fallback - show info message
-    if (!isNativeIOS()) {
-      console.info('[AppleHealth] Permissions only available on iOS app');
-      throw new Error('Apple Health is only available on iOS devices. Install the BisaFit app to connect.');
-    }
-    
-    throw new Error('Apple Health plugin not available');
-  },
-
-  /**
-   * Fetch daily step counts for a date range
-   */
-  async fetchDailySteps(startDate: Date, endDate: Date): Promise<DailyStepsData[]> {
-    const plugin = getPlugin();
-    
-    if (plugin?.fetchDailySteps) {
-      try {
-        const result = await plugin.fetchDailySteps({
-          startDate: startDate.toISOString(),
-          endDate: endDate.toISOString(),
-        });
-        return result?.steps || [];
-      } catch (error) {
-        console.error('[AppleHealth] fetchDailySteps error:', error);
-        throw error;
-      }
-    }
-    
-    // Web fallback
-    console.warn('[AppleHealth] fetchDailySteps not available on web');
-    return [];
-  },
-
-  /**
-   * Fetch workouts for a date range
-   */
-  async fetchWorkouts(startDate: Date, endDate: Date): Promise<ExternalWorkoutData[]> {
-    const plugin = getPlugin();
-    
-    if (plugin?.fetchWorkouts) {
-      try {
-        const result = await plugin.fetchWorkouts({
-          startDate: startDate.toISOString(),
-          endDate: endDate.toISOString(),
-        });
-        
-        // Normalize the workout data
-        const workouts: ExternalWorkoutData[] = (result?.workouts || []).map((w: AppleHealthWorkout) => ({
-          externalId: w.externalId,
-          source: 'apple_health' as const,
-          startTime: new Date(w.startTime),
-          endTime: new Date(w.endTime),
-          durationMinutes: w.durationMinutes,
-          workoutType: normalizeAppleWorkoutType(w.workoutType),
-          caloriesBurned: w.caloriesBurned,
-          heartRateAvg: w.heartRateAvg,
-          distanceMeters: w.distanceMeters,
-        }));
-        
-        return workouts;
-      } catch (error) {
-        console.error('[AppleHealth] fetchWorkouts error:', error);
-        throw error;
-      }
-    }
-    
-    // Web fallback
-    console.warn('[AppleHealth] fetchWorkouts not available on web');
-    return [];
-  },
-
-  /**
-   * Full sync: fetch steps and workouts, report progress
-   */
-  async syncAll(
-    startDate: Date,
-    endDate: Date,
-    onProgress?: SyncProgressCallback
-  ): Promise<{ steps: DailyStepsData[]; workouts: ExternalWorkoutData[] }> {
-    const progress: SyncProgress = {
-      phase: 'idle',
-      message: 'Starting sync...',
-      imported: 0,
-      skipped: 0,
-    };
+  static async isAvailable(): Promise<boolean> {
+    const plugin = this.getPlugin();
+    if (!plugin) return false;
     
     try {
-      // Phase 1: Steps
-      progress.phase = 'steps';
-      progress.message = 'Syncing steps...';
-      onProgress?.(progress);
-      
-      const steps = await this.fetchDailySteps(startDate, endDate);
-      progress.imported += steps.length;
-      
-      // Phase 2: Workouts
-      progress.phase = 'workouts';
-      progress.message = 'Syncing workouts...';
-      onProgress?.(progress);
-      
-      const workouts = await this.fetchWorkouts(startDate, endDate);
-      progress.imported += workouts.length;
-      
-      // Complete
-      progress.phase = 'complete';
-      progress.message = `Sync complete! ${steps.length} days of steps, ${workouts.length} workouts`;
-      onProgress?.(progress);
-      
-      return { steps, workouts };
+      const result = await plugin.isAvailable();
+      return result.available;
     } catch (error) {
-      progress.phase = 'error';
-      progress.message = error instanceof Error ? error.message : 'Sync failed';
-      onProgress?.(progress);
-      throw error;
+      console.error('[AppleHealth] Error checking availability:', error);
+      return false;
     }
-  },
-
+  }
+  
   /**
-   * Get full connection status
+   * Request permissions for health data
    */
-  async getConnectionStatus(connected: boolean, lastSyncAt: string | null): Promise<AppleHealthConnectionStatus> {
-    const available = await this.isAvailable();
-    const permissions = await this.getPermissionStatus();
-    
-    let permissionStatus: AppleHealthPermissionStatus = 'not_determined';
-    if (!available) {
-      permissionStatus = 'unavailable';
-    } else if (permissions.steps || permissions.workouts) {
-      permissionStatus = 'authorized';
-    } else if (connected) {
-      // Connected but no permissions = denied or need to re-authorize
-      permissionStatus = 'denied';
+  static async requestPermissions(): Promise<boolean> {
+    const plugin = this.getPlugin();
+    if (!plugin) {
+      console.warn('[AppleHealth] Plugin not available');
+      return false;
     }
     
-    return {
-      available,
-      connected,
-      permissionStatus,
-      lastSyncAt: lastSyncAt ? new Date(lastSyncAt) : null,
-    };
-  },
-
+    try {
+      const result = await plugin.requestAuthorization({
+        read: [
+          'HKQuantityTypeIdentifierStepCount',
+          'HKQuantityTypeIdentifierActiveEnergyBurned',
+          'HKQuantityTypeIdentifierRestingHeartRate',
+          'HKQuantityTypeIdentifierBodyMass',
+          'HKCategoryTypeIdentifierSleepAnalysis',
+          'HKWorkoutTypeIdentifier',
+        ],
+        write: [
+          'HKQuantityTypeIdentifierActiveEnergyBurned',
+          'HKWorkoutTypeIdentifier',
+        ],
+      });
+      
+      console.log('[AppleHealth] Permissions result:', result.granted);
+      return result.granted;
+    } catch (error) {
+      console.error('[AppleHealth] Error requesting permissions:', error);
+      return false;
+    }
+  }
+  
   /**
-   * Open Apple Health settings on iOS
+   * Get today's health data
    */
-  async openHealthSettings(): Promise<void> {
-    const plugin = getPlugin();
+  static async getTodayData(): Promise<HealthKitData> {
+    const plugin = this.getPlugin();
+    if (!plugin) {
+      return {
+        steps: 0,
+        activeCalories: 0,
+        restingHeartRate: null,
+        weight: null,
+        sleep: null,
+      };
+    }
     
-    if (plugin?.openHealthSettings) {
-      try {
-        await plugin.openHealthSettings();
-      } catch (error) {
-        console.error('[AppleHealth] openHealthSettings error:', error);
+    try {
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      // Query multiple data types
+      const result = await plugin.multipleQueryHKitSampleType({
+        sampleNames: [
+          'HKQuantityTypeIdentifierStepCount',
+          'HKQuantityTypeIdentifierActiveEnergyBurned',
+          'HKQuantityTypeIdentifierRestingHeartRate',
+          'HKQuantityTypeIdentifierBodyMass',
+        ],
+        startDate: startOfDay.toISOString(),
+        endDate: now.toISOString(),
+      });
+      
+      // Parse results
+      const data = result.data || {};
+      
+      return {
+        steps: this.sumQuantity(data['HKQuantityTypeIdentifierStepCount']),
+        activeCalories: this.sumQuantity(data['HKQuantityTypeIdentifierActiveEnergyBurned']),
+        restingHeartRate: this.getLatestValue(data['HKQuantityTypeIdentifierRestingHeartRate']),
+        weight: this.getLatestValue(data['HKQuantityTypeIdentifierBodyMass']),
+        sleep: null, // Sleep requires special handling
+      };
+    } catch (error) {
+      console.error('[AppleHealth] Error getting today data:', error);
+      return {
+        steps: 0,
+        activeCalories: 0,
+        restingHeartRate: null,
+        weight: null,
+        sleep: null,
+      };
+    }
+  }
+  
+  /**
+   * Get workouts from the last 7 days
+   */
+  static async getRecentWorkouts(days: number = 7): Promise<WorkoutData[]> {
+    const plugin = this.getPlugin();
+    if (!plugin) return [];
+    
+    try {
+      const now = new Date();
+      const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+      
+      const result = await plugin.queryHKitSampleType({
+        sampleName: 'HKWorkoutTypeIdentifier',
+        startDate: startDate.toISOString(),
+        endDate: now.toISOString(),
+        limit: 100,
+      });
+      
+      const workouts: WorkoutData[] = [];
+      
+      if (result.data) {
+        for (const workout of result.data) {
+          workouts.push({
+            id: workout.uuid || `workout_${Date.now()}_${Math.random()}`,
+            name: this.getWorkoutName(workout.workoutActivityType),
+            type: this.normalizeWorkoutType(workout.workoutActivityType),
+            startDate: new Date(workout.startDate),
+            endDate: new Date(workout.endDate),
+            duration: Math.round((new Date(workout.endDate).getTime() - new Date(workout.startDate).getTime()) / 60000),
+            calories: workout.totalEnergyBurned || 0,
+            distance: workout.totalDistance,
+            source: workout.sourceName || 'Apple Health',
+          });
+        }
       }
-    } else {
-      console.info('[AppleHealth] Cannot open Health settings on this platform');
+      
+      return workouts;
+    } catch (error) {
+      console.error('[AppleHealth] Error getting workouts:', error);
+      return [];
     }
-  },
-};
-
-export default AppleHealthService;
+  }
+  
+  /**
+   * Save a workout to Apple Health
+   */
+  static async saveWorkout(workout: {
+    name: string;
+    type: string;
+    startDate: Date;
+    endDate: Date;
+    calories?: number;
+    distance?: number;
+  }): Promise<boolean> {
+    const plugin = this.getPlugin();
+    if (!plugin) return false;
+    
+    try {
+      const result = await plugin.saveWorkout({
+        activityType: this.getHealthKitWorkoutType(workout.type),
+        startDate: workout.startDate.toISOString(),
+        endDate: workout.endDate.toISOString(),
+        energyBurned: workout.calories,
+        distance: workout.distance,
+      });
+      
+      console.log('[AppleHealth] Workout saved:', result.success);
+      return result.success;
+    } catch (error) {
+      console.error('[AppleHealth] Error saving workout:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * Helper: Sum quantity values
+   */
+  private static sumQuantity(data: any[]): number {
+    if (!data || !Array.isArray(data)) return 0;
+    return data.reduce((sum, item) => sum + (parseFloat(item.value) || 0), 0);
+  }
+  
+  /**
+   * Helper: Get latest value
+   */
+  private static getLatestValue(data: any[]): number | null {
+    if (!data || !Array.isArray(data) || data.length === 0) return null;
+    const sorted = data.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime());
+    return parseFloat(sorted[0].value) || null;
+  }
+  
+  /**
+   * Helper: Get workout display name
+   */
+  private static getWorkoutName(activityType: string): string {
+    const map: Record<string, string> = {
+      'HKWorkoutActivityTypeTraditionalStrengthTraining': 'Strength Training',
+      'HKWorkoutActivityTypeRunning': 'Running',
+      'HKWorkoutActivityTypeCycling': 'Cycling',
+      'HKWorkoutActivityTypeWalking': 'Walking',
+      'HKWorkoutActivityTypeHighIntensityIntervalTraining': 'HIIT',
+      'HKWorkoutActivityTypeYoga': 'Yoga',
+      'HKWorkoutActivityTypeSwimming': 'Swimming',
+      'HKWorkoutActivityTypeFunctionalStrengthTraining': 'Functional Training',
+    };
+    return map[activityType] || 'Workout';
+  }
+  
+  /**
+   * Helper: Normalize workout type
+   */
+  private static normalizeWorkoutType(activityType: string): string {
+    const map: Record<string, string> = {
+      'HKWorkoutActivityTypeTraditionalStrengthTraining': 'strength',
+      'HKWorkoutActivityTypeRunning': 'running',
+      'HKWorkoutActivityTypeCycling': 'cycling',
+      'HKWorkoutActivityTypeWalking': 'walking',
+      'HKWorkoutActivityTypeHighIntensityIntervalTraining': 'hiit',
+      'HKWorkoutActivityTypeYoga': 'yoga',
+      'HKWorkoutActivityTypeSwimming': 'swimming',
+    };
+    return map[activityType] || 'other';
+  }
+  
+  /**
+   * Helper: Get HealthKit workout type
+   */
+  private static getHealthKitWorkoutType(type: string): string {
+    const map: Record<string, string> = {
+      'strength': 'HKWorkoutActivityTypeTraditionalStrengthTraining',
+      'running': 'HKWorkoutActivityTypeRunning',
+      'cycling': 'HKWorkoutActivityTypeCycling',
+      'walking': 'HKWorkoutActivityTypeWalking',
+      'hiit': 'HKWorkoutActivityTypeHighIntensityIntervalTraining',
+      'yoga': 'HKWorkoutActivityTypeYoga',
+      'swimming': 'HKWorkoutActivityTypeSwimming',
+    };
+    return map[type] || 'HKWorkoutActivityTypeTraditionalStrengthTraining';
+  }
+}
