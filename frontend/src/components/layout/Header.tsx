@@ -4,6 +4,7 @@ import { Dumbbell, Bell } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { HeaderMenu } from './HeaderMenu';
 
 interface HeaderProps {
   title?: string;
@@ -48,16 +49,19 @@ export function Header({ title = 'BisaFit' }: HeaderProps) {
         </div>
         
         {user && (
-          <Link to="/notifications">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              {unreadCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </Button>
-          </Link>
+          <div className="flex items-center gap-1">
+            <Link to="/notifications">
+              <Button variant="ghost" size="icon" className="relative h-9 w-9">
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Button>
+            </Link>
+            <HeaderMenu />
+          </div>
         )}
       </div>
     </header>
