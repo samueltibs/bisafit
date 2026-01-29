@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,9 +6,10 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 import uuid
 from datetime import datetime
+from workout_image_service import generate_workout_image, generate_workout_images_batch
 
 
 ROOT_DIR = Path(__file__).parent
@@ -35,6 +36,20 @@ class StatusCheck(BaseModel):
 class StatusCheckCreate(BaseModel):
     client_name: str
 
+# Workout Image Generation Models
+class WorkoutImageRequest(BaseModel):
+    exercise_name: str
+    gender: str = "male"
+    muscle_group: str = "full body"
+
+class ExerciseInfo(BaseModel):
+    exercise_name: str
+    muscle_group: str = "full body"
+
+class WorkoutImagesBatchRequest(BaseModel):
+    exercises: List[ExerciseInfo]
+    gender: str = "male"
+
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
@@ -51,6 +66,40 @@ async def create_status_check(input: StatusCheckCreate):
 async def get_status_checks():
     status_checks = await db.status_checks.find().to_list(1000)
     return [StatusCheck(**status_check) for status_check in status_checks]
+
+# Workout Image Generation Endpoints
+@api_router.post("/generate-workout-image")
+async def create_workout_image(request: WorkoutImageRequest):
+    """
+    Generate an AI-powered workout form guide image.
+    Takes 30-60 seconds to generate.
+    """
+    try:
+        result = await generate_workout_image(
+            exercise_name=request.exercise_name,
+            gender=request.gender,
+            muscle_group=request.muscle_group
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Error generating workout image: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/generate-workout-images-batch")
+async def create_workout_images_batch(request: WorkoutImagesBatchRequest):
+    """
+    Generate multiple workout images in batch.
+    Useful for generating all images for a workout plan at once.
+    """
+    try:
+        results = await generate_workout_images_batch(
+            exercises=[ex.dict() for ex in request.exercises],
+            gender=request.gender
+        )
+        return {"images": results}
+    except Exception as e:
+        logger.error(f"Error generating workout images batch: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Include the router in the main app
 app.include_router(api_router)
