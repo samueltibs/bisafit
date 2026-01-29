@@ -1,12 +1,13 @@
 /**
  * Subscription Types
  * 
- * NOTE: Stripe Checkout + webhooks will replace mock provider once LLC and Stripe account are live.
+ * Ready for RevenueCat integration for mobile subscriptions.
+ * Supports monthly, annual, and lifetime plans.
  */
 
-export type SubscriptionStatus = 'preview' | 'trialing' | 'active' | 'expired';
-export type SubscriptionProvider = 'mock' | 'stripe';
-export type SubscriptionPlan = 'monthly' | 'annual';
+export type SubscriptionStatus = 'preview' | 'trialing' | 'active' | 'expired' | 'lifetime';
+export type SubscriptionProvider = 'mock' | 'revenuecat' | 'stripe';
+export type SubscriptionPlan = 'monthly' | 'annual' | 'lifetime';
 
 export interface SubscriptionState {
   status: SubscriptionStatus;
@@ -24,34 +25,58 @@ export interface SubscriptionPlanOption {
   name: string;
   price: string;
   pricePerMonth: string;
-  interval: 'month' | 'year';
+  interval: 'month' | 'year' | 'lifetime';
   badge?: string;
   savings?: string;
+  popular?: boolean;
 }
 
+// UPDATED PRICING - Competitive & Professional
 export const SUBSCRIPTION_PLANS: SubscriptionPlanOption[] = [
   {
     id: 'monthly',
     name: 'Monthly',
-    price: '$12.99',
-    pricePerMonth: '$12.99/month',
+    price: '$9.99',
+    pricePerMonth: '$9.99/month',
     interval: 'month',
   },
   {
     id: 'annual',
     name: 'Annual',
-    price: '$119',
-    pricePerMonth: '$9.92/month',
+    price: '$79.99',
+    pricePerMonth: '$6.67/month',
     interval: 'year',
-    badge: 'Best Value',
-    savings: 'Save $36',
+    badge: 'BEST VALUE',
+    savings: 'Save 33%',
+    popular: true,
+  },
+  {
+    id: 'lifetime',
+    name: 'Lifetime',
+    price: '$199.99',
+    pricePerMonth: 'One-time payment',
+    interval: 'lifetime',
+    badge: 'PREMIUM',
+    savings: 'Never pay again',
   },
 ];
 
-// Stripe config placeholders (to be populated when Stripe is integrated)
+// RevenueCat Product IDs (will be configured when RevenueCat is set up)
+export const REVENUECAT_CONFIG = {
+  apiKey: '', // Will be set via environment variable
+  products: {
+    monthly: 'bisafit_monthly_9.99', // Product ID in RevenueCat
+    annual: 'bisafit_annual_79.99',  // Product ID in RevenueCat
+    lifetime: 'bisafit_lifetime_199.99', // Product ID in RevenueCat
+  },
+  entitlementId: 'premium', // Entitlement identifier
+};
+
+// Stripe config placeholders (backup for web payments)
 export const STRIPE_CONFIG = {
   publishableKey: '', // Will be set via environment variable
   monthlyPriceId: '', // Stripe Price ID for monthly plan
   annualPriceId: '', // Stripe Price ID for annual plan
-  webhookEndpoint: '/api/stripe-webhook', // Webhook handler stub
+  lifetimePriceId: '', // Stripe Price ID for lifetime plan
+  webhookEndpoint: '/api/stripe-webhook', // Webhook handler
 };
