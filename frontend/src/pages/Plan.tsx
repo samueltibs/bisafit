@@ -79,6 +79,7 @@ export default function Plan() {
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
   const [showMarkCompleteConfirm, setShowMarkCompleteConfirm] = useState(false);
   const [hasRepairedDates, setHasRepairedDates] = useState(false);
+  const [showProgressionNotes, setShowProgressionNotes] = useState(false);
 
   // Progression engine state
   const {
