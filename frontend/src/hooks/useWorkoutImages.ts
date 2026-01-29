@@ -5,8 +5,7 @@
  * Generates gender-specific images using OpenAI DALL-E 3.
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { useUserProfile } from './useUserProfile';
+import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 
 interface WorkoutImage {
@@ -18,7 +17,7 @@ interface WorkoutImage {
 
 interface UseWorkoutImagesReturn {
   getImageForExercise: (exerciseName: string, muscleGroup?: string) => string | null;
-  generateImage: (exerciseName: string, muscleGroup?: string) => Promise<void>;
+  generateImage: (exerciseName: string, muscleGroup?: string, gender?: string) => Promise<void>;
   isGenerating: boolean;
   cache: Record<string, WorkoutImage>;
 }
@@ -26,13 +25,9 @@ interface UseWorkoutImagesReturn {
 // In-memory cache for workout images
 const imageCache: Record<string, WorkoutImage> = {};
 
-export function useWorkoutImages(): UseWorkoutImagesReturn {
-  const { profile } = useUserProfile();
+export function useWorkoutImages(userGender: string = 'male'): UseWorkoutImagesReturn {
   const [cache, setCache] = useState<Record<string, WorkoutImage>>(imageCache);
   const [isGenerating, setIsGenerating] = useState(false);
-
-  // Get user's gender
-  const userGender = profile?.gender?.toLowerCase() || 'male';
 
   // Get image from cache
   const getImageForExercise = useCallback((exerciseName: string, muscleGroup?: string): string | null => {
@@ -41,15 +36,18 @@ export function useWorkoutImages(): UseWorkoutImagesReturn {
   }, [userGender]);
 
   // Generate new image
-  const generateImage = useCallback(async (exerciseName: string, muscleGroup: string = 'full body') => {
-    const cacheKey = `${exerciseName.toLowerCase()}_${userGender}`;
+  const generateImage = useCallback(async (exerciseName: string, muscleGroup: string = 'full body', gender?: string) => {
+    const genderToUse = gender || userGender || 'male';
+    const cacheKey = `${exerciseName.toLowerCase()}_${genderToUse}`;
     
     // Check if already cached
     if (imageCache[cacheKey]) {
+      console.log('Image already cached for:', exerciseName);
       return;
     }
 
     setIsGenerating(true);
+    console.log('Starting image generation for:', exerciseName, 'Gender:', genderToUse);
 
     try {
       const backendUrl = import.meta.env.VITE_REACT_APP_BACKEND_URL;
@@ -59,7 +57,8 @@ export function useWorkoutImages(): UseWorkoutImagesReturn {
         throw new Error('Backend URL not found');
       }
       
-      console.log('Generating workout image:', exerciseName, userGender, muscleGroup);
+      console.log('Backend URL:', backendUrl);
+      console.log('Generating workout image:', exerciseName, genderToUse, muscleGroup);
       
       const response = await fetch(`${backendUrl}/api/generate-workout-image`, {
         method: 'POST',
@@ -68,7 +67,7 @@ export function useWorkoutImages(): UseWorkoutImagesReturn {
         },
         body: JSON.stringify({
           exercise_name: exerciseName,
-          gender: userGender,
+          gender: genderToUse,
           muscle_group: muscleGroup,
         }),
       });
@@ -87,10 +86,10 @@ export function useWorkoutImages(): UseWorkoutImagesReturn {
       imageCache[cacheKey] = data;
       setCache({ ...imageCache });
 
-      toast.success(`Generated form guide for ${exerciseName}`);
+      toast.success(`Form guide ready for ${exerciseName}`);
     } catch (error) {
       console.error('Error generating workout image:', error);
-      toast.error('Failed to generate workout form guide');
+      toast.error('Could not generate form guide. Using workout without image.');
     } finally {
       setIsGenerating(false);
     }
