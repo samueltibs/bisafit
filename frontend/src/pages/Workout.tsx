@@ -437,6 +437,7 @@ export default function Workout() {
                     nextExerciseReps={nextExerciseInfo?.reps}
                     isPaused={isPaused}
                     muscleGroup={currentBlock.type}
+                    userGender={(profile?.gender as string) || 'male'}
                     onPlayPause={togglePause}
                     onSkipForward={() => {
                       if (timerType === 'rest') {
