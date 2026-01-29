@@ -4,3 +4,5 @@ export { WorkoutHistoryList } from './WorkoutHistoryList';
 export { WeeklyStoryCard } from './WeeklyStoryCard';
 export { WeeklyStoryModal } from './WeeklyStoryModal';
 export { WeekRecapBanner } from './WeekRecapBanner';
+export { ProgressPhotosGrid } from './ProgressPhotosGrid';
+export { PhotoUploadDialog } from './PhotoUploadDialog';
