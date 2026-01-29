@@ -317,6 +317,30 @@ frontend:
         agent: "main"
         comment: "FIXED: Made progression notes collapsible (tap to expand/collapse). Improved Coach Notes layout with better spacing (flex-1 min-w-0 for text wrapping). Added leading-relaxed for better readability on mobile."
 
+  - task: "AI workout form images integration"
+    implemented: true
+    working: true
+    file: "backend/workout_image_service.py, frontend/src/hooks/useWorkoutImages.ts"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "IMPLEMENTED: Full OpenAI DALL-E 3 integration for generating gender-specific workout form guide images. Backend API endpoints created (/api/generate-workout-image, /api/generate-workout-images-batch). Frontend hook with caching. Using Emergent LLM Key."
+
+  - task: "Enhanced TV-style workout interface"
+    implemented: true
+    working: true
+    file: "frontend/src/components/workout/EnhancedExerciseDisplay.tsx, frontend/src/pages/Workout.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "IMPLEMENTED: Complete redesign matching TV screen reference. Features: large timer (00:45 style), AI form guide images, progress indicators, next exercise preview, playback controls (play/pause/skip). Mobile-optimized full-screen interface. Images auto-generate and cache."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
