@@ -117,37 +117,56 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
             onClick={() => setSelectedPlan(plan.id)}
             className={cn(
               "relative w-full rounded-xl border-2 p-4 text-left transition-all",
+              plan.popular && "ring-2 ring-primary ring-offset-2 ring-offset-background",
               selectedPlan === plan.id
-                ? "border-primary bg-primary/5"
-                : "border-border bg-card hover:border-primary/50"
+                ? "border-primary bg-primary/5 shadow-lg"
+                : "border-border bg-card hover:border-primary/50 hover:shadow-md"
             )}
           >
             {plan.badge && (
               <Badge 
-                className="absolute -top-2 right-4 bg-primary text-primary-foreground"
+                className={cn(
+                  "absolute -top-2 right-4 font-bold",
+                  plan.popular 
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                )}
               >
                 {plan.badge}
               </Badge>
             )}
             
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-foreground">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-bold text-lg text-foreground">
                     {plan.name}
                   </span>
-                  {plan.savings && (
-                    <span className="text-xs text-primary font-medium">
-                      {plan.savings}
-                    </span>
+                  {selectedPlan === plan.id && (
+                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+                      <Check className="h-3 w-3 text-primary-foreground" />
+                    </div>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  {plan.pricePerMonth}
-                </p>
+                
+                <div className="space-y-1">
+                  <p className="text-2xl font-bold text-foreground">
+                    {plan.price}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {plan.pricePerMonth}
+                  </p>
+                  {plan.savings && (
+                    <p className="text-sm font-medium text-primary">
+                      {plan.savings}
+                    </p>
+                  )}
+                </div>
               </div>
-              
-              <div className="flex items-center gap-3">
+            </div>
+          </button>
+        ))}
+      </div>
                 <span className="text-lg font-bold text-foreground">
                   {plan.price}
                 </span>
