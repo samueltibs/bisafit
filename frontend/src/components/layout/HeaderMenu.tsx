@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, TrendingUp, ShoppingBag, Settings, Bell } from 'lucide-react';
+import { Menu, TrendingUp, ShoppingBag, Settings, Bell, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -11,11 +11,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/lib/i18n';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 export function HeaderMenu() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
+  const { signOut } = useAuth();
   const [open, setOpen] = useState(false);
 
   const menuItems = [
@@ -28,6 +31,17 @@ export function HeaderMenu() {
   const handleNavigate = (path: string) => {
     navigate(path);
     setOpen(false);
+  };
+
+  const handleLogout = async () => {
+    setOpen(false);
+    try {
+      await signOut();
+      toast.success('Logged out successfully');
+      navigate('/auth');
+    } catch (error) {
+      toast.error('Failed to log out');
+    }
   };
 
   const isActiveRoute = (path: string) => {
@@ -67,6 +81,16 @@ export function HeaderMenu() {
             </div>
           );
         })}
+        
+        {/* Logout Button */}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={handleLogout}
+          className="cursor-pointer gap-2 text-destructive focus:text-destructive"
+        >
+          <LogOut className="h-4 w-4" />
+          <span>Log Out</span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
