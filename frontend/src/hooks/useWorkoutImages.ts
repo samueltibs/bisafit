@@ -52,7 +52,14 @@ export function useWorkoutImages(): UseWorkoutImagesReturn {
     setIsGenerating(true);
 
     try {
-      const backendUrl = import.meta.env.REACT_APP_BACKEND_URL || process.env.REACT_APP_BACKEND_URL;
+      const backendUrl = import.meta.env.VITE_REACT_APP_BACKEND_URL;
+      
+      if (!backendUrl) {
+        console.error('Backend URL not configured');
+        throw new Error('Backend URL not found');
+      }
+      
+      console.log('Generating workout image:', exerciseName, userGender, muscleGroup);
       
       const response = await fetch(`${backendUrl}/api/generate-workout-image`, {
         method: 'POST',
@@ -67,10 +74,14 @@ export function useWorkoutImages(): UseWorkoutImagesReturn {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate workout image');
+        const errorText = await response.text();
+        console.error('API Error:', response.status, errorText);
+        throw new Error(`Failed to generate workout image: ${response.status}`);
       }
 
       const data = await response.json();
+      
+      console.log('Image generated successfully for:', exerciseName);
       
       // Store in cache
       imageCache[cacheKey] = data;
@@ -101,7 +112,11 @@ export async function generateWorkoutImagesBatch(
   gender: string = 'male'
 ): Promise<Record<string, string>> {
   try {
-    const backendUrl = import.meta.env.REACT_APP_BACKEND_URL || process.env.REACT_APP_BACKEND_URL;
+    const backendUrl = import.meta.env.VITE_REACT_APP_BACKEND_URL;
+    
+    if (!backendUrl) {
+      throw new Error('Backend URL not configured');
+    }
     
     const response = await fetch(`${backendUrl}/api/generate-workout-images-batch`, {
       method: 'POST',
