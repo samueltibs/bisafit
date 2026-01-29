@@ -98,7 +98,7 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
       </div>
 
       {/* Header */}
-      <div className="mb-8 text-center">
+      <div className="mb-6 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 shadow-lg">
           <Crown className="h-8 w-8 text-primary-foreground" />
         </div>
@@ -219,7 +219,7 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
       </Button>
 
       {/* Fine Print */}
-      <div className="mt-6 space-y-2 text-center">
+      <div className="mt-4 space-y-2 text-center">
         <p className="text-sm text-muted-foreground">
           <span className="font-semibold text-foreground">Free for 7 days</span>, then{' '}
           <span className="font-semibold text-foreground">
