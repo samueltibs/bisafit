@@ -175,7 +175,17 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
                   <p className="text-sm text-muted-foreground">
                     {plan.pricePerMonth}
                   </p>
-                  {plan.savings && (
+                  {plan.id === 'annual' && (
+                    <div className="mt-2 space-y-0.5">
+                      <p className="text-xs line-through text-muted-foreground">
+                        Regular: $179.88/year
+                      </p>
+                      <p className="text-sm font-bold text-green-600 dark:text-green-500">
+                        Save $44.89 (3 months FREE!)
+                      </p>
+                    </div>
+                  )}
+                  {plan.savings && plan.id !== 'annual' && (
                     <p className="text-sm font-semibold text-primary">
                       💰 {plan.savings}
                     </p>
