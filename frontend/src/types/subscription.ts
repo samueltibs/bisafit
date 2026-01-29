@@ -31,29 +31,29 @@ export interface SubscriptionPlanOption {
   popular?: boolean;
 }
 
-// UPDATED PRICING - Competitive & Professional
+// UPDATED PRICING - Current Promotional Offer
 export const SUBSCRIPTION_PLANS: SubscriptionPlanOption[] = [
   {
     id: 'monthly',
     name: 'Monthly',
-    price: '$9.99',
-    pricePerMonth: '$9.99/month',
+    price: '$14.99',
+    pricePerMonth: '$14.99/month',
     interval: 'month',
   },
   {
     id: 'annual',
     name: 'Annual',
-    price: '$79.99',
-    pricePerMonth: '$6.67/month',
+    price: '$134.99',
+    pricePerMonth: '$11.25/month',
     interval: 'year',
-    badge: 'BEST VALUE',
-    savings: 'Save 33%',
+    badge: '🎁 3 MONTHS FREE',
+    savings: 'Limited Time Offer',
     popular: true,
   },
   {
     id: 'lifetime',
     name: 'Lifetime',
-    price: '$199.99',
+    price: '$249.99',
     pricePerMonth: 'One-time payment',
     interval: 'lifetime',
     badge: 'PREMIUM',

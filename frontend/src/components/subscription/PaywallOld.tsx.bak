@@ -1,8 +1,8 @@
 /**
  * Paywall Component
  * 
- * Displays subscription plans with new pricing structure.
- * Ready for RevenueCat integration for mobile payments.
+ * Displays subscription plans and handles trial signup.
+ * NOTE: Stripe Checkout + webhooks will replace mock provider once LLC and Stripe account are live.
  */
 
 import { useState, useEffect } from 'react';
@@ -19,10 +19,10 @@ import { trackEvent } from '@/lib/analytics';
 import { ERROR_MESSAGES } from '@/lib/branding';
 
 const PREMIUM_FEATURES = [
-  { icon: Zap, label: 'AI-generated workouts & form guides' },
+  { icon: Zap, label: 'Personalized AI workouts' },
   { icon: Utensils, label: 'Custom nutrition plans' },
-  { icon: Camera, label: 'Progress photo tracking' },
-  { icon: Calendar, label: 'Workout calendar & scheduling' },
+  { icon: Camera, label: 'Ingredient & equipment scans' },
+  { icon: Calendar, label: 'Calendar sync' },
   { icon: Sparkles, label: 'Smart progression engine' },
 ];
 
@@ -32,7 +32,7 @@ interface PaywallProps {
 }
 
 export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps) {
-  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>('annual');
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>('monthly');
   const [isLoading, setIsLoading] = useState(false);
   const { startTrial } = useSubscription();
   const { toast } = useToast();
@@ -75,34 +75,32 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
     }
   };
 
-  const selectedPlanDetails = SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan);
-
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-background via-background to-muted/20 px-4 py-8">
+    <div className="flex min-h-screen flex-col bg-background px-4 py-8">
       {/* Header */}
       <div className="mb-8 text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 shadow-lg">
-          <Crown className="h-8 w-8 text-primary-foreground" />
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+          <Crown className="h-8 w-8 text-primary" />
         </div>
-        <h1 className="text-3xl font-bold text-foreground">
-          Start Your Free Trial
+        <h1 className="text-2xl font-bold text-foreground">
+          Start your 7-day free trial
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Unlock your full fitness potential
+          Unlock your full fitness potential with BisaFit Premium
         </p>
       </div>
 
       {/* Features */}
       <Card className="mb-6 border-primary/20 bg-primary/5">
-        <CardContent className="p-5">
-          <h3 className="mb-4 text-sm font-semibold text-foreground uppercase tracking-wider">
-            Premium Features:
+        <CardContent className="p-4">
+          <h3 className="mb-3 text-sm font-semibold text-foreground">
+            What you'll get:
           </h3>
-          <ul className="space-y-3">
+          <ul className="space-y-2">
             {PREMIUM_FEATURES.map(({ icon: Icon, label }) => (
               <li key={label} className="flex items-center gap-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 flex-shrink-0">
-                  <Icon className="h-4 w-4 text-primary" />
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10">
+                  <Icon className="h-3.5 w-3.5 text-primary" />
                 </div>
                 <span className="text-sm text-foreground">{label}</span>
               </li>
@@ -118,17 +116,17 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
             key={plan.id}
             onClick={() => setSelectedPlan(plan.id)}
             className={cn(
-              "relative w-full rounded-xl border-2 p-5 text-left transition-all",
+              "relative w-full rounded-xl border-2 p-4 text-left transition-all",
               plan.popular && "ring-2 ring-primary ring-offset-2 ring-offset-background",
               selectedPlan === plan.id
-                ? "border-primary bg-primary/5 shadow-lg scale-[1.02]"
+                ? "border-primary bg-primary/5 shadow-lg"
                 : "border-border bg-card hover:border-primary/50 hover:shadow-md"
             )}
           >
             {plan.badge && (
               <Badge 
                 className={cn(
-                  "absolute -top-2 right-4 font-bold text-xs",
+                  "absolute -top-2 right-4 font-bold",
                   plan.popular 
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground"
@@ -138,29 +136,29 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
               </Badge>
             )}
             
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start justify-between">
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-1">
                   <span className="font-bold text-lg text-foreground">
                     {plan.name}
                   </span>
                   {selectedPlan === plan.id && (
                     <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary">
-                      <Check className="h-3 w-3 text-primary-foreground font-bold" />
+                      <Check className="h-3 w-3 text-primary-foreground" />
                     </div>
                   )}
                 </div>
                 
                 <div className="space-y-1">
-                  <p className="text-3xl font-bold text-foreground">
+                  <p className="text-2xl font-bold text-foreground">
                     {plan.price}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {plan.pricePerMonth}
                   </p>
                   {plan.savings && (
-                    <p className="text-sm font-semibold text-primary">
-                      💰 {plan.savings}
+                    <p className="text-sm font-medium text-primary">
+                      {plan.savings}
                     </p>
                   )}
                 </div>
@@ -169,56 +167,54 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
           </button>
         ))}
       </div>
-
-      {/* CTA Button */}
-      <Button
-        onClick={handleStartTrial}
-        disabled={isLoading}
-        size="lg"
-        className="w-full text-base font-semibold h-12 shadow-lg"
-      >
-        {isLoading ? (
-          <>
-            <span className="animate-spin mr-2">⏳</span>
-            Starting Trial...
-          </>
-        ) : (
-          <>
-            <Sparkles className="mr-2 h-5 w-5" />
-            Start 7-Day Free Trial
-          </>
-        )}
-      </Button>
-
-      {/* Fine Print */}
-      <div className="mt-6 space-y-2 text-center">
-        <p className="text-sm text-muted-foreground">
-          <span className="font-semibold text-foreground">Free for 7 days</span>, then{' '}
-          <span className="font-semibold text-foreground">
-            {selectedPlanDetails?.price}
-          </span>
-          {selectedPlan !== 'lifetime' && (
-            <> {selectedPlanDetails?.interval === 'year' ? ' per year' : ' per month'}</>
-          )}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Cancel anytime during your free trial. You won't be charged until the trial ends.
-        </p>
+                <span className="text-lg font-bold text-foreground">
+                  {plan.price}
+                </span>
+                <div className={cn(
+                  "flex h-6 w-6 items-center justify-center rounded-full border-2",
+                  selectedPlan === plan.id
+                    ? "border-primary bg-primary"
+                    : "border-muted-foreground/30"
+                )}>
+                  {selectedPlan === plan.id && (
+                    <Check className="h-4 w-4 text-primary-foreground" />
+                  )}
+                </div>
+              </div>
+            </div>
+          </button>
+        ))}
       </div>
 
+      {/* CTA */}
+      <Button
+        size="lg"
+        onClick={handleStartTrial}
+        disabled={isLoading}
+        className="w-full text-lg font-semibold"
+      >
+        {isLoading ? 'Starting Trial...' : 'Start Free Trial'}
+      </Button>
+
+      {/* Disclaimer */}
+      <p className="mt-4 text-center text-xs text-muted-foreground">
+        7-day free trial. Payment method required.
+        <br />
+        You won't be charged until your trial ends.
+      </p>
+
       {/* Not Now Link */}
-      {onClose && (
-        <button
-          onClick={onClose}
-          className="mt-4 text-center text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
-        >
-          Maybe later
-        </button>
-      )}
+      <button
+        onClick={() => navigate('/home')}
+        className="mt-4 text-center text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+      >
+        Not now
+      </button>
 
       {/* Terms */}
-      <p className="mt-6 text-center text-xs text-muted-foreground/70">
+      <p className="mt-4 text-center text-xs text-muted-foreground/70">
         By starting your trial, you agree to our Terms of Service and Privacy Policy.
+        Cancel anytime before your trial ends.
       </p>
     </div>
   );
