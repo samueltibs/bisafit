@@ -1,16 +1,15 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Calendar, Dumbbell, Apple, TrendingUp, ShoppingBag, Settings } from 'lucide-react';
+import { Home, Calendar, Dumbbell, Apple } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation, type TranslationKey } from '@/lib/i18n';
 
+// Optimized for mobile: Only 4 primary tabs
+// Progress, Store, and Settings moved to top-right menu
 const navItems: { path: string; icon: typeof Home; labelKey: TranslationKey }[] = [
   { path: '/home', icon: Home, labelKey: 'nav.home' },
   { path: '/plan', icon: Calendar, labelKey: 'nav.plan' },
-  { path: '/workout/today', icon: Dumbbell, labelKey: 'nav.workout' },
   { path: '/nutrition', icon: Apple, labelKey: 'nav.nutrition' },
-  { path: '/progress', icon: TrendingUp, labelKey: 'nav.progress' },
-  { path: '/store', icon: ShoppingBag, labelKey: 'nav.store' },
-  { path: '/settings', icon: Settings, labelKey: 'nav.settings' },
+  { path: '/workout/today', icon: Dumbbell, labelKey: 'nav.workout' },
 ];
 
 export function BottomNav() {
@@ -28,7 +27,7 @@ export function BottomNav() {
               key={path}
               to={path}
               className={cn(
-                "flex flex-col items-center gap-1 px-3 py-2 transition-all duration-200 rounded-xl min-w-[56px]",
+                "flex flex-col items-center gap-1 px-4 py-2 transition-all duration-200 rounded-xl flex-1",
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground active:scale-95"
