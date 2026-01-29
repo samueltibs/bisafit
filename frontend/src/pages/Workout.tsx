@@ -408,6 +408,21 @@ export default function Workout() {
 
   return (
     <>
+      {/* Workout Preparation - Pre-generate all form guide images */}
+      {showPreparation && workout && (
+        <WorkoutPreparation
+          exercises={workout.blocks.flatMap(block => 
+            block.items.map(item => ({
+              name: item.name,
+              muscle_group: block.type,
+            }))
+          )}
+          userGender={(profile?.gender as string) || 'male'}
+          onComplete={handlePreparationComplete}
+          onSkip={handlePreparationSkip}
+        />
+      )}
+    
       {/* TV Mode Overlay - renders on top when active */}
       {tvMode && isActive && (
         <TVModeOverlay
