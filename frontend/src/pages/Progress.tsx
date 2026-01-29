@@ -11,8 +11,6 @@ import {
   TrendingUp, 
   TrendingDown, 
   Plus,
-  ChevronLeft,
-  ChevronRight,
   Calendar,
   Activity,
   Sparkles,
@@ -20,7 +18,10 @@ import {
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { cn } from '@/lib/utils';
 import { WorkoutHistoryList, NonScaleProgress, WeeklyStoryCard } from '@/components/progress';
+import { ProgressPhotosGrid } from '@/components/progress/ProgressPhotosGrid';
+import { PhotoUploadDialog } from '@/components/progress/PhotoUploadDialog';
 import { useProgressMetrics } from '@/hooks/useProgressMetrics';
+import { useProgressPhotos } from '@/hooks/useProgressPhotos';
 
 const weightData = [
   { date: 'Jan 1', weight: 82 },
@@ -40,15 +41,11 @@ const measurements = [
   { part: 'Thighs', current: 58, previous: 60, unit: 'cm' },
 ];
 
-const progressPhotos = [
-  { id: 1, date: 'Jan 1, 2025', label: 'Start' },
-  { id: 2, date: 'Feb 1, 2025', label: 'Month 1' },
-  { id: 3, date: 'Today', label: 'Current' },
-];
-
 export default function Progress() {
   const [activeTab, setActiveTab] = useState('progress');
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const { summary, loading: metricsLoading } = useProgressMetrics();
+  const { photos, loading: photosLoading, uploading, uploadPhoto, deletePhoto } = useProgressPhotos();
 
   const currentWeight = weightData[weightData.length - 1].weight;
   const previousWeight = weightData[weightData.length - 2].weight;
@@ -217,44 +214,38 @@ export default function Progress() {
           </TabsContent>
 
           <TabsContent value="photos" className="mt-4 space-y-4">
-            {/* Photo Comparison */}
-            <div className="flex items-center justify-between">
-              <Button variant="ghost" size="icon">
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-              <div className="flex gap-2">
-                {progressPhotos.map((photo, index) => (
-                  <div
-                    key={photo.id}
-                    className={cn(
-                      "flex h-40 w-28 flex-col items-center justify-center rounded-xl border-2 border-dashed transition-all",
-                      index === progressPhotos.length - 1
-                        ? "border-primary bg-primary/5"
-                        : "border-border bg-muted"
-                    )}
-                  >
-                    <Camera className="mb-2 h-8 w-8 text-muted-foreground" />
-                    <p className="text-xs font-medium">{photo.label}</p>
-                    <p className="text-xs text-muted-foreground">{photo.date}</p>
-                  </div>
-                ))}
-              </div>
-              <Button variant="ghost" size="icon">
-                <ChevronRight className="h-5 w-5" />
-              </Button>
-            </div>
+            {/* Progress Photos Grid */}
+            <ProgressPhotosGrid
+              photos={photos}
+              loading={photosLoading}
+              onDelete={deletePhoto}
+              onAddPhoto={() => setUploadDialogOpen(true)}
+            />
 
             {/* Add Photo Button */}
-            <Button className="w-full gap-2">
-              <Camera className="h-4 w-4" />
-              Take Progress Photo
-            </Button>
+            {photos.length > 0 && (
+              <Button 
+                className="w-full gap-2"
+                onClick={() => setUploadDialogOpen(true)}
+              >
+                <Camera className="h-4 w-4" />
+                Add Progress Photo
+              </Button>
+            )}
 
             <p className="text-center text-sm text-muted-foreground">
               Photos are stored privately and only visible to you
             </p>
           </TabsContent>
         </Tabs>
+
+        {/* Photo Upload Dialog */}
+        <PhotoUploadDialog
+          open={uploadDialogOpen}
+          onClose={() => setUploadDialogOpen(false)}
+          onUpload={uploadPhoto}
+          uploading={uploading}
+        />
       </div>
     </AppLayout>
   );
