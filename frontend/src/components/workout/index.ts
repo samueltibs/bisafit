@@ -10,6 +10,7 @@ export { WorkoutTimer } from './WorkoutTimer';
 
 // Enhanced workout display with AI images
 export { EnhancedExerciseDisplay } from './EnhancedExerciseDisplay';
+export { WorkoutPreparation } from './WorkoutPreparation';
 
 // Active workout premium components
 export { ActiveWorkoutHeader } from './ActiveWorkoutHeader';
