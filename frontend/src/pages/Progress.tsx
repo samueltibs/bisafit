@@ -41,8 +41,8 @@ const measurements = [
 ];
 
 const progressPhotos = [
-  { id: 1, date: 'Jan 1, 2024', label: 'Start' },
-  { id: 2, date: 'Feb 1, 2024', label: 'Month 1' },
+  { id: 1, date: 'Jan 1, 2025', label: 'Start' },
+  { id: 2, date: 'Feb 1, 2025', label: 'Month 1' },
   { id: 3, date: 'Today', label: 'Current' },
 ];
 
