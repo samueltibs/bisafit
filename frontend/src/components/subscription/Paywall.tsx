@@ -78,10 +78,11 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
   const selectedPlanDetails = SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 px-4 py-8 overflow-y-auto">
-      <div className="max-w-md mx-auto pb-safe">
-        {/* Promo Banner */}
-        <div className="mb-6 animate-fade-in">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="h-screen overflow-y-auto">
+        <div className="max-w-md mx-auto px-4 py-8 pb-20">
+          {/* Promo Banner */}
+          <div className="mb-6 animate-fade-in">
         <Card className="border-2 border-primary bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -97,8 +98,8 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
         </Card>
       </div>
 
-      {/* Header */}
-      <div className="mb-6 text-center">
+          {/* Header */}
+          <div className="mb-8 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 shadow-lg">
           <Crown className="h-8 w-8 text-primary-foreground" />
         </div>
@@ -110,8 +111,8 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
         </p>
       </div>
 
-      {/* Features */}
-      <Card className="mb-6 border-primary/20 bg-primary/5">
+          {/* Features */}
+          <Card className="mb-6 border-primary/20 bg-primary/5">
         <CardContent className="p-5">
           <h3 className="mb-4 text-sm font-semibold text-foreground uppercase tracking-wider">
             Premium Features:
@@ -129,8 +130,8 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
         </CardContent>
       </Card>
 
-      {/* Plan Selection */}
-      <div className="mb-6 space-y-3">
+          {/* Plan Selection */}
+          <div className="mb-6 space-y-3">
         {SUBSCRIPTION_PLANS.map((plan) => (
           <button
             key={plan.id}
@@ -198,8 +199,8 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
         ))}
       </div>
 
-      {/* CTA Button */}
-      <Button
+          {/* CTA Button */}
+          <Button
         onClick={handleStartTrial}
         disabled={isLoading}
         size="lg"
@@ -218,8 +219,8 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
         )}
       </Button>
 
-      {/* Fine Print */}
-      <div className="mt-4 space-y-2 text-center">
+          {/* Fine Print */}
+          <div className="mt-4 space-y-2 text-center">
         <p className="text-sm text-muted-foreground">
           <span className="font-semibold text-foreground">Free for 7 days</span>, then{' '}
           <span className="font-semibold text-foreground">
@@ -232,8 +233,8 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
         </p>
       </div>
 
-      {/* Not Now Link */}
-      {onClose && (
+          {/* Not Now Link */}
+          {onClose && (
         <button
           onClick={onClose}
           className="mt-4 text-center text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
@@ -242,10 +243,11 @@ export function Paywall({ onClose, redirectAfterTrial = '/home' }: PaywallProps)
         </button>
       )}
 
-      {/* Terms */}
-      <p className="mt-6 text-center text-xs text-muted-foreground/70">
-        By starting your trial, you agree to our Terms of Service and Privacy Policy.
-      </p>
+        {/* Terms */}
+        <p className="mt-6 mb-8 text-center text-xs text-muted-foreground/70">
+          By starting your trial, you agree to our Terms of Service and Privacy Policy.
+        </p>
+        </div>
       </div>
     </div>
   );
