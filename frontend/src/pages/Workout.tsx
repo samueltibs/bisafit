@@ -32,6 +32,7 @@ import {
   CoachingCues,
   LargeDemoPanel,
   EnhancedExerciseDisplay,
+  WorkoutPreparation,
 } from '@/components/workout';
 import { cn } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics';
@@ -51,6 +52,8 @@ export default function Workout() {
   const [tvMode, setTvMode] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [useEnhancedView, setUseEnhancedView] = useState(true); // New: Enhanced TV-style view
+  const [showPreparation, setShowPreparation] = useState(false); // Pre-workout image generation
+  const [preparationComplete, setPreparationComplete] = useState(false);
 
   // Premium feature gating
   const { showModal: showPremiumModal, setShowModal: setShowPremiumModal, checkPremiumAccess } = usePremiumFeature();
@@ -210,10 +213,48 @@ export default function Workout() {
   // Voice cue: workout start + optional music autoplay
   const handleStart = () => {
     trackEvent('workout_started');
+    
+    // Show preparation screen to pre-generate images
+    if (useEnhancedView && !preparationComplete) {
+      setShowPreparation(true);
+      return;
+    }
+    
     startWorkout();
     voiceCues.announceWorkoutStart();
     
     // Trigger music autoplay if enabled
+    if (musicSettings.autoplay && musicSettings.provider !== 'none') {
+      musicService.playDefaultPlaylistOnWorkoutStart().catch(err => {
+        console.log('[Workout] Music autoplay failed:', err);
+      });
+    }
+  };
+  
+  const handlePreparationComplete = () => {
+    setShowPreparation(false);
+    setPreparationComplete(true);
+    
+    // Now start the actual workout
+    startWorkout();
+    voiceCues.announceWorkoutStart();
+    
+    // Trigger music autoplay if enabled
+    if (musicSettings.autoplay && musicSettings.provider !== 'none') {
+      musicService.playDefaultPlaylistOnWorkoutStart().catch(err => {
+        console.log('[Workout] Music autoplay failed:', err);
+      });
+    }
+  };
+  
+  const handlePreparationSkip = () => {
+    setShowPreparation(false);
+    setPreparationComplete(true);
+    
+    // Start without waiting for images
+    startWorkout();
+    voiceCues.announceWorkoutStart();
+    
     if (musicSettings.autoplay && musicSettings.provider !== 'none') {
       musicService.playDefaultPlaylistOnWorkoutStart().catch(err => {
         console.log('[Workout] Music autoplay failed:', err);
