@@ -37,38 +37,47 @@ def create_workout_form_prompt(
     gender_descriptor = "athletic man" if gender.lower() == "male" else "athletic woman"
     
     prompt = f"""
-Create a professional fitness form guide illustration showing a {gender_descriptor} performing a {exercise_name}.
+Create a high-quality, professional fitness photograph showing a {gender_descriptor} performing a {exercise_name}.
 
-Style Requirements:
-- Clean, modern 2D digital illustration style
-- Bright, vibrant colors (blues, greens, oranges)
-- Simplified, slightly blurred background (gym environment)
-- Defined but not exaggerated musculature
-- Professional fitness attire (tank top, shorts/leggings)
-- Warm medium skin tone
-- Focused, determined facial expression
+Photography Style:
+- Photo-realistic, professional gym photography
+- Studio lighting with soft shadows
+- Sharp focus on subject, slightly blurred gym background
+- Modern, clean aesthetic matching premium fitness app design
+- Professional color grading (cool tones, high contrast)
+- Shot from optimal angle to show proper form
+- Appears as if from a professional fitness magazine or app
 
-Visual Elements to Include:
-- 4 orange callout circles highlighting key form points:
-  * Back position/posture
-  * Hand/grip placement
-  * Knee/hip alignment
-  * Foot position and stance
-- 2 orange checkmarks (✓) on correct form elements
-- 2 bold orange downward arrows showing movement direction
-- Inset circular images showing:
-  * Close-up of grip/hand position (upper left)
-  * Front view of stance/alignment (upper right)
-  * Side view of feet/ankle position (lower right)
+Subject Requirements:
+- Real-looking {gender_descriptor} with defined, athletic physique
+- Professional athletic attire (fitted tank top, athletic shorts/leggings)
+- Medium skin tone with healthy appearance
+- Focused, determined expression
+- Proper exercise form and positioning
+- Visible muscle engagement for {muscle_group}
+
+Setting:
+- High-end modern gym environment
+- Professional equipment (commercial quality)
+- Clean, organized space with soft background blur
+- Studio-style lighting setup
+- Dark or neutral background to highlight subject
 
 Composition:
-- Main figure in the critical phase of {exercise_name}
-- Dynamic pose showing proper form
-- Focus on {muscle_group} engagement
-- Professional gym setting with equipment
-- Clean white or light background with subtle gym elements
+- Professional sports photography composition
+- Shows critical phase of {exercise_name}
+- Clear view of proper body alignment and form
+- Emphasis on {muscle_group} engagement
+- Shot angle that demonstrates correct technique
 
-Technical: High resolution, suitable for mobile display, educational fitness guide quality.
+Technical Quality:
+- High resolution, professional photography quality
+- Proper exposure and lighting
+- Sharp details on subject, shallow depth of field on background
+- Looks like it could be from Nike, Peloton, or Apple Fitness
+- Premium, aspirational aesthetic
+
+The image should inspire users while clearly demonstrating perfect form for {exercise_name}.
 """
     
     return prompt.strip()
