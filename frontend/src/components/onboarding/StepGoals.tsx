@@ -107,8 +107,8 @@ export function StepGoals({
               className={cn(
                 "flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-all",
                 experienceLevel === level.value
-                  ? "border-primary bg-primary/10"
-                  : "border-border hover:border-primary/50"
+                  ? "border-foreground/30 bg-secondary"
+                  : "border-border hover:border-foreground/20"
               )}
               onClick={() => onExperienceChange(level.value)}
             >
