@@ -45,6 +45,14 @@ interface BetaFeedbackFormProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface UploadedFile {
+  id: string;
+  name: string;
+  type: 'image' | 'video';
+  url: string;
+  size: number;
+}
+
 interface FeedbackData {
   // Section 1: Overall Experience
   overallRating: number;
@@ -73,6 +81,7 @@ interface FeedbackData {
   
   // Section 6: Bugs & Issues
   bugsEncountered: string;
+  bugAttachments: string[]; // URLs of uploaded files
   deviceInfo: string;
   
   // Section 7: Final Thoughts
