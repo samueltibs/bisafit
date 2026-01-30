@@ -794,8 +794,13 @@ export default function Settings() {
                 className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
               >
                 <div className="flex items-center gap-3">
-                  <MessageSquare className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">Send Feedback</span>
+                  <MessageSquare className="h-5 w-5 icon-heart" />
+                  <div>
+                    <span className="font-medium">{BETA_MODE ? 'Beta Feedback' : 'Send Feedback'}</span>
+                    {BETA_MODE && (
+                      <p className="text-xs text-muted-foreground">Help us improve before launch</p>
+                    )}
+                  </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
