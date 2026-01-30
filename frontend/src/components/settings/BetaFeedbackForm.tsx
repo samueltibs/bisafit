@@ -298,6 +298,19 @@ export function BetaFeedbackForm({ open, onOpenChange }: BetaFeedbackFormProps) 
         attachments_count: uploadedFiles.length,
       });
 
+      // Send email notification to admin
+      try {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL || '';
+        await fetch(`${backendUrl}/api/send-feedback-notification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ feedback_data: feedback }),
+        });
+      } catch (emailError) {
+        // Don't fail the whole submission if email fails
+        console.log('Email notification skipped:', emailError);
+      }
+
       setIsSubmitted(true);
       toast.success('Thank you for your feedback! 🙏');
       
