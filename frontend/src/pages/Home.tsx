@@ -127,8 +127,8 @@ export default function Home() {
                   <p className="text-sm opacity-90">Progress</p>
                   <p className="text-2xl font-bold">72%</p>
                 </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-foreground/20">
-                  <Trophy className="h-6 w-6" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-full icon-bg-trophy">
+                  <Trophy className="h-6 w-6 icon-trophy" />
                 </div>
               </div>
               <Progress value={72} className="h-2 bg-primary-foreground/20" />
