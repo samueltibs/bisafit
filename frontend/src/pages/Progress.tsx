@@ -93,23 +93,23 @@ export default function Progress() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="animate-slide-up">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="progress" className="gap-1">
-              <Sparkles className="h-4 w-4" />
+              <Sparkles className="h-4 w-4 icon-energy" />
               <span className="hidden sm:inline">Progress</span>
             </TabsTrigger>
             <TabsTrigger value="workouts" className="gap-1">
-              <Activity className="h-4 w-4" />
+              <Activity className="h-4 w-4 icon-workout" />
               <span className="hidden sm:inline">History</span>
             </TabsTrigger>
             <TabsTrigger value="weight" className="gap-1">
-              <Scale className="h-4 w-4" />
+              <Scale className="h-4 w-4 icon-heart" />
               <span className="hidden sm:inline">Weight</span>
             </TabsTrigger>
             <TabsTrigger value="measurements" className="gap-1">
-              <Ruler className="h-4 w-4" />
+              <Ruler className="h-4 w-4 icon-calendar" />
               <span className="hidden sm:inline">Body</span>
             </TabsTrigger>
             <TabsTrigger value="photos" className="gap-1">
-              <Camera className="h-4 w-4" />
+              <Camera className="h-4 w-4 icon-camera" />
               <span className="hidden sm:inline">Photos</span>
             </TabsTrigger>
           </TabsList>
