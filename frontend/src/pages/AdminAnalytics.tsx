@@ -2,10 +2,11 @@
  * Admin Analytics Dashboard
  * 
  * View beta feedback and analytics data from Supabase.
- * Access: /admin/analytics (only for authenticated users)
+ * Access: /admin/analytics (admin users only)
  */
 
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -25,10 +26,17 @@ import {
   ChevronUp,
   Image,
   Video,
-  ExternalLink
+  ExternalLink,
+  ShieldAlert
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+
+// Admin emails - add your email(s) here
+const ADMIN_EMAILS = [
+  'support@bisafit.com',
+  // Add more admin emails as needed
+];
 
 interface FeedbackEntry {
   id: string;
