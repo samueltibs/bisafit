@@ -106,6 +106,7 @@ const initialFeedback: FeedbackData = {
   favoriteFeatures: [],
   missingFeatures: '',
   bugsEncountered: '',
+  bugAttachments: [],
   deviceInfo: '',
   oneImprovement: '',
   additionalComments: '',
