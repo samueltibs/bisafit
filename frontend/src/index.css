@@ -7,8 +7,8 @@
 @layer base {
   :root {
     /* ============================================
-       BISAFIT VISUAL IDENTITY v4 - MONOCHROME
-       Black & white with minimal color accents
+       BISAFIT VISUAL IDENTITY v5 - PREMIUM MINIMAL
+       Black & white base with soft, refined accents
        ============================================ */
 
     /* Background: Deep black #121212 */
@@ -16,65 +16,66 @@
     /* Text primary: Clean white #F5F5F5 */
     --foreground: 0 0% 96%;
 
-    /* Primary cards/surfaces: Elevated dark #1E1E1E */
-    --card: 0 0% 12%;
+    /* Primary cards/surfaces: Elevated dark #1A1A1A */
+    --card: 0 0% 10%;
     --card-foreground: 0 0% 96%;
 
     /* Popover: same as card */
-    --popover: 0 0% 12%;
+    --popover: 0 0% 10%;
     --popover-foreground: 0 0% 96%;
 
     /* Primary: White - for main UI elements, progress bars */
     --primary: 0 0% 96%;
     --primary-foreground: 0 0% 7%;
 
-    /* Secondary surfaces: Slightly lighter dark #252525 */
-    --secondary: 0 0% 15%;
+    /* Secondary surfaces: Subtle grey #1E1E1E */
+    --secondary: 0 0% 12%;
     --secondary-foreground: 0 0% 96%;
 
-    /* Muted: secondary surface with soft gray text #9E9E9E */
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 62%;
+    /* Muted: soft grey text #888888 */
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 53%;
 
-    /* Accent: Vibrant Pink #FF3370 - for special buttons/icons only */
-    --accent: 342 100% 60%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent: Dusty Rose #C9A9A6 - soft, elegant */
+    --accent: 7 18% 72%;
+    --accent-foreground: 0 0% 7%;
 
-    /* Destructive: muted red */
-    --destructive: 0 65% 55%;
+    /* Destructive: muted coral */
+    --destructive: 0 45% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders and Inputs - subtle dark lines */
-    --border: 0 0% 20%;
-    --input: 0 0% 18%;
+    /* Borders and Inputs - very subtle */
+    --border: 0 0% 18%;
+    --input: 0 0% 15%;
     --ring: 0 0% 96%;
 
-    /* Radius: 18-22px for cards */
-    --radius: 1.125rem;
-    --radius-card: 1.25rem;
-    --radius-lg: 1.375rem;
+    /* Radius: 16-20px for elegant curves */
+    --radius: 1rem;
+    --radius-card: 1.125rem;
+    --radius-lg: 1.25rem;
 
-    /* Semantic colors */
-    --success: 88 50% 53%;
+    /* Semantic colors - Soft Sage for success */
+    --success: 93 22% 61%;
     --success-foreground: 0 0% 7%;
-    --warning: 45 100% 51%;
+    /* Soft Gold for warnings/energy */
+    --warning: 40 30% 69%;
     --warning-foreground: 0 0% 7%;
-    --energy: 88 50% 53%;
+    --energy: 40 30% 69%;
     --energy-foreground: 0 0% 7%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(0 0% 96%) 0%, hsl(0 0% 85%) 100%);
-    --gradient-energy: linear-gradient(135deg, hsl(88 50% 53%) 0%, hsl(88 50% 45%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 14%) 0%, hsl(0 0% 12%) 100%);
+    /* Gradients - subtle, premium */
+    --gradient-primary: linear-gradient(135deg, hsl(0 0% 96%) 0%, hsl(0 0% 88%) 100%);
+    --gradient-energy: linear-gradient(135deg, hsl(40 30% 69%) 0%, hsl(40 30% 60%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 12%) 0%, hsl(0 0% 10%) 100%);
 
     /* Sidebar */
     --sidebar-background: 0 0% 7%;
     --sidebar-foreground: 0 0% 96%;
     --sidebar-primary: 0 0% 96%;
     --sidebar-primary-foreground: 0 0% 7%;
-    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent: 0 0% 12%;
     --sidebar-accent-foreground: 0 0% 96%;
-    --sidebar-border: 0 0% 20%;
+    --sidebar-border: 0 0% 18%;
     --sidebar-ring: 0 0% 96%;
   }
 
