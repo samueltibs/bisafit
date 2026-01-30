@@ -11,7 +11,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { allExerciseMediaData, getExerciseMedia } from '@/lib/exerciseMediaData';
+import { allExerciseMediaData } from '@/lib/exerciseMediaData';
 
 interface UseWorkoutImagesReturn {
   getImageForExercise: (exerciseName: string, muscleGroup?: string) => string | null;
@@ -36,20 +36,48 @@ function exerciseNameToFilename(exerciseName: string): string {
 }
 
 /**
+ * Look up exercise in the media data
+ */
+function findExerciseMedia(exerciseName: string) {
+  const normalizedName = exerciseName.toLowerCase().trim();
+  
+  // Direct lookup
+  if (allExerciseMediaData[normalizedName]) {
+    return allExerciseMediaData[normalizedName];
+  }
+  
+  // Try variations
+  const variations = [
+    normalizedName,
+    normalizedName.replace(/s$/, ''), // Remove trailing 's'
+    normalizedName.replace(/es$/, ''), // Remove trailing 'es'
+    normalizedName.replace(/-/g, ' '), // Replace hyphens with spaces
+    normalizedName.replace(/\s+/g, '-'), // Replace spaces with hyphens
+  ];
+  
+  for (const variation of variations) {
+    if (allExerciseMediaData[variation]) {
+      return allExerciseMediaData[variation];
+    }
+  }
+  
+  return null;
+}
+
+/**
  * Get static image URL for an exercise
  */
 function getStaticImageUrl(exerciseName: string, gender: string = 'neutral'): string | null {
-  // First try to find in the exercise media data
-  const mediaEntry = getExerciseMedia(exerciseName, gender as any);
+  const mediaEntry = findExerciseMedia(exerciseName);
   
   if (mediaEntry) {
     // Check for gender-specific images first
     if (mediaEntry.demoImages) {
       if (gender === 'male' && mediaEntry.demoImages.male) {
-        return `${EXERCISE_MEDIA_BASE}/${mediaEntry.demoImages.male}`;
+        return `${EXERCISE_MEDIA_BASE}/male/${mediaEntry.demoImages.male}`;
       }
       if (gender === 'female' && mediaEntry.demoImages.female) {
-        return `${EXERCISE_MEDIA_BASE}/${mediaEntry.demoImages.female}`;
+        return `${EXERCISE_MEDIA_BASE}/female/${mediaEntry.demoImages.female}`;
       }
       if (mediaEntry.demoImages.neutral) {
         return `${EXERCISE_MEDIA_BASE}/${mediaEntry.demoImages.neutral}`;
