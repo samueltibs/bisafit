@@ -4,11 +4,11 @@ import { cn } from '@/lib/utils';
 import { Flame, Dumbbell, Zap, Scale } from 'lucide-react';
 import { useTranslation, type TranslationKey } from '@/lib/i18n';
 
-const goals: { value: string; labelKey: TranslationKey; descKey: TranslationKey; icon: typeof Flame }[] = [
-  { value: 'fat_loss', labelKey: 'goal.fatLoss', descKey: 'goal.fatLoss.desc', icon: Flame },
-  { value: 'muscle_gain', labelKey: 'goal.muscleGain', descKey: 'goal.muscleGain.desc', icon: Dumbbell },
-  { value: 'endurance', labelKey: 'goal.endurance', descKey: 'goal.endurance.desc', icon: Zap },
-  { value: 'maintenance', labelKey: 'goal.maintenance', descKey: 'goal.maintenance.desc', icon: Scale },
+const goals: { value: string; labelKey: TranslationKey; descKey: TranslationKey; icon: typeof Flame; colorClass: string; bgClass: string }[] = [
+  { value: 'fat_loss', labelKey: 'goal.fatLoss', descKey: 'goal.fatLoss.desc', icon: Flame, colorClass: 'icon-fire', bgClass: 'icon-bg-fire' },
+  { value: 'muscle_gain', labelKey: 'goal.muscleGain', descKey: 'goal.muscleGain.desc', icon: Dumbbell, colorClass: 'icon-workout', bgClass: 'icon-bg-workout' },
+  { value: 'endurance', labelKey: 'goal.endurance', descKey: 'goal.endurance.desc', icon: Zap, colorClass: 'icon-energy', bgClass: 'icon-bg-energy' },
+  { value: 'maintenance', labelKey: 'goal.maintenance', descKey: 'goal.maintenance.desc', icon: Scale, colorClass: 'icon-heart', bgClass: 'icon-bg-heart' },
 ];
 
 const experienceLevels: { value: string; labelKey: TranslationKey; descKey: TranslationKey }[] = [
