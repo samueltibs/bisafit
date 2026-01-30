@@ -77,6 +77,23 @@ export interface AnalyticsEventProperties {
   feature?: string;
   reason?: string;
   notification_type?: string;
+  // Page tracking
+  page_name?: string;
+  previous_page?: string;
+  // Session tracking
+  session_duration_seconds?: number;
+  // Beta feedback
+  overall_rating?: number;
+  would_recommend?: string;
+  sections_completed?: number;
+  // Workout tracking
+  workout_id?: string;
+  workout_name?: string;
+  workout_duration_minutes?: number;
+  exercises_completed?: number;
+  // Error tracking
+  error_type?: string;
+  error_message?: string;
   // Allow additional custom properties
   [key: string]: string | number | boolean | undefined;
 }
