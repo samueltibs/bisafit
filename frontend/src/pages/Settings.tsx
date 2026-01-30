@@ -824,8 +824,8 @@ export default function Settings() {
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
 
-              {/* Admin Analytics - Only show in beta mode */}
-              {BETA_MODE && (
+              {/* Admin Analytics - Only show for admin users */}
+              {BETA_MODE && isAdmin && (
                 <button 
                   onClick={() => navigate('/admin/analytics')}
                   className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
