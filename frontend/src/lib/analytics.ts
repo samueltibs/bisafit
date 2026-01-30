@@ -167,3 +167,52 @@ export async function getRecentEvents(limit = 20) {
 
   return data || [];
 }
+
+/**
+ * Track page view - call this when navigating to a new page
+ */
+export function trackPageView(pageName: string, previousPage?: string): void {
+  trackEvent('page_viewed', {
+    page_name: pageName,
+    previous_page: previousPage,
+  });
+}
+
+/**
+ * Track feature usage - call this when a user interacts with a feature
+ */
+export function trackFeatureUsage(featureName: string, additionalProps?: AnalyticsEventProperties): void {
+  trackEvent('feature_used', {
+    feature: featureName,
+    ...additionalProps,
+  });
+}
+
+/**
+ * Track errors for debugging and quality monitoring
+ */
+export function trackError(errorType: string, errorMessage: string, additionalProps?: AnalyticsEventProperties): void {
+  trackEvent('ui_error', {
+    error_type: errorType,
+    error_message: errorMessage.substring(0, 200), // Truncate long error messages
+    ...additionalProps,
+  });
+}
+
+// Session management for tracking app usage duration
+let sessionStartTime: Date | null = null;
+
+export function startSession(): void {
+  sessionStartTime = new Date();
+  trackEvent('session_started', {});
+}
+
+export function endSession(): void {
+  if (sessionStartTime) {
+    const durationSeconds = Math.round((new Date().getTime() - sessionStartTime.getTime()) / 1000);
+    trackEvent('session_ended', {
+      session_duration_seconds: durationSeconds,
+    });
+    sessionStartTime = null;
+  }
+}
