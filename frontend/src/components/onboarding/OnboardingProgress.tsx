@@ -2,13 +2,13 @@ import { cn } from '@/lib/utils';
 import { User, Target, Calendar, Dumbbell, Heart, Utensils, MessageSquare } from 'lucide-react';
 
 const steps = [
-  { id: 1, title: 'About You', icon: User },
-  { id: 2, title: 'Goals', icon: Target },
-  { id: 3, title: 'Schedule', icon: Calendar },
-  { id: 4, title: 'Equipment', icon: Dumbbell },
-  { id: 5, title: 'Health', icon: Heart },
-  { id: 6, title: 'Nutrition', icon: Utensils },
-  { id: 7, title: 'Coach Style', icon: MessageSquare },
+  { id: 1, title: 'About You', icon: User, colorClass: 'icon-water' },
+  { id: 2, title: 'Goals', icon: Target, colorClass: 'icon-fire' },
+  { id: 3, title: 'Schedule', icon: Calendar, colorClass: 'icon-calendar' },
+  { id: 4, title: 'Equipment', icon: Dumbbell, colorClass: 'icon-workout' },
+  { id: 5, title: 'Health', icon: Heart, colorClass: 'icon-heart' },
+  { id: 6, title: 'Nutrition', icon: Utensils, colorClass: 'icon-nutrition' },
+  { id: 7, title: 'Coach Style', icon: MessageSquare, colorClass: 'icon-energy' },
 ];
 
 interface OnboardingProgressProps {
@@ -25,17 +25,20 @@ export function OnboardingProgress({ currentStep }: OnboardingProgressProps) {
               className={cn(
                 'flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-all',
                 currentStep >= step.id
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground'
+                  ? 'bg-secondary'
+                  : 'bg-muted'
               )}
             >
-              <step.icon className="h-4 w-4 sm:h-5 sm:w-5" />
+              <step.icon className={cn(
+                "h-4 w-4 sm:h-5 sm:w-5",
+                currentStep >= step.id ? step.colorClass : 'text-muted-foreground'
+              )} />
             </div>
             {index < steps.length - 1 && (
               <div
                 className={cn(
                   'h-0.5 w-4 sm:w-8 mx-0.5 sm:mx-1',
-                  currentStep > step.id ? 'bg-primary' : 'bg-muted'
+                  currentStep > step.id ? 'bg-foreground/30' : 'bg-muted'
                 )}
               />
             )}
