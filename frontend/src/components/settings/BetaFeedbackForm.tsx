@@ -295,6 +295,7 @@ export function BetaFeedbackForm({ open, onOpenChange }: BetaFeedbackFormProps) 
         overall_rating: feedback.overallRating,
         would_recommend: feedback.wouldRecommend,
         sections_completed: TOTAL_SECTIONS,
+        attachments_count: uploadedFiles.length,
       });
 
       setIsSubmitted(true);
