@@ -279,8 +279,8 @@ export function EquipmentEditor({
                 className={cn(
                   "flex cursor-pointer items-center gap-2 rounded-lg border-2 p-2.5 transition-all",
                   isSelected
-                    ? "border-primary bg-primary/10"
-                    : "border-border hover:border-primary/50"
+                    ? "border-foreground/30 bg-secondary"
+                    : "border-border hover:border-foreground/20"
                 )}
               >
                 <Checkbox
