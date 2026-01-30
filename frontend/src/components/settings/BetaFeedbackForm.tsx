@@ -32,7 +32,12 @@ import {
   Smartphone,
   Zap,
   MessageSquare,
-  Check
+  Check,
+  Upload,
+  Image,
+  Video,
+  X,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
