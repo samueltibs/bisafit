@@ -14,6 +14,8 @@ export type AnalyticsEventName =
   // Engagement
   | 'workout_started'
   | 'workout_completed'
+  | 'workout_skipped'
+  | 'workout_paused'
   | 'quick_win_started'
   | 'quick_win_completed'
   | 'nutrition_plan_generated'
@@ -30,6 +32,9 @@ export type AnalyticsEventName =
   | 'personal_best_achieved'
   | 'streak_milestone'
   | 'streak_saved'
+  | 'weight_logged'
+  | 'measurement_logged'
+  | 'photo_uploaded'
   // Notifications & Reminders
   | 'notification_scheduled'
   | 'notification_delivered'
@@ -43,9 +48,27 @@ export type AnalyticsEventName =
   | 'apple_health_disconnected'
   | 'apple_health_synced'
   | 'apple_health_sync_failed'
-  // Quality
+  // Navigation & Feature Usage (Beta Analytics)
+  | 'page_viewed'
+  | 'feature_used'
+  | 'settings_changed'
+  | 'onboarding_step_completed'
+  | 'onboarding_completed'
+  | 'onboarding_abandoned'
+  // Beta Feedback
+  | 'beta_feedback_started'
+  | 'beta_feedback_submitted'
+  | 'beta_feedback_abandoned'
+  // Session Analytics
+  | 'session_started'
+  | 'session_ended'
+  | 'app_backgrounded'
+  | 'app_foregrounded'
+  // Errors & Quality
   | 'generation_error'
-  | 'scan_error';
+  | 'scan_error'
+  | 'api_error'
+  | 'ui_error';
 
 export interface AnalyticsEventProperties {
   // Optional common properties
