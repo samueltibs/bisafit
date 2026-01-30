@@ -388,6 +388,8 @@ def run_all_tests():
     test_results['data_persistence'] = test_data_persistence()
     test_results['error_handling'] = test_error_handling()
     test_results['multiple_requests'] = test_multiple_requests()
+    test_results['workout_image_generation'] = test_workout_image_generation()
+    test_results['workout_images_batch'] = test_workout_images_batch()
     
     # Summary
     print("\n" + "="*50)
