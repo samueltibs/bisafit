@@ -32,18 +32,27 @@ const Index = () => {
     );
   }
 
-  // Logged in but no profile or onboarding incomplete - go to onboarding
-  if (!profile || !hasCompletedOnboarding()) {
-    return <Navigate to="/onboarding" replace />;
+  // If profile exists (even if incomplete), check subscription and go to appropriate page
+  // This allows returning users to skip onboarding if they've already created a profile
+  if (profile) {
+    // Check if onboarding is truly incomplete (no goal set at all)
+    const needsOnboarding = !profile.goal_primary;
+    
+    if (needsOnboarding) {
+      return <Navigate to="/onboarding" replace />;
+    }
+    
+    // Has profile with goal - check premium access
+    if (!hasPremiumAccess) {
+      return <Navigate to="/paywall" replace />;
+    }
+    
+    // Has everything - go to home
+    return <Navigate to="/home" replace />;
   }
 
-  // Logged in with complete profile but no premium access - go to paywall
-  if (!hasPremiumAccess) {
-    return <Navigate to="/paywall" replace />;
-  }
-
-  // Logged in with complete profile and premium access - go to home
-  return <Navigate to="/home" replace />;
+  // No profile at all - go to onboarding
+  return <Navigate to="/onboarding" replace />;
 };
 
 export default Index;
