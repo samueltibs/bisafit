@@ -194,8 +194,8 @@ export default function Home() {
                 <Card className="cursor-pointer border-border transition-all hover:border-primary/50 hover:shadow-md">
                   <CardContent className="flex items-center justify-between p-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                        <Dumbbell className="h-6 w-6 text-primary" />
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl icon-bg-workout">
+                        <Dumbbell className="h-6 w-6 icon-workout" />
                       </div>
                       <div>
                         <p className="font-medium">Today's Workout</p>
