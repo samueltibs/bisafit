@@ -82,7 +82,7 @@ export default function Progress() {
           </Card>
           <Card className="border-border">
             <CardContent className="p-4 text-center">
-              <Calendar className="mx-auto mb-2 h-5 w-5 text-energy" />
+              <Calendar className="mx-auto mb-2 h-5 w-5 icon-calendar" />
               <p className="text-xl font-bold tabular-nums">{streakDays}</p>
               <p className="text-xs text-muted-foreground">day streak</p>
             </CardContent>
