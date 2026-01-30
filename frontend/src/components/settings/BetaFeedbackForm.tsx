@@ -730,9 +730,97 @@ export function BetaFeedbackForm({ open, onOpenChange }: BetaFeedbackFormProps) 
                   placeholder="Describe any crashes, errors, or unexpected behavior..."
                   value={feedback.bugsEncountered}
                   onChange={(e) => updateFeedback('bugsEncountered', e.target.value)}
-                  rows={4}
+                  rows={3}
                   className="resize-none"
                 />
+              </div>
+
+              {/* File Upload Section */}
+              <div className="space-y-2">
+                <Label className="text-sm">Attach screenshots or screen recordings (optional)</Label>
+                <div className="space-y-3">
+                  {/* Upload Button */}
+                  <label className={cn(
+                    "flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer transition-all",
+                    isUploading 
+                      ? "border-muted bg-muted/50 cursor-wait" 
+                      : "border-border hover:border-foreground/30 hover:bg-muted/30"
+                  )}>
+                    <div className="flex flex-col items-center justify-center py-4">
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mb-1" />
+                          <span className="text-xs text-muted-foreground">Uploading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Image className="h-5 w-5 text-muted-foreground" />
+                            <Video className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            Tap to upload images or videos
+                          </span>
+                          <span className="text-[10px] text-muted-foreground/70">
+                            Max 10MB images, 50MB videos
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*,video/*"
+                      multiple
+                      onChange={handleFileUpload}
+                      disabled={isUploading}
+                    />
+                  </label>
+
+                  {/* Uploaded Files Preview */}
+                  {uploadedFiles.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">
+                        {uploadedFiles.length} file(s) attached
+                      </Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {uploadedFiles.map((file) => (
+                          <div 
+                            key={file.id}
+                            className="relative group rounded-lg border border-border overflow-hidden bg-muted/30"
+                          >
+                            {file.type === 'image' ? (
+                              <img 
+                                src={file.url} 
+                                alt={file.name}
+                                className="w-full h-20 object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-20 flex items-center justify-center bg-muted">
+                                <Video className="h-8 w-8 text-muted-foreground" />
+                              </div>
+                            )}
+                            {/* File info overlay */}
+                            <div className="absolute bottom-0 left-0 right-0 bg-background/90 px-2 py-1">
+                              <p className="text-[10px] truncate">{file.name}</p>
+                              <p className="text-[9px] text-muted-foreground">
+                                {formatFileSize(file.size)}
+                              </p>
+                            </div>
+                            {/* Remove button */}
+                            <button
+                              type="button"
+                              onClick={() => removeFile(file.id)}
+                              className="absolute top-1 right-1 p-1 rounded-full bg-background/80 hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2">
