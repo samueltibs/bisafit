@@ -144,8 +144,8 @@ export default function Home() {
         <div className="grid grid-cols-3 gap-3 animate-slide-up">
           <Card className="border-border">
             <CardContent className="p-4 text-center">
-              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-energy/10">
-                <Flame className="h-5 w-5 text-energy" />
+              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full icon-bg-fire">
+                <Flame className="h-5 w-5 icon-fire" />
               </div>
               <p className="text-lg font-bold">{todayStats.calories.current}</p>
               <p className="text-xs text-muted-foreground">/ {todayStats.calories.target} kcal</p>
@@ -154,8 +154,8 @@ export default function Home() {
           
           <Card className="border-border">
             <CardContent className="p-4 text-center">
-              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-accent">
-                <Droplets className="h-5 w-5 text-accent-foreground" />
+              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full icon-bg-water">
+                <Droplets className="h-5 w-5 icon-water" />
               </div>
               <p className="text-lg font-bold">{todayStats.water.current}</p>
               <p className="text-xs text-muted-foreground">/ {todayStats.water.target} glasses</p>
