@@ -179,8 +179,8 @@ export default function Home() {
               <Card className="border-border/50 bg-muted/30">
                 <CardContent className="flex items-center justify-between p-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
-                      <Bed className="h-6 w-6 text-muted-foreground" />
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl icon-bg-sleep">
+                      <Bed className="h-6 w-6 icon-sleep" />
                     </div>
                     <div>
                       <p className="font-medium text-muted-foreground">Rest Day</p>
