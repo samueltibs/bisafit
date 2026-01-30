@@ -85,11 +85,11 @@ export function StepGoals({
                 className={cn(
                   "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all",
                   goalSecondary === goal.value
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-foreground text-background"
                     : "bg-muted text-muted-foreground hover:bg-muted/80"
                 )}
               >
-                <goal.icon className="h-4 w-4" />
+                <goal.icon className={cn("h-4 w-4", goal.colorClass)} />
                 {t(goal.labelKey)}
               </button>
             ))}
