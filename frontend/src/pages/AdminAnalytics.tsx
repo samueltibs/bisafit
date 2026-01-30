@@ -87,12 +87,39 @@ interface AnalyticsSummary {
 
 export default function AdminAnalytics() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('feedback');
   const [feedback, setFeedback] = useState<FeedbackEntry[]>([]);
   const [events, setEvents] = useState<AnalyticsEvent[]>([]);
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null);
+
+  // Check if user is admin
+  const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
+
+  // Redirect non-admins
+  useEffect(() => {
+    if (user && !isAdmin) {
+      navigate('/home');
+    }
+  }, [user, isAdmin, navigate]);
+
+  // Show access denied for non-admins
+  if (!isAdmin) {
+    return (
+      <AppLayout title="Access Denied" showNav={false}>
+        <div className="container max-w-md py-20 text-center">
+          <ShieldAlert className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+          <h1 className="text-xl font-bold mb-2">Admin Access Required</h1>
+          <p className="text-muted-foreground mb-6">
+            This page is only accessible to administrators.
+          </p>
+          <Button onClick={() => navigate('/home')}>Go to Home</Button>
+        </div>
+      </AppLayout>
+    );
+  }
 
   const fetchData = async () => {
     setLoading(true);
