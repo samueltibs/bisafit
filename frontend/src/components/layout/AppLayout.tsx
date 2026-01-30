@@ -55,6 +55,10 @@ function logScrollDiagnostics(context: string, scrollContainerRef: React.RefObje
 export function AppLayout({ children, title = 'BisaFit', showNav = true }: AppLayoutProps) {
   const scrollContainerRef = useRef<HTMLElement>(null);
   const location = useLocation();
+  
+  // Track page views and session
+  usePageTracking();
+  useSessionTracking();
 
   // Route change diagnostic
   useEffect(() => {
