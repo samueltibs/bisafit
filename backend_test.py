@@ -276,6 +276,103 @@ def test_multiple_requests():
         print(f"❌ Multiple Requests FAILED ({success_count}/{total_requests})")
         return False
 
+def test_workout_image_generation():
+    """Test POST /api/generate-workout-image endpoint"""
+    print("\n=== Testing Workout Image Generation ===")
+    try:
+        test_data = {
+            "exercise_name": "Push-up",
+            "gender": "male",
+            "muscle_group": "chest"
+        }
+        
+        print("⏳ Generating workout image (this may take 30-60 seconds)...")
+        response = requests.post(f"{API_BASE}/generate-workout-image", json=test_data, timeout=120)
+        print(f"Status Code: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            required_fields = ['image_base64', 'exercise_name', 'gender', 'muscle_group', 'model']
+            missing_fields = [field for field in required_fields if field not in data]
+            
+            if not missing_fields:
+                # Check if image_base64 is valid base64 data URL
+                if data['image_base64'].startswith('data:image/'):
+                    print(f"✅ Generated image for {data['exercise_name']}")
+                    print(f"Gender: {data['gender']}, Muscle Group: {data['muscle_group']}")
+                    print(f"Model: {data['model']}")
+                    print(f"Image size: {len(data['image_base64'])} characters")
+                    return True
+                else:
+                    print(f"❌ Invalid image format: {data['image_base64'][:50]}...")
+                    return False
+            else:
+                print(f"❌ Missing fields in response: {missing_fields}")
+                return False
+        else:
+            print(f"❌ Workout Image Generation FAILED - Status code: {response.status_code}")
+            print(f"Response: {response.text}")
+            return False
+            
+    except requests.exceptions.Timeout:
+        print("❌ Workout Image Generation FAILED - Request timed out (>120s)")
+        return False
+    except Exception as e:
+        print(f"❌ Workout Image Generation FAILED - Exception: {str(e)}")
+        return False
+
+def test_workout_images_batch():
+    """Test POST /api/generate-workout-images-batch endpoint"""
+    print("\n=== Testing Batch Workout Image Generation ===")
+    try:
+        test_data = {
+            "exercises": [
+                {"exercise_name": "Squat", "muscle_group": "legs"},
+                {"exercise_name": "Plank", "muscle_group": "core"}
+            ],
+            "gender": "female"
+        }
+        
+        print("⏳ Generating batch workout images (this may take 60-120 seconds)...")
+        response = requests.post(f"{API_BASE}/generate-workout-images-batch", json=test_data, timeout=180)
+        print(f"Status Code: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            if 'images' in data and isinstance(data['images'], list):
+                images = data['images']
+                print(f"Generated {len(images)} images")
+                
+                success_count = 0
+                for i, img in enumerate(images):
+                    if 'image_base64' in img and img['image_base64'] and img['image_base64'].startswith('data:image/'):
+                        success_count += 1
+                        print(f"Image {i+1}: ✅ {img.get('exercise_name', 'Unknown')}")
+                    else:
+                        print(f"Image {i+1}: ❌ {img.get('exercise_name', 'Unknown')} - {img.get('error', 'Invalid format')}")
+                
+                if success_count == len(test_data['exercises']):
+                    print(f"✅ Batch Image Generation PASSED ({success_count}/{len(test_data['exercises'])})")
+                    return True
+                else:
+                    print(f"❌ Batch Image Generation PARTIAL ({success_count}/{len(test_data['exercises'])})")
+                    return False
+            else:
+                print(f"❌ Invalid response format: {data}")
+                return False
+        else:
+            print(f"❌ Batch Image Generation FAILED - Status code: {response.status_code}")
+            print(f"Response: {response.text}")
+            return False
+            
+    except requests.exceptions.Timeout:
+        print("❌ Batch Image Generation FAILED - Request timed out (>180s)")
+        return False
+    except Exception as e:
+        print(f"❌ Batch Image Generation FAILED - Exception: {str(e)}")
+        return False
+
 def run_all_tests():
     """Run all backend tests"""
     print("🚀 Starting BisaFit Backend API Testing Suite")
