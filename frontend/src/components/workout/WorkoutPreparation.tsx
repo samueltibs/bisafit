@@ -1,16 +1,17 @@
 /**
  * Workout Preparation Screen
  * 
- * Pre-generates all AI form guide images before workout starts.
- * Shows loading progress and only proceeds when all images are ready.
+ * Pre-loads all exercise form guide images before workout starts.
+ * Uses STATIC images from the pre-generated library - NO AI CREDITS NEEDED.
  */
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, CheckCircle2, Sparkles, Zap } from 'lucide-react';
+import { Loader2, CheckCircle2, Sparkles, Zap, Image } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getExerciseMedia } from '@/lib/exerciseMediaData';
 
 interface Exercise {
   name: string;
@@ -24,6 +25,68 @@ interface WorkoutPreparationProps {
   onSkip: () => void;
 }
 
+// Base path for static exercise images
+const EXERCISE_MEDIA_BASE = '/exercise-media';
+
+/**
+ * Convert exercise name to filename
+ */
+function exerciseNameToFilename(exerciseName: string): string {
+  return exerciseName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, '-')
+    .concat('.png');
+}
+
+/**
+ * Get static image URL for an exercise
+ */
+function getStaticImageUrl(exerciseName: string, gender: string = 'neutral'): string {
+  const mediaEntry = getExerciseMedia(exerciseName, gender as any);
+  
+  if (mediaEntry) {
+    if (mediaEntry.demoImages) {
+      if (gender === 'male' && mediaEntry.demoImages.male) {
+        return `${EXERCISE_MEDIA_BASE}/${mediaEntry.demoImages.male}`;
+      }
+      if (gender === 'female' && mediaEntry.demoImages.female) {
+        return `${EXERCISE_MEDIA_BASE}/${mediaEntry.demoImages.female}`;
+      }
+      if (mediaEntry.demoImages.neutral) {
+        return `${EXERCISE_MEDIA_BASE}/${mediaEntry.demoImages.neutral}`;
+      }
+    }
+    
+    if (mediaEntry.filename) {
+      if (gender === 'male' || gender === 'female') {
+        return `${EXERCISE_MEDIA_BASE}/${gender}/${mediaEntry.filename}`;
+      }
+      return `${EXERCISE_MEDIA_BASE}/${mediaEntry.filename}`;
+    }
+  }
+  
+  const filename = exerciseNameToFilename(exerciseName);
+  
+  if (gender === 'male' || gender === 'female') {
+    return `${EXERCISE_MEDIA_BASE}/${gender}/${filename}`;
+  }
+  
+  return `${EXERCISE_MEDIA_BASE}/${filename}`;
+}
+
+/**
+ * Preload an image and return a promise
+ */
+function preloadImage(url: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false); // Don't fail on missing images
+    img.src = url;
+  });
+}
+
 export function WorkoutPreparation({
   exercises,
   userGender,
@@ -32,164 +95,136 @@ export function WorkoutPreparation({
 }: WorkoutPreparationProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
-  const [isGenerating, setIsGenerating] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadedImages, setLoadedImages] = useState<Record<string, string>>({});
 
   const totalExercises = exercises.length;
   const progress = (completedCount / totalExercises) * 100;
 
   useEffect(() => {
-    generateAllImages();
+    preloadAllImages();
   }, []);
 
-  const generateAllImages = async () => {
-    const backendUrl = import.meta.env.VITE_REACT_APP_BACKEND_URL;
+  const preloadAllImages = async () => {
+    const imageCache: Record<string, string> = {};
     
-    if (!backendUrl) {
-      setError('Backend configuration error');
-      setIsGenerating(false);
-      return;
-    }
-
-    try {
-      for (let i = 0; i < exercises.length; i++) {
-        setCurrentIndex(i);
-        const exercise = exercises[i];
-        
-        console.log(`Generating image ${i + 1}/${exercises.length}:`, exercise.name);
-
-        try {
-          const response = await fetch(`${backendUrl}/api/generate-workout-image`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              exercise_name: exercise.name,
-              gender: userGender || 'male',
-              muscle_group: exercise.muscle_group || 'full body',
-            }),
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            // Store in cache (will be picked up by useWorkoutImages hook)
-            const cacheKey = `${exercise.name.toLowerCase()}_${userGender}`;
-            (window as any).__workoutImageCache = (window as any).__workoutImageCache || {};
-            (window as any).__workoutImageCache[cacheKey] = data;
-            
-            console.log(`✓ Generated: ${exercise.name}`);
-          } else {
-            console.warn(`Failed to generate: ${exercise.name}`);
-          }
-        } catch (err) {
-          console.warn(`Error generating ${exercise.name}:`, err);
-        }
-
-        setCompletedCount(i + 1);
-      }
-
-      setIsGenerating(false);
+    for (let i = 0; i < exercises.length; i++) {
+      setCurrentIndex(i);
+      const exercise = exercises[i];
       
-      // Auto-proceed after 1 second
-      setTimeout(() => {
-        onComplete();
-      }, 1000);
-
-    } catch (err) {
-      console.error('Batch generation error:', err);
-      setError('Failed to prepare workout');
-      setIsGenerating(false);
+      // Get static image URL
+      const imageUrl = getStaticImageUrl(exercise.name, userGender || 'male');
+      
+      // Preload the image
+      await preloadImage(imageUrl);
+      
+      // Cache it
+      const cacheKey = `${exercise.name.toLowerCase()}_${userGender}`;
+      imageCache[cacheKey] = imageUrl;
+      
+      // Also store in window cache for the workout to use
+      if (typeof window !== 'undefined') {
+        (window as any).__workoutImageCache = (window as any).__workoutImageCache || {};
+        (window as any).__workoutImageCache[cacheKey] = { image_url: imageUrl };
+      }
+      
+      setCompletedCount(i + 1);
     }
+    
+    setLoadedImages(imageCache);
+    setIsLoading(false);
+    
+    // Auto-complete after a short delay
+    setTimeout(() => {
+      onComplete();
+    }, 500);
   };
 
   const currentExercise = exercises[currentIndex];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-sm">
-      <Card className="w-full max-w-md mx-4">
-        <CardContent className="pt-6 pb-6 px-6">
-          <div className="space-y-6">
-            {/* Icon */}
-            <div className="flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                {isGenerating ? (
-                  <Loader2 className="h-8 w-8 text-primary animate-spin" />
-                ) : error ? (
-                  <Zap className="h-8 w-8 text-destructive" />
-                ) : (
-                  <CheckCircle2 className="h-8 w-8 text-green-500" />
-                )}
-              </div>
-            </div>
-
-            {/* Title */}
-            <div className="text-center space-y-2">
-              <h3 className="text-xl font-bold">
-                {isGenerating ? 'Preparing Your Workout' : error ? 'Ready to Start' : 'All Set!'}
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {isGenerating
-                  ? 'Generating AI form guides for your exercises...'
-                  : error
-                  ? 'Some images failed, but you can still start'
-                  : 'All form guides ready. Let\'s go!'}
-              </p>
-            </div>
-
-            {/* Progress */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {isGenerating ? 'Generating...' : 'Complete'}
-                </span>
-                <span className="font-medium tabular-nums">
-                  {completedCount}/{totalExercises}
-                </span>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </div>
-
-            {/* Current Exercise */}
-            {isGenerating && currentExercise && (
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
-                <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
-                <span className="text-sm truncate">{currentExercise.name}</span>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="space-y-2">
-              {!isGenerating && (
-                <Button 
-                  onClick={onComplete} 
-                  className="w-full"
-                  size="lg"
-                >
-                  {error ? 'Start Anyway' : 'Start Workout'}
-                </Button>
-              )}
-              
-              {isGenerating && (
-                <Button 
-                  onClick={onSkip} 
-                  variant="outline" 
-                  className="w-full"
-                  size="lg"
-                >
-                  Skip & Start Now
-                </Button>
-              )}
-            </div>
-
-            {/* Info */}
-            <p className="text-xs text-center text-muted-foreground">
-              {isGenerating ? (
-                <>This takes ~30 seconds per exercise. You can skip and images will generate during your workout.</>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md border-border">
+        <CardContent className="p-6 space-y-6">
+          {/* Header */}
+          <div className="text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              {isLoading ? (
+                <Loader2 className="h-8 w-8 text-primary animate-spin" />
               ) : (
-                <>Form guides will help you maintain perfect technique!</>
+                <CheckCircle2 className="h-8 w-8 text-primary" />
               )}
+            </div>
+            <h2 className="text-xl font-semibold">
+              {isLoading ? 'Preparing Your Workout' : 'Ready to Go!'}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {isLoading
+                ? 'Loading exercise images...'
+                : 'All form guides ready'}
             </p>
+          </div>
+
+          {/* Progress */}
+          <div className="space-y-2">
+            <Progress value={progress} className="h-2" />
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">
+                {completedCount} of {totalExercises} exercises
+              </span>
+              <span className="font-medium">{Math.round(progress)}%</span>
+            </div>
+          </div>
+
+          {/* Current Exercise */}
+          {isLoading && currentExercise && (
+            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background">
+                <Image className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{currentExercise.name}</p>
+                <p className="text-xs text-muted-foreground">Loading image...</p>
+              </div>
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            </div>
+          )}
+
+          {/* Features Badge */}
+          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Sparkles className="h-3 w-3" />
+              <span>Form guides</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Zap className="h-3 w-3" />
+              <span>Instant loading</span>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={onSkip}
+            >
+              Skip
+            </Button>
+            <Button
+              className="flex-1"
+              disabled={isLoading}
+              onClick={onComplete}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                'Start Workout'
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>
