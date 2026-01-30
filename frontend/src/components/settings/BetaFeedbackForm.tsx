@@ -320,6 +320,7 @@ export function BetaFeedbackForm({ open, onOpenChange }: BetaFeedbackFormProps) 
   const handleClose = () => {
     setCurrentSection(1);
     setFeedback(initialFeedback);
+    setUploadedFiles([]);
     onOpenChange(false);
   };
 
