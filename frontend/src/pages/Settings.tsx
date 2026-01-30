@@ -46,6 +46,7 @@ import {
   Compass,
   Music,
   Activity,
+  BarChart3,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
