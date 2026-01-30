@@ -4,6 +4,7 @@ import { BottomNav } from './BottomNav';
 import { Header } from './Header';
 import { TrialBanner } from '@/components/subscription/TrialBanner';
 import { PageTransition } from '@/components/ui/page-transition';
+import { usePageTracking, useSessionTracking } from '@/hooks/useAnalytics';
 
 interface AppLayoutProps {
   children: ReactNode;
