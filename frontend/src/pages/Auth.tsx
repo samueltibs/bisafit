@@ -121,14 +121,55 @@ export default function Auth() {
         <p className="text-xs text-muted-foreground mt-1">{SUPPORT_MESSAGE_SHORT}</p>
       </div>
 
-      <Card className="w-full max-w-sm animate-slide-up border-border shadow-xl">
-        <Tabs defaultValue="signin" className="w-full">
-          <CardHeader className="pb-4">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
+      {showForgotPassword ? (
+        /* Forgot Password View */
+        <Card className="w-full max-w-sm animate-slide-up border-border shadow-xl">
+          <CardHeader>
+            <button
+              onClick={() => setShowForgotPassword(false)}
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-2 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to sign in
+            </button>
+            <CardTitle>Reset Password</CardTitle>
+            <CardDescription>
+              Enter your email and we'll send you a link to reset your password.
+            </CardDescription>
           </CardHeader>
+          <CardContent>
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="forgot-email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="forgot-email"
+                    type="email"
+                    placeholder="you@example.com"
+                    className="pl-10"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send Reset Link'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      ) : (
+        /* Normal Sign In / Sign Up View */
+        <Card className="w-full max-w-sm animate-slide-up border-border shadow-xl">
+          <Tabs defaultValue="signin" className="w-full">
+            <CardHeader className="pb-4">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="signin">Sign In</TabsTrigger>
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              </TabsList>
+            </CardHeader>
 
           <CardContent>
             <TabsContent value="signin" className="mt-0">
