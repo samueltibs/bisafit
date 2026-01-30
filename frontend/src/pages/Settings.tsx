@@ -1013,51 +1013,58 @@ export default function Settings() {
         </DialogContent>
       </Dialog>
 
-      {/* Send Feedback Modal */}
-      <Dialog open={isFeedbackModalOpen} onOpenChange={setIsFeedbackModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Send Feedback</DialogTitle>
-            <DialogDescription>
-              Let us know how we can improve your experience.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4">
-            <Textarea
-              placeholder="What would you like to share with us?"
-              value={feedbackMessage}
-              onChange={(e) => setFeedbackMessage(e.target.value)}
-              rows={4}
-              className="resize-none"
-            />
-          </div>
+      {/* Send Feedback Modal - Conditional based on BETA_MODE */}
+      {BETA_MODE ? (
+        <BetaFeedbackForm 
+          open={isFeedbackModalOpen} 
+          onOpenChange={setIsFeedbackModalOpen} 
+        />
+      ) : (
+        <Dialog open={isFeedbackModalOpen} onOpenChange={setIsFeedbackModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Send Feedback</DialogTitle>
+              <DialogDescription>
+                Let us know how we can improve your experience.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="py-4">
+              <Textarea
+                placeholder="What would you like to share with us?"
+                value={feedbackMessage}
+                onChange={(e) => setFeedbackMessage(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+            </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => {
-              setIsFeedbackModalOpen(false);
-              setFeedbackMessage('');
-            }}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={() => {
-                if (feedbackMessage.trim()) {
-                  openMailto(EMAIL_SUPPORT, `${APP_NAME} Feedback`);
-                  setIsFeedbackModalOpen(false);
-                  setFeedbackMessage('');
-                  toast.success('Opening email to send feedback');
-                } else {
-                  toast.error('Please enter your feedback');
-                }
-              }}
-              disabled={!feedbackMessage.trim()}
-            >
-              Send Feedback
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => {
+                setIsFeedbackModalOpen(false);
+                setFeedbackMessage('');
+              }}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (feedbackMessage.trim()) {
+                    openMailto(EMAIL_SUPPORT, `${APP_NAME} Feedback`);
+                    setIsFeedbackModalOpen(false);
+                    setFeedbackMessage('');
+                    toast.success('Opening email to send feedback');
+                  } else {
+                    toast.error('Please enter your feedback');
+                  }
+                }}
+                disabled={!feedbackMessage.trim()}
+              >
+                Send Feedback
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </AppLayout>
   );
 }
