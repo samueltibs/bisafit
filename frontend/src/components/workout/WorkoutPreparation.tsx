@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Loader2, CheckCircle2, Sparkles, Zap, Image } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getExerciseMedia } from '@/lib/exerciseMediaData';
+import { allExerciseMediaData } from '@/lib/exerciseMediaData';
 
 interface Exercise {
   name: string;
@@ -40,18 +40,26 @@ function exerciseNameToFilename(exerciseName: string): string {
 }
 
 /**
+ * Look up exercise in the media data
+ */
+function findExerciseMedia(exerciseName: string) {
+  const normalizedName = exerciseName.toLowerCase().trim();
+  return allExerciseMediaData[normalizedName] || null;
+}
+
+/**
  * Get static image URL for an exercise
  */
 function getStaticImageUrl(exerciseName: string, gender: string = 'neutral'): string {
-  const mediaEntry = getExerciseMedia(exerciseName, gender as any);
+  const mediaEntry = findExerciseMedia(exerciseName);
   
   if (mediaEntry) {
     if (mediaEntry.demoImages) {
       if (gender === 'male' && mediaEntry.demoImages.male) {
-        return `${EXERCISE_MEDIA_BASE}/${mediaEntry.demoImages.male}`;
+        return `${EXERCISE_MEDIA_BASE}/male/${mediaEntry.demoImages.male}`;
       }
       if (gender === 'female' && mediaEntry.demoImages.female) {
-        return `${EXERCISE_MEDIA_BASE}/${mediaEntry.demoImages.female}`;
+        return `${EXERCISE_MEDIA_BASE}/female/${mediaEntry.demoImages.female}`;
       }
       if (mediaEntry.demoImages.neutral) {
         return `${EXERCISE_MEDIA_BASE}/${mediaEntry.demoImages.neutral}`;
