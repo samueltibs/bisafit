@@ -1,123 +1,129 @@
 /**
- * Workout AI Images Hook
+ * Workout Images Hook
  * 
- * Manages AI-generated workout form guide images with caching.
- * Generates gender-specific images using OpenAI DALL-E 3.
+ * Serves exercise form guide images from static library.
+ * NO AI CREDITS REQUIRED - images are pre-generated and stored locally.
+ * 
+ * Images are stored in /public/exercise-media/
+ * - Neutral images: /exercise-media/{filename}.png
+ * - Male variants: /exercise-media/male/{filename}.png
+ * - Female variants: /exercise-media/female/{filename}.png
  */
 
 import { useState, useCallback } from 'react';
-import { toast } from 'sonner';
-
-interface WorkoutImage {
-  exercise_name: string;
-  image_base64: string;
-  gender: string;
-  muscle_group: string;
-}
+import { allExerciseMediaData, getExerciseMedia } from '@/lib/exerciseMediaData';
 
 interface UseWorkoutImagesReturn {
   getImageForExercise: (exerciseName: string, muscleGroup?: string) => string | null;
   generateImage: (exerciseName: string, muscleGroup?: string, gender?: string) => Promise<void>;
   isGenerating: boolean;
-  cache: Record<string, WorkoutImage>;
+  cache: Record<string, { image_url: string }>;
 }
 
-// In-memory cache for workout images
-const imageCache: Record<string, WorkoutImage> = {};
+// Base path for static exercise images
+const EXERCISE_MEDIA_BASE = '/exercise-media';
 
-// Initialize from window cache if available (set by WorkoutPreparation)
-if (typeof window !== 'undefined') {
-  const windowCache = (window as any).__workoutImageCache;
-  if (windowCache) {
-    Object.assign(imageCache, windowCache);
-  }
+/**
+ * Convert exercise name to filename
+ * e.g., "Jumping Jacks" -> "jumping-jacks.png"
+ */
+function exerciseNameToFilename(exerciseName: string): string {
+  return exerciseName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .concat('.png');
 }
 
-export function useWorkoutImages(userGender: string = 'male'): UseWorkoutImagesReturn {
-  const [cache, setCache] = useState<Record<string, WorkoutImage>>(() => {
-    // Check window cache on initialization
-    if (typeof window !== 'undefined') {
-      const windowCache = (window as any).__workoutImageCache;
-      if (windowCache) {
-        Object.assign(imageCache, windowCache);
+/**
+ * Get static image URL for an exercise
+ */
+function getStaticImageUrl(exerciseName: string, gender: string = 'neutral'): string | null {
+  // First try to find in the exercise media data
+  const mediaEntry = getExerciseMedia(exerciseName, gender as any);
+  
+  if (mediaEntry) {
+    // Check for gender-specific images first
+    if (mediaEntry.demoImages) {
+      if (gender === 'male' && mediaEntry.demoImages.male) {
+        return `${EXERCISE_MEDIA_BASE}/${mediaEntry.demoImages.male}`;
+      }
+      if (gender === 'female' && mediaEntry.demoImages.female) {
+        return `${EXERCISE_MEDIA_BASE}/${mediaEntry.demoImages.female}`;
+      }
+      if (mediaEntry.demoImages.neutral) {
+        return `${EXERCISE_MEDIA_BASE}/${mediaEntry.demoImages.neutral}`;
       }
     }
-    return imageCache;
-  });
-  const [isGenerating, setIsGenerating] = useState(false);
+    
+    // Fall back to filename
+    if (mediaEntry.filename) {
+      // Check gender-specific folder first
+      if (gender === 'male' || gender === 'female') {
+        return `${EXERCISE_MEDIA_BASE}/${gender}/${mediaEntry.filename}`;
+      }
+      return `${EXERCISE_MEDIA_BASE}/${mediaEntry.filename}`;
+    }
+  }
+  
+  // Generate filename from exercise name as fallback
+  const filename = exerciseNameToFilename(exerciseName);
+  
+  // Try gender-specific folder first
+  if (gender === 'male' || gender === 'female') {
+    return `${EXERCISE_MEDIA_BASE}/${gender}/${filename}`;
+  }
+  
+  return `${EXERCISE_MEDIA_BASE}/${filename}`;
+}
 
-  // Get image from cache
+// In-memory cache for verified image URLs
+const verifiedImageCache: Record<string, string> = {};
+
+export function useWorkoutImages(userGender: string = 'male'): UseWorkoutImagesReturn {
+  const [cache, setCache] = useState<Record<string, { image_url: string }>>(
+    Object.entries(verifiedImageCache).reduce((acc, [key, url]) => {
+      acc[key] = { image_url: url };
+      return acc;
+    }, {} as Record<string, { image_url: string }>)
+  );
+  const [isGenerating] = useState(false);
+
+  // Get image URL from static library
   const getImageForExercise = useCallback((exerciseName: string, muscleGroup?: string): string | null => {
     const cacheKey = `${exerciseName.toLowerCase()}_${userGender}`;
-    // Check both memory cache and window cache
-    const cached = imageCache[cacheKey] || (typeof window !== 'undefined' && (window as any).__workoutImageCache?.[cacheKey]);
-    return cached?.image_base64 || null;
+    
+    // Check cache first
+    if (verifiedImageCache[cacheKey]) {
+      return verifiedImageCache[cacheKey];
+    }
+    
+    // Get static image URL
+    const imageUrl = getStaticImageUrl(exerciseName, userGender);
+    
+    if (imageUrl) {
+      // Cache the URL
+      verifiedImageCache[cacheKey] = imageUrl;
+      return imageUrl;
+    }
+    
+    return null;
   }, [userGender]);
 
-  // Generate new image
+  // "Generate" image - just looks up from static library (no API call needed)
   const generateImage = useCallback(async (exerciseName: string, muscleGroup: string = 'full body', gender?: string) => {
     const genderToUse = gender || userGender || 'male';
     const cacheKey = `${exerciseName.toLowerCase()}_${genderToUse}`;
     
-    // Check if already cached
-    if (imageCache[cacheKey]) {
-      console.log('Image already cached for:', exerciseName);
-      return;
-    }
-
-    setIsGenerating(true);
-    console.log('Starting image generation for:', exerciseName, 'Gender:', genderToUse);
-
-    try {
-      const backendUrl = import.meta.env.VITE_REACT_APP_BACKEND_URL;
-      
-      if (!backendUrl) {
-        console.error('Backend URL not configured');
-        throw new Error('Backend URL not found');
-      }
-      
-      console.log('Backend URL:', backendUrl);
-      console.log('Generating workout image:', exerciseName, genderToUse, muscleGroup);
-      
-      const response = await fetch(`${backendUrl}/api/generate-workout-image`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          exercise_name: exerciseName,
-          gender: genderToUse,
-          muscle_group: muscleGroup,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error:', response.status, errorText);
-        throw new Error(`Failed to generate workout image: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      console.log('Image generated successfully for:', exerciseName);
-      
-      // Store in cache
-      imageCache[cacheKey] = data;
-      
-      // Also store in window cache for persistence
-      if (typeof window !== 'undefined') {
-        (window as any).__workoutImageCache = (window as any).__workoutImageCache || {};
-        (window as any).__workoutImageCache[cacheKey] = data;
-      }
-      
-      setCache({ ...imageCache });
-
-      toast.success(`Form guide ready for ${exerciseName}`);
-    } catch (error) {
-      console.error('Error generating workout image:', error);
-      toast.error('Could not generate form guide. Using workout without image.');
-    } finally {
-      setIsGenerating(false);
+    // Get static image URL
+    const imageUrl = getStaticImageUrl(exerciseName, genderToUse);
+    
+    if (imageUrl) {
+      verifiedImageCache[cacheKey] = imageUrl;
+      setCache(prev => ({
+        ...prev,
+        [cacheKey]: { image_url: imageUrl }
+      }));
     }
   }, [userGender]);
 
@@ -130,52 +136,25 @@ export function useWorkoutImages(userGender: string = 'male'): UseWorkoutImagesR
 }
 
 /**
- * Batch generate images for an entire workout
+ * Batch "generate" images for an entire workout
+ * Now just returns static image URLs (no API call needed)
  */
 export async function generateWorkoutImagesBatch(
   exercises: Array<{ name: string; muscle_group?: string }>,
   gender: string = 'male'
 ): Promise<Record<string, string>> {
-  try {
-    const backendUrl = import.meta.env.VITE_REACT_APP_BACKEND_URL;
-    
-    if (!backendUrl) {
-      throw new Error('Backend URL not configured');
+  const imageMap: Record<string, string> = {};
+  
+  for (const exercise of exercises) {
+    const imageUrl = getStaticImageUrl(exercise.name, gender);
+    if (imageUrl) {
+      imageMap[exercise.name] = imageUrl;
+      
+      // Also cache it
+      const cacheKey = `${exercise.name.toLowerCase()}_${gender}`;
+      verifiedImageCache[cacheKey] = imageUrl;
     }
-    
-    const response = await fetch(`${backendUrl}/api/generate-workout-images-batch`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        exercises: exercises.map(ex => ({
-          exercise_name: ex.name,
-          muscle_group: ex.muscle_group || 'full body',
-        })),
-        gender,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to generate workout images');
-    }
-
-    const data = await response.json();
-    
-    // Store in cache
-    const imageMap: Record<string, string> = {};
-    data.images.forEach((img: WorkoutImage) => {
-      if (img.image_base64) {
-        const cacheKey = `${img.exercise_name.toLowerCase()}_${gender}`;
-        imageCache[cacheKey] = img;
-        imageMap[img.exercise_name] = img.image_base64;
-      }
-    });
-
-    return imageMap;
-  } catch (error) {
-    console.error('Error generating workout images batch:', error);
-    throw error;
   }
+  
+  return imageMap;
 }
