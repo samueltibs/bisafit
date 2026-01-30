@@ -126,7 +126,7 @@ backend:
         comment: "Backend has minimal implementation - only basic status check endpoints. Need to verify if working."
       - working: true
         agent: "testing"
-        comment: "✅ PASSED - GET /api/ endpoint returns correct 'Hello World' response. Status code 200. CORS headers working correctly (verified via OPTIONS preflight request). Backend server running properly on https://bisafit-portal.preview.emergentagent.com/api"
+        comment: "✅ PASSED - GET /api/ endpoint returns correct 'Hello World' response. Status code 200. CORS headers working correctly (verified via OPTIONS preflight request). Backend server running properly on https://fitness-relaunch.preview.emergentagent.com/api"
 
   - task: "MongoDB connection and data persistence"
     implemented: true

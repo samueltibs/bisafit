@@ -11,7 +11,7 @@ from datetime import datetime
 import uuid
 
 # Get backend URL from frontend .env
-BACKEND_URL = "https://bisafit-portal.preview.emergentagent.com"
+BACKEND_URL = "https://fitness-relaunch.preview.emergentagent.com"
 API_BASE = f"{BACKEND_URL}/api"
 
 def test_api_health_check():
