@@ -82,12 +82,18 @@ import { BetaFeedbackForm } from '@/components/settings/BetaFeedbackForm';
 // Toggle this to switch between beta feedback form and simple feedback
 const BETA_MODE = true;
 
+// Admin emails for analytics access
+const ADMIN_EMAILS = ['samuel.m.tibs@gmail.com'];
+
 export default function Settings() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, signOut } = useAuth();
   const { profile, loading, update, refetch } = useUserProfile();
   const { realignSchedule, haveWorkoutDaysChanged, isRealigning } = useScheduleRealignment();
+  
+  // Check if user is admin
+  const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
   
   // Modal states with scroll restoration on close
   const [isEditModalOpen, setIsEditModalOpenState] = useState(false);
