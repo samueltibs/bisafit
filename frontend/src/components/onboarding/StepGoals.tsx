@@ -51,16 +51,13 @@ export function StepGoals({
               className={cn(
                 "flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all",
                 goalPrimary === goal.value
-                  ? "border-primary bg-primary/10"
-                  : "border-border hover:border-primary/50"
+                  ? "border-foreground/30 bg-secondary"
+                  : "border-border hover:border-foreground/20"
               )}
               onClick={() => onGoalChange(goal.value)}
             >
               <RadioGroupItem value={goal.value} id={goal.value} className="sr-only" />
-              <goal.icon className={cn(
-                "h-8 w-8",
-                goalPrimary === goal.value ? "text-primary" : "text-muted-foreground"
-              )} />
+              <goal.icon className={cn("h-8 w-8", goal.colorClass)} />
               <Label htmlFor={goal.value} className="cursor-pointer font-medium">
                 {t(goal.labelKey)}
               </Label>
