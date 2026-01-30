@@ -626,11 +626,11 @@
     }
     50% {
       transform: scale(1.02);
-      filter: drop-shadow(0 0 8px hsl(145 52% 55% / 0.4));
+      filter: drop-shadow(0 0 8px hsl(187 100% 42% / 0.4));
     }
     100% {
       transform: scale(1);
-      filter: drop-shadow(0 0 4px hsl(145 52% 55% / 0.3));
+      filter: drop-shadow(0 0 4px hsl(187 100% 42% / 0.3));
     }
   }
 
