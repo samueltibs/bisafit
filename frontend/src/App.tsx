@@ -28,6 +28,7 @@ import Store from "./pages/Store";
 import Settings from "./pages/Settings";
 import NotificationCenter from "./pages/NotificationCenter";
 import ManageSubscription from "./pages/ManageSubscription";
+import AdminAnalytics from "./pages/AdminAnalytics";
 import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
