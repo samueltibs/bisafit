@@ -76,6 +76,11 @@ import { useTranslation, translateGoal } from '@/lib/i18n';
 import { MusicSettings } from '@/components/settings/MusicSettings';
 import { HealthPlatformSettings } from '@/components/settings/HealthPlatformSettings';
 import { ReminderSettings } from '@/components/settings/ReminderSettings';
+import { BetaFeedbackForm } from '@/components/settings/BetaFeedbackForm';
+
+// Toggle this to switch between beta feedback form and simple feedback
+const BETA_MODE = true;
+
 export default function Settings() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
