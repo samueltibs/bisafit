@@ -817,6 +817,23 @@ export default function Settings() {
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
 
+              {/* Admin Analytics - Only show in beta mode */}
+              {BETA_MODE && (
+                <button 
+                  onClick={() => navigate('/admin/analytics')}
+                  className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
+                >
+                  <div className="flex items-center gap-3">
+                    <BarChart3 className="h-5 w-5 icon-energy" />
+                    <div>
+                      <span className="font-medium">Analytics Dashboard</span>
+                      <p className="text-xs text-muted-foreground">View feedback & usage data</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </button>
+              )}
+
               {/* App Version */}
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
