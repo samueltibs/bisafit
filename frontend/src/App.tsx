@@ -131,6 +131,12 @@ const App = () => (
                 <ManageSubscription />
               </ProtectedRoute>
             } />
+            {/* Admin Analytics Dashboard */}
+            <Route path="/admin/analytics" element={
+              <ProtectedRoute>
+                <AdminAnalytics />
+              </ProtectedRoute>
+            } />
             <Route path="*" element={<NotFound />} />
           </Routes>
             <AnalyticsDebugPanel />
