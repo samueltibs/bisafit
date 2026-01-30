@@ -102,6 +102,48 @@ async def create_workout_images_batch(request: WorkoutImagesBatchRequest):
         logger.error(f"Error generating workout images batch: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# Email Notification Models
+class FeedbackNotificationRequest(BaseModel):
+    feedback_data: Dict[str, Any]
+
+class AnalyticsReportRequest(BaseModel):
+    totalUsers: int = 0
+    totalEvents: int = 0
+    totalFeedback: int = 0
+    avgRating: float = 0.0
+    topEvents: List[Dict[str, Any]] = []
+    recentFeedback: List[Dict[str, Any]] = []
+
+
+@api_router.post("/send-feedback-notification")
+async def send_feedback_email(request: FeedbackNotificationRequest):
+    """
+    Send email notification when new beta feedback is submitted.
+    Called from the frontend after feedback is saved.
+    """
+    try:
+        result = await send_feedback_notification(request.feedback_data)
+        return result
+    except Exception as e:
+        logger.error(f"Error sending feedback notification: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/send-weekly-report")
+async def send_weekly_report(request: AnalyticsReportRequest):
+    """
+    Send weekly analytics report email.
+    Can be called manually or via a scheduled job.
+    """
+    try:
+        result = await send_weekly_analytics_report(request.dict())
+        return result
+    except Exception as e:
+        logger.error(f"Error sending weekly report: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
