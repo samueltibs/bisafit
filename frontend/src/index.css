@@ -7,75 +7,75 @@
 @layer base {
   :root {
     /* ============================================
-       BISAFIT VISUAL IDENTITY v2 - DARK PREMIUM
-       Inspired by modern fitness app dark themes
+       BISAFIT VISUAL IDENTITY v3 - DARK PREMIUM
+       Deep charcoal with vibrant pink & muted green
        ============================================ */
 
-    /* Background: Deep charcoal #181818 */
-    --background: 0 0% 9%;
+    /* Background: Deep charcoal #121212 */
+    --background: 0 0% 7%;
     /* Text primary: Clean white #F5F5F5 */
     --foreground: 0 0% 96%;
 
-    /* Primary cards/surfaces: Elevated dark #2C2C2E */
-    --card: 0 0% 17%;
+    /* Primary cards/surfaces: Elevated dark #1E1E1E */
+    --card: 0 0% 12%;
     --card-foreground: 0 0% 96%;
 
     /* Popover: same as card */
-    --popover: 0 0% 17%;
+    --popover: 0 0% 12%;
     --popover-foreground: 0 0% 96%;
 
-    /* Primary accent: Vibrant Teal/Cyan #00BCD4 */
-    --primary: 187 100% 42%;
+    /* Primary accent: Vibrant Pink #FF3370 */
+    --primary: 342 100% 60%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary surfaces: Slightly lighter dark #242424 */
-    --secondary: 0 0% 14%;
+    /* Secondary surfaces: Slightly lighter dark #252525 */
+    --secondary: 0 0% 15%;
     --secondary-foreground: 0 0% 96%;
 
     /* Muted: secondary surface with soft gray text #9E9E9E */
-    --muted: 0 0% 14%;
+    --muted: 0 0% 15%;
     --muted-foreground: 0 0% 62%;
 
-    /* Accent: Soft Pink/Peach #FFAB91 for highlights */
-    --accent: 14 100% 78%;
-    --accent-foreground: 0 0% 9%;
+    /* Accent: Muted Sage Green #8BC34A for progress/success */
+    --accent: 88 50% 53%;
+    --accent-foreground: 0 0% 7%;
 
     /* Destructive: muted red */
     --destructive: 0 65% 55%;
     --destructive-foreground: 0 0% 100%;
 
     /* Borders and Inputs - subtle dark lines */
-    --border: 0 0% 22%;
-    --input: 0 0% 20%;
-    --ring: 187 100% 42%;
+    --border: 0 0% 20%;
+    --input: 0 0% 18%;
+    --ring: 342 100% 60%;
 
     /* Radius: 18-22px for cards */
     --radius: 1.125rem;
     --radius-card: 1.25rem;
     --radius-lg: 1.375rem;
 
-    /* Semantic colors */
-    --success: 187 100% 42%;
-    --success-foreground: 0 0% 100%;
-    --warning: 14 100% 78%;
-    --warning-foreground: 0 0% 9%;
-    --energy: 14 100% 78%;
-    --energy-foreground: 0 0% 9%;
+    /* Semantic colors - Green for success/progress */
+    --success: 88 50% 53%;
+    --success-foreground: 0 0% 7%;
+    --warning: 45 100% 51%;
+    --warning-foreground: 0 0% 7%;
+    --energy: 88 50% 53%;
+    --energy-foreground: 0 0% 7%;
 
-    /* Gradients - Premium teal and peach */
-    --gradient-primary: linear-gradient(135deg, hsl(187 100% 42%) 0%, hsl(187 100% 35%) 100%);
-    --gradient-energy: linear-gradient(135deg, hsl(14 100% 78%) 0%, hsl(14 100% 70%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 19%) 0%, hsl(0 0% 17%) 100%);
+    /* Gradients - Premium pink and green */
+    --gradient-primary: linear-gradient(135deg, hsl(342 100% 60%) 0%, hsl(342 100% 50%) 100%);
+    --gradient-energy: linear-gradient(135deg, hsl(88 50% 53%) 0%, hsl(88 50% 45%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 14%) 0%, hsl(0 0% 12%) 100%);
 
     /* Sidebar */
-    --sidebar-background: 0 0% 9%;
+    --sidebar-background: 0 0% 7%;
     --sidebar-foreground: 0 0% 96%;
-    --sidebar-primary: 187 100% 42%;
+    --sidebar-primary: 342 100% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 14%;
+    --sidebar-accent: 0 0% 15%;
     --sidebar-accent-foreground: 0 0% 96%;
-    --sidebar-border: 0 0% 22%;
-    --sidebar-ring: 187 100% 42%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 342 100% 60%;
   }
 
   /* Dark class mirrors root */
