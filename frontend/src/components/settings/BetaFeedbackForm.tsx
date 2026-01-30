@@ -305,6 +305,7 @@ export function BetaFeedbackForm({ open, onOpenChange }: BetaFeedbackFormProps) 
         setIsSubmitted(false);
         setCurrentSection(1);
         setFeedback(initialFeedback);
+        setUploadedFiles([]);
         onOpenChange(false);
       }, 2000);
 
