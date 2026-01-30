@@ -30,8 +30,8 @@ export function StepsCard({ steps, target, className }: StepsCardProps) {
   return (
     <Card className={cn("border-border relative", className)}>
       <CardContent className="p-4 text-center">
-        <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-          <Footprints className="h-5 w-5 text-primary" />
+        <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full icon-bg-steps">
+          <Footprints className="h-5 w-5 icon-steps" />
         </div>
         <p className="text-lg font-bold tabular-nums">{(displaySteps / 1000).toFixed(1)}k</p>
         <p className="text-xs text-muted-foreground">/ {target / 1000}k steps</p>
