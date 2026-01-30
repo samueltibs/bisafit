@@ -51,7 +51,7 @@ export function WeeklyStoryModal({
         particleCount: 80,
         spread: 70,
         origin: { y: 0.3 },
-        colors: ['#6FCF97', '#E6B65C', '#ffffff'],
+        colors: ['#00BCD4', '#FFAB91', '#ffffff'],
       });
     }
   }, [open, showConfetti]);
