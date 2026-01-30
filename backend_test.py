@@ -42,30 +42,20 @@ def test_cors_headers():
     """Test CORS configuration"""
     print("\n=== Testing CORS Configuration ===")
     try:
-        # Test OPTIONS preflight request (this is where CORS headers should appear)
-        response = requests.options(f"{API_BASE}/")
+        # Test with Origin header (simulates cross-origin request)
+        headers = {'Origin': 'https://fitness-relaunch.preview.emergentagent.com'}
+        response = requests.get(f"{API_BASE}/", headers=headers)
         cors_headers = {
             'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
-            'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
-            'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers'),
+            'Access-Control-Allow-Credentials': response.headers.get('Access-Control-Allow-Credentials'),
         }
-        print(f"OPTIONS CORS Headers: {cors_headers}")
+        print(f"Cross-origin CORS Headers: {cors_headers}")
         
-        # Also test GET request CORS headers
-        get_response = requests.get(f"{API_BASE}/")
-        get_cors_headers = {
-            'Access-Control-Allow-Origin': get_response.headers.get('Access-Control-Allow-Origin'),
-            'Access-Control-Allow-Methods': get_response.headers.get('Access-Control-Allow-Methods'),
-            'Access-Control-Allow-Headers': get_response.headers.get('Access-Control-Allow-Headers'),
-        }
-        print(f"GET CORS Headers: {get_cors_headers}")
-        
-        # CORS headers typically appear in OPTIONS preflight requests
-        if cors_headers['Access-Control-Allow-Origin'] or get_cors_headers['Access-Control-Allow-Origin']:
-            print("✅ CORS Headers Present (verified via OPTIONS or GET)")
+        if cors_headers['Access-Control-Allow-Origin']:
+            print("✅ CORS Headers Present (verified with Origin header)")
             return True
         else:
-            print("❌ CORS Headers Missing in both OPTIONS and GET requests")
+            print("❌ CORS Headers Missing even with Origin header")
             return False
             
     except Exception as e:
