@@ -9,7 +9,8 @@ const Index = () => {
   const { profile, loading: profileLoading, hasCompletedOnboarding } = useUserProfile();
   const { hasPremiumAccess, loading: subscriptionLoading } = useSubscription();
 
-  if (authLoading || (user && (profileLoading || subscriptionLoading))) {
+  // Show loading only for auth check initially
+  if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -17,9 +18,18 @@ const Index = () => {
     );
   }
 
-  // Not logged in - go to auth
+  // Not logged in - go to auth (login/signup page)
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // User is logged in, now check profile and subscription
+  if (profileLoading || subscriptionLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   // Logged in but no profile or onboarding incomplete - go to onboarding
