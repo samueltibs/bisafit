@@ -136,6 +136,9 @@ export function BetaFeedbackForm({ open, onOpenChange }: BetaFeedbackFormProps) 
   const [feedback, setFeedback] = useState<FeedbackData>(initialFeedback);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useState<HTMLInputElement | null>(null);
 
   const progress = (currentSection / TOTAL_SECTIONS) * 100;
 
@@ -150,6 +153,109 @@ export function BetaFeedbackForm({ open, onOpenChange }: BetaFeedbackFormProps) 
         ? prev.favoriteFeatures.filter(f => f !== featureId)
         : [...prev.favoriteFeatures, featureId]
     }));
+  };
+
+  // File upload handler
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    const newFiles: UploadedFile[] = [];
+
+    for (const file of Array.from(files)) {
+      // Validate file type
+      const isImage = file.type.startsWith('image/');
+      const isVideo = file.type.startsWith('video/');
+      
+      if (!isImage && !isVideo) {
+        toast.error(`${file.name} is not a supported format`);
+        continue;
+      }
+
+      // Check file size (max 50MB for videos, 10MB for images)
+      const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        toast.error(`${file.name} is too large (max ${isVideo ? '50MB' : '10MB'})`);
+        continue;
+      }
+
+      try {
+        // Upload to Supabase storage
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user?.id || 'anonymous'}_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `beta-feedback/${fileName}`;
+
+        const { data, error } = await supabase.storage
+          .from('feedback-attachments')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (error) {
+          // If bucket doesn't exist, create a data URL as fallback
+          console.log('Storage upload failed, using data URL fallback:', error.message);
+          
+          // Convert to base64 for local storage
+          const reader = new FileReader();
+          const dataUrl = await new Promise<string>((resolve) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(file);
+          });
+
+          newFiles.push({
+            id: `local_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+            name: file.name,
+            type: isImage ? 'image' : 'video',
+            url: dataUrl,
+            size: file.size
+          });
+        } else {
+          // Get public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('feedback-attachments')
+            .getPublicUrl(filePath);
+
+          newFiles.push({
+            id: data.path,
+            name: file.name,
+            type: isImage ? 'image' : 'video',
+            url: publicUrl,
+            size: file.size
+          });
+        }
+      } catch (err) {
+        console.error('Upload error:', err);
+        toast.error(`Failed to upload ${file.name}`);
+      }
+    }
+
+    if (newFiles.length > 0) {
+      setUploadedFiles(prev => [...prev, ...newFiles]);
+      updateFeedback('bugAttachments', [...feedback.bugAttachments, ...newFiles.map(f => f.url)]);
+      toast.success(`${newFiles.length} file(s) uploaded`);
+    }
+
+    setIsUploading(false);
+    // Reset input
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
+  const removeFile = (fileId: string) => {
+    const file = uploadedFiles.find(f => f.id === fileId);
+    if (file) {
+      setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
+      updateFeedback('bugAttachments', feedback.bugAttachments.filter(url => url !== file.url));
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const handleNext = () => {
