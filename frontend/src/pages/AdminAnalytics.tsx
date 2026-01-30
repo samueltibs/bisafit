@@ -34,6 +34,7 @@ import { format } from 'date-fns';
 
 // Admin emails - add your email(s) here
 const ADMIN_EMAILS = [
+  'samuel.m.tibs@gmail.com',
   'support@bisafit.com',
   // Add more admin emails as needed
 ];
