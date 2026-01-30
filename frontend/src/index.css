@@ -361,6 +361,76 @@
     @apply text-foreground/60;
   }
 
+  /* Semantic icon colors - meaningful colors for specific icons */
+  .icon-fire {
+    color: #E57C4A; /* Warm orange for fire/calories */
+  }
+  .icon-water {
+    color: #5B9BD5; /* Soft blue for water/hydration */
+  }
+  .icon-steps {
+    color: #7CB87C; /* Soft green for steps/walking */
+  }
+  .icon-sleep {
+    color: #9B8FD4; /* Soft purple for sleep/rest */
+  }
+  .icon-heart {
+    color: #D47B8F; /* Soft rose for heart/health */
+  }
+  .icon-trophy {
+    color: #D4AF37; /* Gold for achievements */
+  }
+  .icon-nutrition {
+    color: #7CB87C; /* Green for food/nutrition */
+  }
+  .icon-workout {
+    color: #8B9DC3; /* Soft blue-grey for workouts */
+  }
+  .icon-calendar {
+    color: #C9A9A6; /* Dusty rose for calendar */
+  }
+  .icon-camera {
+    color: #9B8FD4; /* Soft purple for camera */
+  }
+  .icon-energy {
+    color: #E5C04A; /* Soft gold for energy */
+  }
+  
+  /* Icon background circles with matching soft colors */
+  .icon-bg-fire {
+    background-color: rgba(229, 124, 74, 0.15);
+  }
+  .icon-bg-water {
+    background-color: rgba(91, 155, 213, 0.15);
+  }
+  .icon-bg-steps {
+    background-color: rgba(124, 184, 124, 0.15);
+  }
+  .icon-bg-sleep {
+    background-color: rgba(155, 143, 212, 0.15);
+  }
+  .icon-bg-heart {
+    background-color: rgba(212, 123, 143, 0.15);
+  }
+  .icon-bg-trophy {
+    background-color: rgba(212, 175, 55, 0.15);
+  }
+  .icon-bg-nutrition {
+    background-color: rgba(124, 184, 124, 0.15);
+  }
+  .icon-bg-workout {
+    background-color: rgba(139, 157, 195, 0.15);
+  }
+  .icon-bg-calendar {
+    background-color: rgba(201, 169, 166, 0.15);
+  }
+  .icon-bg-camera {
+    background-color: rgba(155, 143, 212, 0.15);
+  }
+  .icon-bg-energy {
+    background-color: rgba(229, 192, 74, 0.15);
+  }
+
   /* Icon container for consistent sizing and touch targets */
   .icon-container {
     @apply inline-flex items-center justify-center rounded-xl;
