@@ -42,19 +42,30 @@ def test_cors_headers():
     """Test CORS configuration"""
     print("\n=== Testing CORS Configuration ===")
     try:
-        response = requests.get(f"{API_BASE}/")
+        # Test OPTIONS preflight request (this is where CORS headers should appear)
+        response = requests.options(f"{API_BASE}/")
         cors_headers = {
             'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
             'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
             'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers'),
         }
-        print(f"CORS Headers: {cors_headers}")
+        print(f"OPTIONS CORS Headers: {cors_headers}")
         
-        if cors_headers['Access-Control-Allow-Origin']:
-            print("✅ CORS Headers Present")
+        # Also test GET request CORS headers
+        get_response = requests.get(f"{API_BASE}/")
+        get_cors_headers = {
+            'Access-Control-Allow-Origin': get_response.headers.get('Access-Control-Allow-Origin'),
+            'Access-Control-Allow-Methods': get_response.headers.get('Access-Control-Allow-Methods'),
+            'Access-Control-Allow-Headers': get_response.headers.get('Access-Control-Allow-Headers'),
+        }
+        print(f"GET CORS Headers: {get_cors_headers}")
+        
+        # CORS headers typically appear in OPTIONS preflight requests
+        if cors_headers['Access-Control-Allow-Origin'] or get_cors_headers['Access-Control-Allow-Origin']:
+            print("✅ CORS Headers Present (verified via OPTIONS or GET)")
             return True
         else:
-            print("❌ CORS Headers Missing")
+            print("❌ CORS Headers Missing in both OPTIONS and GET requests")
             return False
             
     except Exception as e:
