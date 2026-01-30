@@ -149,35 +149,22 @@ export function EnhancedExerciseDisplay({
                   src={formImage}
                   alt={`${exerciseName} form guide`}
                   className="w-full h-full object-contain"
+                  onError={(e) => {
+                    // Hide image if it fails to load
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
                 />
               ) : isGenerating ? (
                 <div className="flex flex-col items-center justify-center h-full gap-2 p-4">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   <p className="text-xs text-muted-foreground text-center">
-                    Generating AI form guide...
-                  </p>
-                  <p className="text-xs text-muted-foreground/70 text-center">
-                    30-60 seconds
+                    Loading form guide...
                   </p>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full gap-2 p-4">
                   <Sparkles className="h-8 w-8 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground">No form guide</p>
-                  {onGenerateImage && (
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setImageRequested(true);
-                        generateImage(exerciseName, muscleGroup, userGender);
-                      }}
-                      disabled={isGenerating}
-                      className="text-xs h-7"
-                    >
-                      <Sparkles className="h-3 w-3 mr-1" />
-                      Generate
-                    </Button>
-                  )}
+                  <p className="text-xs text-muted-foreground">No form guide available</p>
                 </div>
               )}
             </div>
