@@ -1,15 +1,13 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserProfile } from '@/hooks/useUserProfile';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Loader2 } from 'lucide-react';
 
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
-  const { profile, loading: profileLoading, hasCompletedOnboarding } = useUserProfile();
   const { hasPremiumAccess, loading: subscriptionLoading } = useSubscription();
 
-  // Show loading only for auth check initially
+  // Show loading only for auth check
   if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -23,8 +21,8 @@ const Index = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  // User is logged in, now check profile and subscription
-  if (profileLoading || subscriptionLoading) {
+  // User is logged in - check subscription
+  if (subscriptionLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -32,27 +30,9 @@ const Index = () => {
     );
   }
 
-  // If profile exists (even if incomplete), check subscription and go to appropriate page
-  // This allows returning users to skip onboarding if they've already created a profile
-  if (profile) {
-    // Check if onboarding is truly incomplete (no goal set at all)
-    const needsOnboarding = !profile.goal_primary;
-    
-    if (needsOnboarding) {
-      return <Navigate to="/onboarding" replace />;
-    }
-    
-    // Has profile with goal - check premium access
-    if (!hasPremiumAccess) {
-      return <Navigate to="/paywall" replace />;
-    }
-    
-    // Has everything - go to home
-    return <Navigate to="/home" replace />;
-  }
-
-  // No profile at all - go to onboarding
-  return <Navigate to="/onboarding" replace />;
+  // Logged in - go directly to home (let home page handle any redirects if needed)
+  // This prevents the onboarding loop for returning users
+  return <Navigate to="/home" replace />;
 };
 
 export default Index;
