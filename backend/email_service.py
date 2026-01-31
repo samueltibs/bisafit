@@ -124,7 +124,7 @@ async def send_feedback_notification(feedback_data: Dict[str, Any]) -> Dict[str,
                 
                 {"<div class='section'><div class='section-title'>Additional Comments</div><p>" + feedback_data.get('additionalComments', '') + "</p></div>" if feedback_data.get('additionalComments') else ""}
                 
-                {"<div class='section'><div class='section-title'>Attachments</div><p>" + str(len(feedback_data.get('bugAttachments', []))) + " file(s) attached - <a href='https://fitness-relaunch.preview.emergentagent.com/admin/analytics'>View in Dashboard</a></p></div>" if feedback_data.get('bugAttachments') else ""}
+                {"<div class='section'><div class='section-title'>Attachments</div><p>" + str(len(feedback_data.get('bugAttachments', []))) + " file(s) attached - <a href='https://fitness-boost-18.preview.emergentagent.com/admin/analytics'>View in Dashboard</a></p></div>" if feedback_data.get('bugAttachments') else ""}
                 
                 <div class="section" style="font-size: 12px; color: #666;">
                     <div class="section-title">Device Info</div>
@@ -133,7 +133,7 @@ async def send_feedback_notification(feedback_data: Dict[str, Any]) -> Dict[str,
                 </div>
                 
                 <p style="text-align: center; margin-top: 20px;">
-                    <a href="https://fitness-relaunch.preview.emergentagent.com/admin/analytics" 
+                    <a href="https://fitness-boost-18.preview.emergentagent.com/admin/analytics" 
                        style="display: inline-block; padding: 12px 24px; background: #121212; color: white; text-decoration: none; border-radius: 8px;">
                         View Full Analytics Dashboard
                     </a>
@@ -247,7 +247,7 @@ async def send_weekly_analytics_report(analytics_data: Dict[str, Any]) -> Dict[s
                 </div>
                 
                 <p style="text-align: center; margin-top: 30px;">
-                    <a href="https://fitness-relaunch.preview.emergentagent.com/admin/analytics" 
+                    <a href="https://fitness-boost-18.preview.emergentagent.com/admin/analytics" 
                        style="display: inline-block; padding: 14px 28px; background: #121212; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
                         View Full Dashboard →
                     </a>
