@@ -374,6 +374,211 @@ def test_workout_images_batch():
         print(f"❌ Batch Image Generation FAILED - Exception: {str(e)}")
         return False
 
+def test_template_plan_generation():
+    """Test POST /api/generate-plan-template endpoint - NEW FEATURE"""
+    print("\n=== Testing Template-Based Workout Plan Generation (NO AI CREDITS) ===")
+    
+    # Test Case 1: Fat Loss Plan for Intermediate User
+    print("\n--- Test Case 1: Fat Loss Plan ---")
+    try:
+        test_data = {
+            "user_profile": {
+                "user_id": "test-user-fat-loss-123",
+                "goal_primary": "fat_loss",
+                "experience_level": "intermediate",
+                "workout_days_per_week": 4,
+                "workout_days": ["Monday", "Tuesday", "Thursday", "Friday"],
+                "equipment": ["bodyweight", "dumbbells"],
+                "gender": "male",
+                "session_minutes": 45
+            }
+        }
+        
+        response = requests.post(f"{API_BASE}/generate-plan-template", json=test_data, timeout=30)
+        print(f"Status Code: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            # Check response structure
+            required_fields = ['success', 'plan', 'message']
+            missing_fields = [field for field in required_fields if field not in data]
+            
+            if missing_fields:
+                print(f"❌ Missing top-level fields: {missing_fields}")
+                return False
+            
+            if not data.get('success'):
+                print(f"❌ Success field is False: {data}")
+                return False
+            
+            plan = data.get('plan', {})
+            plan_required_fields = ['id', 'name', 'weeks', 'total_weeks', 'user_id', 'goal', 'experience_level']
+            plan_missing_fields = [field for field in plan_required_fields if field not in plan]
+            
+            if plan_missing_fields:
+                print(f"❌ Missing plan fields: {plan_missing_fields}")
+                return False
+            
+            # Validate plan structure
+            if plan.get('total_weeks') != 4:
+                print(f"❌ Expected 4 weeks, got: {plan.get('total_weeks')}")
+                return False
+            
+            weeks = plan.get('weeks', [])
+            if len(weeks) != 4:
+                print(f"❌ Expected 4 weeks array, got {len(weeks)} weeks")
+                return False
+            
+            # Check first week structure
+            first_week = weeks[0]
+            week_required_fields = ['id', 'week_number', 'workouts', 'total_workouts']
+            week_missing_fields = [field for field in week_required_fields if field not in first_week]
+            
+            if week_missing_fields:
+                print(f"❌ Missing week fields: {week_missing_fields}")
+                return False
+            
+            # Check workout structure
+            workouts = first_week.get('workouts', [])
+            if len(workouts) != test_data['user_profile']['workout_days_per_week']:
+                print(f"❌ Expected {test_data['user_profile']['workout_days_per_week']} workouts, got {len(workouts)}")
+                return False
+            
+            # Check first workout structure
+            first_workout = workouts[0]
+            workout_required_fields = ['id', 'name', 'exercises', 'duration_minutes']
+            workout_missing_fields = [field for field in workout_required_fields if field not in first_workout]
+            
+            if workout_missing_fields:
+                print(f"❌ Missing workout fields: {workout_missing_fields}")
+                return False
+            
+            # Check exercises structure
+            exercises = first_workout.get('exercises', [])
+            if len(exercises) == 0:
+                print("❌ No exercises found in workout")
+                return False
+            
+            # Check first exercise structure
+            first_exercise = exercises[0]
+            exercise_required_fields = ['name', 'sets', 'reps', 'rest_seconds', 'muscle_group']
+            exercise_missing_fields = [field for field in exercise_required_fields if field not in first_exercise]
+            
+            if exercise_missing_fields:
+                print(f"❌ Missing exercise fields: {exercise_missing_fields}")
+                return False
+            
+            print(f"✅ Fat Loss Plan Generated Successfully")
+            print(f"Plan ID: {plan['id']}")
+            print(f"Plan Name: {plan['name']}")
+            print(f"Total Weeks: {plan['total_weeks']}")
+            print(f"Workouts per week: {len(workouts)}")
+            print(f"Exercises in first workout: {len(exercises)}")
+            
+        else:
+            print(f"❌ Fat Loss Plan Generation FAILED - Status code: {response.status_code}")
+            print(f"Response: {response.text}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Fat Loss Plan Generation FAILED - Exception: {str(e)}")
+        return False
+    
+    # Test Case 2: Muscle Gain Plan for Beginner
+    print("\n--- Test Case 2: Muscle Gain Plan ---")
+    try:
+        test_data = {
+            "user_profile": {
+                "user_id": "test-user-muscle-gain-456",
+                "goal_primary": "muscle_gain",
+                "experience_level": "beginner",
+                "workout_days_per_week": 3,
+                "workout_days": ["Monday", "Wednesday", "Friday"],
+                "equipment": ["bodyweight"],
+                "gender": "female",
+                "session_minutes": 30
+            }
+        }
+        
+        response = requests.post(f"{API_BASE}/generate-plan-template", json=test_data, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get('success') and data.get('plan', {}).get('total_weeks') == 4:
+                print(f"✅ Muscle Gain Plan Generated Successfully")
+                print(f"Plan Name: {data['plan']['name']}")
+            else:
+                print(f"❌ Invalid muscle gain plan structure: {data}")
+                return False
+        else:
+            print(f"❌ Muscle Gain Plan FAILED - Status: {response.status_code}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Muscle Gain Plan FAILED - Exception: {str(e)}")
+        return False
+    
+    # Test Case 3: Endurance Plan for Advanced User
+    print("\n--- Test Case 3: Endurance Plan ---")
+    try:
+        test_data = {
+            "user_profile": {
+                "user_id": "test-user-endurance-789",
+                "goal_primary": "endurance",
+                "experience_level": "advanced",
+                "workout_days_per_week": 6,
+                "workout_days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+                "equipment": ["bodyweight", "dumbbells", "pull_up_bar"],
+                "gender": "male",
+                "session_minutes": 60
+            }
+        }
+        
+        response = requests.post(f"{API_BASE}/generate-plan-template", json=test_data, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get('success') and data.get('plan', {}).get('total_weeks') == 4:
+                print(f"✅ Endurance Plan Generated Successfully")
+                print(f"Plan Name: {data['plan']['name']}")
+            else:
+                print(f"❌ Invalid endurance plan structure: {data}")
+                return False
+        else:
+            print(f"❌ Endurance Plan FAILED - Status: {response.status_code}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Endurance Plan FAILED - Exception: {str(e)}")
+        return False
+    
+    # Test Case 4: Error Handling - Invalid Data
+    print("\n--- Test Case 4: Error Handling ---")
+    try:
+        # Test with missing required fields
+        invalid_data = {
+            "user_profile": {
+                "goal_primary": "invalid_goal"
+                # Missing required fields
+            }
+        }
+        
+        response = requests.post(f"{API_BASE}/generate-plan-template", json=invalid_data, timeout=30)
+        
+        if response.status_code in [400, 422, 500]:
+            print(f"✅ Error Handling Working - Status: {response.status_code}")
+        else:
+            print(f"❌ Error Handling Failed - Expected error status, got: {response.status_code}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Error Handling Test FAILED - Exception: {str(e)}")
+        return False
+    
+    print("✅ Template Plan Generation PASSED - All test cases successful")
+    return True
+
 def run_all_tests():
     """Run all backend tests"""
     print("🚀 Starting BisaFit Backend API Testing Suite")
