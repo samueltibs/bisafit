@@ -143,6 +143,18 @@ backend:
         agent: "testing"
         comment: "✅ PASSED - MongoDB CRUD operations working perfectly. POST /api/status creates records with valid UUIDs and current timestamps. GET /api/status retrieves all records correctly. Data persistence verified across multiple requests. Error handling working (422 for invalid data, 404 for non-existent endpoints). Tested with 5 concurrent requests - all successful."
 
+  - task: "Template-based workout plan generation (NO AI CREDITS)"
+    implemented: true
+    working: true
+    file: "backend/server.py, backend/plan_generator.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "IMPLEMENTED: POST /api/generate-plan-template endpoint. Replaces AI-based Supabase Edge Function. Generates personalized 4-week plans based on user goals, experience level, equipment, and workout days. Uses template-based algorithmic selection. Manual curl test successful - returns complete workout plans."
+
 frontend:
   - task: "Authentication flow (Supabase)"
     implemented: true
