@@ -596,6 +596,7 @@ def run_all_tests():
     test_results['multiple_requests'] = test_multiple_requests()
     test_results['workout_image_generation'] = test_workout_image_generation()
     test_results['workout_images_batch'] = test_workout_images_batch()
+    test_results['template_plan_generation'] = test_template_plan_generation()
     
     # Summary
     print("\n" + "="*50)
