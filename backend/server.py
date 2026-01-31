@@ -145,6 +145,66 @@ async def send_weekly_report(request: AnalyticsReportRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ============================================
+# WORKOUT PLAN GENERATION (NO AI CREDITS)
+# ============================================
+
+class UserProfileForPlan(BaseModel):
+    """User profile data for generating a workout plan"""
+    user_id: str
+    goal_primary: str = "maintenance"
+    experience_level: str = "intermediate"
+    workout_days_per_week: int = 4
+    workout_days: List[str] = ["Monday", "Wednesday", "Thursday", "Friday"]
+    equipment: List[str] = ["bodyweight"]
+    gender: Optional[str] = None
+    session_minutes: int = 45
+
+
+class GeneratePlanRequest(BaseModel):
+    """Request body for generating a workout plan"""
+    user_profile: UserProfileForPlan
+
+
+@api_router.post("/generate-plan-template")
+async def generate_plan_from_template(request: GeneratePlanRequest):
+    """
+    Generate a 4-week workout plan from templates.
+    NO AI CREDITS REQUIRED - uses algorithmic selection.
+    
+    This replaces the Supabase Edge Function that was consuming AI credits.
+    """
+    try:
+        logger.info(f"Generating plan for user: {request.user_profile.user_id}")
+        
+        # Convert request to dict for the generator
+        profile_data = {
+            "user_id": request.user_profile.user_id,
+            "goal_primary": request.user_profile.goal_primary,
+            "experience_level": request.user_profile.experience_level,
+            "workout_days_per_week": request.user_profile.workout_days_per_week,
+            "workout_days": request.user_profile.workout_days,
+            "equipment": request.user_profile.equipment,
+            "gender": request.user_profile.gender,
+            "session_minutes": request.user_profile.session_minutes,
+        }
+        
+        # Generate the plan using templates
+        plan_data = generate_4_week_plan(profile_data)
+        
+        logger.info(f"Plan generated successfully: {plan_data['id']}")
+        
+        return {
+            "success": True,
+            "plan": plan_data,
+            "message": "Your personalized workout plan is ready!"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error generating plan: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
