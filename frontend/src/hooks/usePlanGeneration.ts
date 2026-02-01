@@ -8,14 +8,18 @@ interface GeneratePlanResult {
   plan_id?: string;
   message?: string;
   error?: string;
+  ai_powered?: boolean;
 }
 
 interface GeneratedPlan {
   id: string;
   name: string;
+  coach_message?: string;
   weeks: Array<{
     id: string;
     week_number: number;
+    theme?: string;
+    coach_note?: string;
     start_date: string;
     end_date: string;
     workouts: Array<{
@@ -31,6 +35,7 @@ interface GeneratedPlan {
         reps: string;
         rest_seconds: number;
         muscle_group: string;
+        notes?: string;
         is_warmup?: boolean;
         is_cooldown?: boolean;
       }>;
@@ -71,22 +76,26 @@ export function usePlanGeneration() {
         throw new Error('User profile not found. Please complete onboarding first.');
       }
 
-      // Call our FREE backend endpoint instead of the Supabase AI function
+      // Call our AI-powered backend endpoint
       const response = await fetch(`${BACKEND_URL}/api/generate-plan-template`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          use_ai: true, // Enable AI-powered generation
           user_profile: {
             user_id: session.user.id,
             goal_primary: profile.goal_primary || 'maintenance',
+            goal_secondary: (profile as any).goal_secondary || null,
             experience_level: profile.experience_level || 'intermediate',
             workout_days_per_week: profile.days_per_week || 4,
-            workout_days: profile.workout_days || ['Monday', 'Wednesday', 'Thursday', 'Friday'],
+            workout_days: (profile as any).workout_days || ['Monday', 'Wednesday', 'Thursday', 'Friday'],
             equipment: profile.equipment_json || ['bodyweight'],
             gender: profile.gender || null,
             session_minutes: profile.session_minutes || 45,
+            constraints: profile.constraints_json || null,
+            coach_tone: (profile as any).coach_tone || 'balanced',
           }
         }),
       });
@@ -111,12 +120,15 @@ export function usePlanGeneration() {
           start_date: generatedPlan.weeks[0]?.start_date || new Date().toISOString().split('T')[0],
           plan_json: {
             name: generatedPlan.name,
+            coach_message: generatedPlan.coach_message,
             goal: generatedPlan.goal,
             experience_level: generatedPlan.experience_level,
             total_weeks: generatedPlan.total_weeks,
             block_number: 1,
             weeks: generatedPlan.weeks.map(week => ({
               week_number: week.week_number,
+              theme: week.theme,
+              coach_note: week.coach_note,
               days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(dayName => {
                 const workout = week.workouts.find(w => w.day_name === dayName);
                 if (workout) {
@@ -177,6 +189,7 @@ export function usePlanGeneration() {
                       reps: e.reps,
                       rest_seconds: e.rest_seconds,
                       muscle_group: e.muscle_group,
+                      notes: e.notes,
                     })),
                 },
                 {
@@ -190,6 +203,7 @@ export function usePlanGeneration() {
                       reps: e.reps,
                       rest_seconds: e.rest_seconds,
                       muscle_group: e.muscle_group,
+                      notes: e.notes,
                     })),
                 },
                 {
@@ -203,6 +217,7 @@ export function usePlanGeneration() {
                       reps: e.reps,
                       rest_seconds: e.rest_seconds,
                       muscle_group: e.muscle_group,
+                      notes: e.notes,
                     })),
                 },
               ],
@@ -231,7 +246,8 @@ export function usePlanGeneration() {
       return {
         success: true,
         plan_id: generatedPlan.id,
-        message: data.message || 'Your personalized workout plan is ready!',
+        message: data.message || 'Your personalized AI workout plan is ready!',
+        ai_powered: data.ai_powered,
       };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate plan';
