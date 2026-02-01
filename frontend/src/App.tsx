@@ -14,6 +14,7 @@ import { AppLanguageProvider } from "@/components/AppLanguageProvider";
 
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import EmailVerification from "./pages/EmailVerification";
 import Onboarding from "./pages/Onboarding";
 import PlanPreview from "./pages/PlanPreview";
