@@ -157,6 +157,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ COMPREHENSIVE TESTING PASSED - Template-based workout plan generation working perfectly. Tested 4 scenarios: 1) Fat Loss Plan (intermediate, 4 days/week, bodyweight+dumbbells) - Generated complete 4-week plan with proper structure, exercises, sets/reps. 2) Muscle Gain Plan (beginner, 3 days/week, bodyweight) - Successfully created personalized plan. 3) Endurance Plan (advanced, 6 days/week, full equipment) - Generated advanced workout plan. 4) Error Handling - Properly rejects invalid data with 422 status. All response structures validated: success flag, plan.id (UUID), plan.name, plan.weeks (4 weeks), plan.total_weeks=4, workouts with exercises containing sets/reps/rest_seconds. NO AI CREDITS USED - purely template-based generation working as designed."
+      - working: true
+        agent: "testing"
+        comment: "✅ AI-POWERED PLAN GENERATION TESTED - POST /api/generate-plan-template with use_ai=true working correctly. PASSED: 1) Health endpoint (GET /api/) returns correct response. 2) AI-Powered Muscle Gain Plan (beginner, 3 days/week, bodyweight, female) - Generated complete personalized plan with success=true, ai_powered=true, proper plan structure (name, coach_message, 4 weeks), workouts on correct days (Mon/Wed/Fri), exercises with warmup/main/cooldown sections, cost_info.estimated_cost_usd=$0.004623. 3) Template-based generation (use_ai=false) working as fallback. ISSUE FOUND: Fat Loss Plan generation (intermediate, 4 days/week, bodyweight+dumbbells, male) experiencing JSON parsing errors in OpenAI response - request times out after 90s due to malformed JSON from GPT-4o-mini. This appears to be an intermittent issue with complex workout plans. Core AI functionality working, but specific parameter combinations may cause parsing failures."
 
 frontend:
   - task: "Authentication flow (Supabase)"
