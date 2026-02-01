@@ -147,59 +147,79 @@ async def send_weekly_report(request: AnalyticsReportRequest):
 
 
 # ============================================
-# WORKOUT PLAN GENERATION (NO AI CREDITS)
+# WORKOUT PLAN GENERATION
 # ============================================
 
 class UserProfileForPlan(BaseModel):
     """User profile data for generating a workout plan"""
     user_id: str
     goal_primary: str = "maintenance"
+    goal_secondary: Optional[str] = None
     experience_level: str = "intermediate"
     workout_days_per_week: int = 4
     workout_days: List[str] = ["Monday", "Wednesday", "Thursday", "Friday"]
     equipment: List[str] = ["bodyweight"]
     gender: Optional[str] = None
     session_minutes: int = 45
+    constraints: Optional[Dict[str, Any]] = None
+    coach_tone: str = "balanced"
 
 
 class GeneratePlanRequest(BaseModel):
     """Request body for generating a workout plan"""
     user_profile: UserProfileForPlan
+    use_ai: bool = True  # Default to AI-powered generation
 
 
 @api_router.post("/generate-plan-template")
 async def generate_plan_from_template(request: GeneratePlanRequest):
     """
-    Generate a 4-week workout plan from templates.
-    NO AI CREDITS REQUIRED - uses algorithmic selection.
+    Generate a 4-week workout plan.
     
-    This replaces the Supabase Edge Function that was consuming AI credits.
+    If use_ai=True (default): Uses GPT-4o-mini for truly personalized plans (~$0.002/plan)
+    If use_ai=False: Uses template-based generation (free, but less personalized)
     """
     try:
-        logger.info(f"Generating plan for user: {request.user_profile.user_id}")
+        logger.info(f"Generating plan for user: {request.user_profile.user_id} (AI: {request.use_ai})")
         
         # Convert request to dict for the generator
         profile_data = {
             "user_id": request.user_profile.user_id,
             "goal_primary": request.user_profile.goal_primary,
+            "goal_secondary": request.user_profile.goal_secondary,
             "experience_level": request.user_profile.experience_level,
             "workout_days_per_week": request.user_profile.workout_days_per_week,
             "workout_days": request.user_profile.workout_days,
             "equipment": request.user_profile.equipment,
             "gender": request.user_profile.gender,
             "session_minutes": request.user_profile.session_minutes,
+            "constraints": request.user_profile.constraints,
+            "coach_tone": request.user_profile.coach_tone,
         }
         
-        # Generate the plan using templates
-        plan_data = generate_4_week_plan(profile_data)
-        
-        logger.info(f"Plan generated successfully: {plan_data['id']}")
-        
-        return {
-            "success": True,
-            "plan": plan_data,
-            "message": "Your personalized workout plan is ready!"
-        }
+        if request.use_ai:
+            # AI-powered generation using GPT-4o-mini
+            plan_data = await generate_ai_plan_with_fallback(profile_data)
+            logger.info(f"AI Plan generated successfully: {plan_data['id']}")
+            
+            return {
+                "success": True,
+                "plan": plan_data,
+                "message": plan_data.get("coach_message", "Your personalized AI workout plan is ready!"),
+                "ai_powered": True,
+                "cost_info": plan_data.get("_meta", {})
+            }
+        else:
+            # Template-based generation (fallback, free)
+            plan_data = generate_4_week_plan(profile_data)
+            logger.info(f"Template plan generated successfully: {plan_data['id']}")
+            
+            return {
+                "success": True,
+                "plan": plan_data,
+                "message": "Your workout plan is ready!",
+                "ai_powered": False
+            }
         
     except Exception as e:
         logger.error(f"Error generating plan: {e}")
