@@ -579,6 +579,164 @@ def test_template_plan_generation():
     print("✅ Template Plan Generation PASSED - All test cases successful")
     return True
 
+def test_ai_powered_plan_generation():
+    """Test POST /api/generate-plan-template endpoint with AI-powered generation (use_ai: true)"""
+    print("\n=== Testing AI-Powered Workout Plan Generation (GPT-4o-mini) ===")
+    
+    # Test Case 1: AI-Powered Fat Loss Plan
+    print("\n--- Test Case 1: AI-Powered Fat Loss Plan ---")
+    try:
+        test_data = {
+            "use_ai": True,
+            "user_profile": {
+                "user_id": "test-user-ai-1",
+                "goal_primary": "fat_loss",
+                "experience_level": "intermediate",
+                "workout_days_per_week": 4,
+                "workout_days": ["Monday", "Tuesday", "Thursday", "Friday"],
+                "equipment": ["bodyweight", "dumbbells"],
+                "gender": "male",
+                "session_minutes": 45,
+                "coach_tone": "motivational"
+            }
+        }
+        
+        print("⏳ Generating AI-powered fat loss plan (this may take 15-30 seconds)...")
+        response = requests.post(f"{API_BASE}/generate-plan-template", json=test_data, timeout=60)
+        print(f"Status Code: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            # Check response structure
+            required_fields = ['success', 'plan', 'message', 'ai_powered', 'cost_info']
+            missing_fields = [field for field in required_fields if field not in data]
+            
+            if missing_fields:
+                print(f"❌ Missing top-level fields: {missing_fields}")
+                return False
+            
+            if not data.get('success'):
+                print(f"❌ Success field is False: {data}")
+                return False
+            
+            if not data.get('ai_powered'):
+                print(f"❌ ai_powered should be True for AI generation: {data.get('ai_powered')}")
+                return False
+            
+            plan = data.get('plan', {})
+            plan_required_fields = ['name', 'coach_message', 'weeks']
+            plan_missing_fields = [field for field in plan_required_fields if field not in plan]
+            
+            if plan_missing_fields:
+                print(f"❌ Missing plan fields: {plan_missing_fields}")
+                return False
+            
+            # Validate plan structure
+            weeks = plan.get('weeks', [])
+            if len(weeks) != 4:
+                print(f"❌ Expected 4 weeks array, got {len(weeks)} weeks")
+                return False
+            
+            # Check that workouts are only on specified days
+            first_week = weeks[0]
+            workouts = first_week.get('workouts', [])
+            expected_days = test_data['user_profile']['workout_days']
+            
+            for workout in workouts:
+                if workout.get('day') not in expected_days:
+                    print(f"❌ Workout scheduled on unexpected day: {workout.get('day')}")
+                    return False
+            
+            # Check workout structure includes warmup, main, cooldown
+            first_workout = workouts[0] if workouts else {}
+            exercises = first_workout.get('exercises', [])
+            
+            if len(exercises) == 0:
+                print("❌ No exercises found in workout")
+                return False
+            
+            # Verify cost info
+            cost_info = data.get('cost_info', {})
+            if 'estimated_cost_usd' in cost_info:
+                cost = cost_info['estimated_cost_usd']
+                if not (0.003 <= cost <= 0.005):
+                    print(f"⚠️ Cost outside expected range: ${cost} (expected $0.003-0.005)")
+            
+            print(f"✅ AI-Powered Fat Loss Plan Generated Successfully")
+            print(f"Plan Name: {plan['name']}")
+            print(f"Coach Message: {plan['coach_message'][:100]}...")
+            print(f"AI Powered: {data['ai_powered']}")
+            print(f"Estimated Cost: ${cost_info.get('estimated_cost_usd', 'N/A')}")
+            
+        else:
+            print(f"❌ AI Fat Loss Plan Generation FAILED - Status code: {response.status_code}")
+            print(f"Response: {response.text}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ AI Fat Loss Plan Generation FAILED - Exception: {str(e)}")
+        return False
+    
+    # Test Case 2: AI-Powered Muscle Gain Plan
+    print("\n--- Test Case 2: AI-Powered Muscle Gain Plan ---")
+    try:
+        test_data = {
+            "use_ai": True,
+            "user_profile": {
+                "user_id": "test-user-ai-2",
+                "goal_primary": "muscle_gain",
+                "experience_level": "beginner",
+                "workout_days_per_week": 3,
+                "workout_days": ["Monday", "Wednesday", "Friday"],
+                "equipment": ["bodyweight"],
+                "gender": "female",
+                "session_minutes": 30,
+                "coach_tone": "supportive"
+            }
+        }
+        
+        print("⏳ Generating AI-powered muscle gain plan (this may take 15-30 seconds)...")
+        response = requests.post(f"{API_BASE}/generate-plan-template", json=test_data, timeout=60)
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            if not data.get('success'):
+                print(f"❌ Success field is False: {data}")
+                return False
+            
+            if not data.get('ai_powered'):
+                print(f"❌ ai_powered should be True for AI generation: {data.get('ai_powered')}")
+                return False
+            
+            plan = data.get('plan', {})
+            if not plan.get('name') or not plan.get('coach_message'):
+                print(f"❌ Missing plan name or coach message: {plan}")
+                return False
+            
+            weeks = plan.get('weeks', [])
+            if len(weeks) != 4:
+                print(f"❌ Expected 4 weeks, got {len(weeks)}")
+                return False
+            
+            print(f"✅ AI-Powered Muscle Gain Plan Generated Successfully")
+            print(f"Plan Name: {plan['name']}")
+            print(f"Coach Message: {plan['coach_message'][:100]}...")
+            print(f"AI Powered: {data['ai_powered']}")
+            
+        else:
+            print(f"❌ AI Muscle Gain Plan FAILED - Status: {response.status_code}")
+            print(f"Response: {response.text}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ AI Muscle Gain Plan FAILED - Exception: {str(e)}")
+        return False
+    
+    print("✅ AI-Powered Plan Generation PASSED - All test cases successful")
+    return True
+
 def run_all_tests():
     """Run all backend tests"""
     print("🚀 Starting BisaFit Backend API Testing Suite")
@@ -597,6 +755,7 @@ def run_all_tests():
     test_results['workout_image_generation'] = test_workout_image_generation()
     test_results['workout_images_batch'] = test_workout_images_batch()
     test_results['template_plan_generation'] = test_template_plan_generation()
+    test_results['ai_powered_plan_generation'] = test_ai_powered_plan_generation()
     
     # Summary
     print("\n" + "="*50)
