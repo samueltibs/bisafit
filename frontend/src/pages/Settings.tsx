@@ -91,7 +91,7 @@ export default function Settings() {
   const { realignSchedule, haveWorkoutDaysChanged, isRealigning } = useScheduleRealignment();
   
   // Check if user is admin
-  const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
+  const isAdmin = isAdminEmail(user?.email);
   
   // Modal states with scroll restoration on close
   const [isEditModalOpen, setIsEditModalOpenState] = useState(false);
