@@ -143,17 +143,17 @@ backend:
         agent: "testing"
         comment: "✅ PASSED - MongoDB CRUD operations working perfectly. POST /api/status creates records with valid UUIDs and current timestamps. GET /api/status retrieves all records correctly. Data persistence verified across multiple requests. Error handling working (422 for invalid data, 404 for non-existent endpoints). Tested with 5 concurrent requests - all successful."
 
-  - task: "Template-based workout plan generation (NO AI CREDITS)"
+  - task: "AI-powered workout plan generation (GPT-4o-mini)"
     implemented: true
     working: true
-    file: "backend/server.py, backend/plan_generator.py"
+    file: "backend/server.py, backend/ai_plan_generator.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
     status_history:
       - working: true
         agent: "main"
-        comment: "IMPLEMENTED: POST /api/generate-plan-template endpoint. Replaces AI-based Supabase Edge Function. Generates personalized 4-week plans based on user goals, experience level, equipment, and workout days. Uses template-based algorithmic selection. Manual curl test successful - returns complete workout plans."
+        comment: "IMPLEMENTED: POST /api/generate-plan-template with use_ai=true uses GPT-4o-mini. Generates truly personalized 4-week plans with custom coach messages, weekly themes, progressive workouts. Cost ~$0.004 per plan. Uses user's own OpenAI API key."
       - working: true
         agent: "testing"
         comment: "✅ COMPREHENSIVE TESTING PASSED - Template-based workout plan generation working perfectly. Tested 4 scenarios: 1) Fat Loss Plan (intermediate, 4 days/week, bodyweight+dumbbells) - Generated complete 4-week plan with proper structure, exercises, sets/reps. 2) Muscle Gain Plan (beginner, 3 days/week, bodyweight) - Successfully created personalized plan. 3) Endurance Plan (advanced, 6 days/week, full equipment) - Generated advanced workout plan. 4) Error Handling - Properly rejects invalid data with 422 status. All response structures validated: success flag, plan.id (UUID), plan.name, plan.weeks (4 weeks), plan.total_weeks=4, workouts with exercises containing sets/reps/rest_seconds. NO AI CREDITS USED - purely template-based generation working as designed."
