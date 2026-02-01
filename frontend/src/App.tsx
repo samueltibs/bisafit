@@ -31,7 +31,40 @@ import NotificationCenter from "./pages/NotificationCenter";
 import ManageSubscription from "./pages/ManageSubscription";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import NotFound from "./pages/NotFound";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
 const queryClient = new QueryClient();
+
+// Component to handle auth redirects
+function AuthRedirectHandler({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    // Listen for password recovery events and redirect appropriately
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth event:', event);
+      
+      // If this is a password recovery event, redirect to reset password page
+      if (event === 'PASSWORD_RECOVERY') {
+        console.log('Password recovery event detected, redirecting to /reset-password');
+        window.location.href = '/reset-password';
+      }
+    });
+
+    // Also check URL hash on mount for recovery tokens
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const type = hashParams.get('type');
+    
+    if (type === 'recovery' && !window.location.pathname.includes('reset-password')) {
+      console.log('Recovery token in URL, redirecting to /reset-password');
+      // Preserve the hash when redirecting
+      window.location.href = '/reset-password' + window.location.hash;
+    }
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  return <>{children}</>;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
