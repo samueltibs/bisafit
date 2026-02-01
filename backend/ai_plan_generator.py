@@ -105,7 +105,7 @@ async def generate_ai_plan(user_profile: Dict[str, Any]) -> Dict[str, Any]:
     user_id = user_profile.get('user_id', str(uuid.uuid4()))
     
     try:
-        # Call GPT-4o-mini
+        # Call GPT-4o-mini with lower temperature for more consistent JSON
         response = await client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -113,7 +113,7 @@ async def generate_ai_plan(user_profile: Dict[str, Any]) -> Dict[str, Any]:
                 {"role": "user", "content": get_plan_generation_prompt(user_profile)}
             ],
             response_format={"type": "json_object"},
-            temperature=0.7,
+            temperature=0.5,  # Lower temperature for more consistent output
             max_tokens=8000,
         )
         
