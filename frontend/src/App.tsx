@@ -179,11 +179,11 @@ const App = () => (
             <OverlayDebugPanel />
             <IOSScrollDebugPanel />
           </BrowserRouter>
-        </TooltipProvider>
-      </AppLanguageProvider>
-      </AuthRedirectHandler>
-    </AuthProvider>
-  </PlatformProvider>
+          </TooltipProvider>
+        </AppLanguageProvider>
+        </AuthRedirectHandler>
+      </AuthProvider>
+    </PlatformProvider>
   </QueryClientProvider>
 );
 
