@@ -12,6 +12,7 @@ from datetime import datetime
 from workout_image_service import generate_workout_image, generate_workout_images_batch
 from email_service import send_feedback_notification, send_weekly_analytics_report
 from plan_generator import generate_4_week_plan, generate_weekly_plan
+from ai_plan_generator import generate_ai_plan_with_fallback
 
 
 ROOT_DIR = Path(__file__).parent
