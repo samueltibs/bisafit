@@ -78,12 +78,10 @@ import { MusicSettings } from '@/components/settings/MusicSettings';
 import { HealthPlatformSettings } from '@/components/settings/HealthPlatformSettings';
 import { ReminderSettings } from '@/components/settings/ReminderSettings';
 import { BetaFeedbackForm } from '@/components/settings/BetaFeedbackForm';
+import { isAdminEmail } from '@/lib/adminConfig';
 
 // Toggle this to switch between beta feedback form and simple feedback
 const BETA_MODE = true;
-
-// Admin emails for analytics access
-const ADMIN_EMAILS = ['samuel.m.tibs@gmail.com'];
 
 export default function Settings() {
   const navigate = useNavigate();
