@@ -8,6 +8,7 @@ Uses YOUR OpenAI API key - costs ~$0.002 per plan generation.
 import os
 import json
 import uuid
+import re
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 from openai import AsyncOpenAI
@@ -19,32 +20,22 @@ load_dotenv()
 client = AsyncOpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
 
 # System prompt for workout plan generation
-SYSTEM_PROMPT = """You are an expert personal trainer and fitness coach creating personalized workout plans.
+SYSTEM_PROMPT = """You are an expert personal trainer creating personalized workout plans.
 
-Your task is to generate a detailed 4-week workout plan based on the user's profile.
+CRITICAL: Return ONLY valid JSON. No markdown, no explanations.
 
-IMPORTANT RULES:
-1. Create EXACTLY 4 weeks of workouts
-2. Each workout must include warmup (3-4 exercises), main workout (5-8 exercises), and cooldown (3-4 stretches)
-3. Match exercise difficulty to user's experience level
-4. Only include exercises that use the user's available equipment
-5. Respect any health constraints or injuries
-6. Vary workouts throughout the week to target different muscle groups
-7. Include progressive overload - slightly increase intensity each week
-8. Match the coaching tone to user's preference
+Create a 4-week workout plan matching the user's profile. Each workout includes:
+- 3 warmup exercises (is_warmup: true)
+- 5-6 main exercises
+- 3 cooldown stretches (is_cooldown: true)
 
-EXERCISE GUIDELINES BY GOAL:
-- Fat Loss: Higher reps (12-15), shorter rest (30-45s), include cardio bursts
-- Muscle Gain: Moderate reps (8-12), longer rest (60-90s), compound movements
-- Endurance: High reps (15-20), minimal rest (20-30s), circuit style
-- Maintenance: Balanced approach (10-12 reps), moderate rest (45-60s)
+Match difficulty to experience level. Only use available equipment.
 
-EXPERIENCE LEVELS:
-- Beginner: Basic movements, bodyweight focus, form emphasis
-- Intermediate: Progressive loading, varied exercises, supersets
-- Advanced: Complex movements, high volume, advanced techniques
-
-Return a valid JSON object following the exact schema provided."""
+GOAL GUIDELINES:
+- fat_loss: 12-15 reps, 30-45s rest, include cardio
+- muscle_gain: 8-12 reps, 60-90s rest, compound movements
+- endurance: 15-20 reps, 20-30s rest, circuits
+- maintenance: 10-12 reps, 45-60s rest, balanced"""
 
 
 def get_plan_generation_prompt(user_profile: Dict[str, Any]) -> str:
@@ -54,51 +45,33 @@ def get_plan_generation_prompt(user_profile: Dict[str, Any]) -> str:
     if not equipment_list:
         equipment_list = ['bodyweight']
     
-    constraints = user_profile.get('constraints', {})
-    injury_flags = constraints.get('injury_flags', []) if isinstance(constraints, dict) else []
-    health_notes = constraints.get('notes', '') if isinstance(constraints, dict) else ''
+    workout_days = user_profile.get('workout_days', ['Monday', 'Wednesday', 'Thursday', 'Friday'])
     
-    return f"""Create a personalized 4-week workout plan for this user:
-
-**User Profile:**
+    return f"""Create workout plan JSON for:
+- Goal: {user_profile.get('goal_primary', 'maintenance')}
+- Experience: {user_profile.get('experience_level', 'intermediate')}
 - Gender: {user_profile.get('gender', 'Not specified')}
-- Primary Goal: {user_profile.get('goal_primary', 'maintenance')}
-- Secondary Goal: {user_profile.get('goal_secondary', 'None')}
-- Experience Level: {user_profile.get('experience_level', 'intermediate')}
-- Workout Days Per Week: {user_profile.get('workout_days_per_week', 4)}
-- Preferred Workout Days: {', '.join(user_profile.get('workout_days', ['Monday', 'Wednesday', 'Thursday', 'Friday']))}
-- Session Duration: {user_profile.get('session_minutes', 45)} minutes
-- Available Equipment: {', '.join(equipment_list)}
-- Health Constraints/Injuries: {', '.join(injury_flags) if injury_flags else 'None'}
-- Additional Health Notes: {health_notes or 'None'}
-- Preferred Coaching Tone: {user_profile.get('coach_tone', 'balanced')}
+- Workout Days: {', '.join(workout_days)}
+- Equipment: {', '.join(equipment_list)}
+- Session Length: {user_profile.get('session_minutes', 45)} min
+- Coaching Style: {user_profile.get('coach_tone', 'balanced')}
 
-**Required JSON Schema:**
+Return this exact JSON structure:
 {{
-  "plan_name": "string - descriptive name like '4-Week Fat Loss Plan'",
-  "coach_message": "string - personalized motivational message for the user (2-3 sentences)",
+  "plan_name": "4-Week [Goal] Plan",
+  "coach_message": "2 sentence personalized motivation",
   "weeks": [
     {{
       "week_number": 1,
-      "theme": "string - week focus like 'Foundation Building'",
-      "coach_note": "string - brief note about this week's focus",
+      "theme": "Week theme",
       "workouts": [
         {{
-          "day_name": "Monday",
-          "workout_name": "string - descriptive name like 'Upper Body Strength'",
+          "day_name": "{workout_days[0] if workout_days else 'Monday'}",
+          "workout_name": "Workout Name",
           "duration_minutes": 45,
-          "focus_areas": ["chest", "shoulders", "triceps"],
+          "focus_areas": ["muscle1", "muscle2"],
           "exercises": [
-            {{
-              "name": "string - exercise name",
-              "sets": 3,
-              "reps": "10-12",
-              "rest_seconds": 60,
-              "muscle_group": "string",
-              "notes": "string - form tips or modifications",
-              "is_warmup": false,
-              "is_cooldown": false
-            }}
+            {{"name": "Exercise", "sets": 3, "reps": "10-12", "rest_seconds": 60, "muscle_group": "chest", "is_warmup": false, "is_cooldown": false}}
           ]
         }}
       ]
@@ -106,9 +79,20 @@ def get_plan_generation_prompt(user_profile: Dict[str, Any]) -> str:
   ]
 }}
 
-Generate all 4 weeks with workouts ONLY on the specified workout days. Other days should not have workouts.
-Make sure exercise selection matches the available equipment and experience level.
-Include warmup exercises (is_warmup: true) and cooldown stretches (is_cooldown: true) for each workout."""
+Generate ALL 4 weeks with workouts ONLY on: {', '.join(workout_days)}"""
+
+
+def fix_json_string(json_str: str) -> str:
+    """Attempt to fix common JSON issues"""
+    # Remove any markdown code blocks
+    json_str = re.sub(r'^```json\s*', '', json_str)
+    json_str = re.sub(r'^```\s*', '', json_str)
+    json_str = re.sub(r'\s*```$', '', json_str)
+    
+    # Remove trailing commas before } or ]
+    json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)
+    
+    return json_str.strip()
 
 
 async def generate_ai_plan(user_profile: Dict[str, Any]) -> Dict[str, Any]:
@@ -130,11 +114,20 @@ async def generate_ai_plan(user_profile: Dict[str, Any]) -> Dict[str, Any]:
             ],
             response_format={"type": "json_object"},
             temperature=0.7,
-            max_tokens=4000,
+            max_tokens=8000,
         )
         
         # Parse the response
-        plan_data = json.loads(response.choices[0].message.content)
+        raw_content = response.choices[0].message.content
+        fixed_content = fix_json_string(raw_content)
+        
+        try:
+            plan_data = json.loads(fixed_content)
+        except json.JSONDecodeError as e:
+            # Log the error and raw response for debugging
+            print(f"JSON Parse Error: {e}")
+            print(f"Raw content length: {len(raw_content)}")
+            raise Exception(f"Failed to parse AI response: {str(e)}")
         
         # Calculate dates
         today = datetime.now()
@@ -201,6 +194,29 @@ async def generate_ai_plan(user_profile: Dict[str, Any]) -> Dict[str, Any]:
             
             transformed_plan["weeks"].append(week_obj)
         
+        # Ensure we have 4 weeks (fill in if AI didn't generate all)
+        while len(transformed_plan["weeks"]) < 4:
+            week_number = len(transformed_plan["weeks"]) + 1
+            week_start = start_date + timedelta(weeks=week_number - 1)
+            week_end = week_start + timedelta(days=6)
+            
+            # Copy workouts from week 1 if available
+            base_workouts = transformed_plan["weeks"][0]["workouts"] if transformed_plan["weeks"] else []
+            
+            week_obj = {
+                "id": str(uuid.uuid4()),
+                "week_number": week_number,
+                "theme": f"Week {week_number}",
+                "coach_note": "",
+                "start_date": week_start.strftime("%Y-%m-%d"),
+                "end_date": week_end.strftime("%Y-%m-%d"),
+                "workouts": [
+                    {**w, "id": str(uuid.uuid4())} for w in base_workouts
+                ],
+                "total_workouts": len(base_workouts)
+            }
+            transformed_plan["weeks"].append(week_obj)
+        
         # Add token usage info for cost tracking
         usage = response.usage
         transformed_plan["_meta"] = {
@@ -236,6 +252,7 @@ async def generate_ai_plan_with_fallback(user_profile: Dict[str, Any]) -> Dict[s
             return await generate_ai_plan(user_profile)
         except Exception as e:
             last_error = e
+            print(f"AI plan generation attempt {attempt + 1} failed: {e}")
             if attempt < max_retries - 1:
                 continue
     
