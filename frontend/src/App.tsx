@@ -70,6 +70,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <PlatformProvider>
       <AuthProvider>
+        <AuthRedirectHandler>
         <AppLanguageProvider>
           <TooltipProvider>
             <Toaster />
