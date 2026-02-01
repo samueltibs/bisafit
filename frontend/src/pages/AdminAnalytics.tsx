@@ -91,7 +91,7 @@ export default function AdminAnalytics() {
   const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null);
 
   // Check if user is admin
-  const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
+  const isAdmin = isAdminEmail(user?.email);
 
   // Redirect non-admins
   useEffect(() => {
