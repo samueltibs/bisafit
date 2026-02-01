@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,7 @@ import { APP_NAME } from '@/lib/branding';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [isValidSession, setIsValidSession] = useState<boolean | null>(null);
   const [isComplete, setIsComplete] = useState(false);
@@ -29,38 +30,60 @@ export default function ResetPassword() {
   // Check if we have a valid recovery session
   useEffect(() => {
     const checkSession = async () => {
-      // Get the current session
-      const { data: { session } } = await supabase.auth.getSession();
-      
       // Check URL hash for recovery token (Supabase puts it there)
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
       const type = hashParams.get('type');
       
-      if (type === 'recovery' && accessToken) {
+      // Also check query params (some Supabase configs use these)
+      const queryType = searchParams.get('type');
+      const queryToken = searchParams.get('access_token');
+      
+      console.log('Reset password page loaded');
+      console.log('Hash type:', type);
+      console.log('Query type:', queryType);
+      console.log('Has access token:', !!accessToken || !!queryToken);
+      
+      if ((type === 'recovery' || queryType === 'recovery') && (accessToken || queryToken)) {
         // We have a recovery token, set the session
-        const { error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: hashParams.get('refresh_token') || '',
-        });
-        
-        if (error) {
-          console.error('Failed to set session:', error);
+        try {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken || queryToken || '',
+            refresh_token: refreshToken || searchParams.get('refresh_token') || '',
+          });
+          
+          if (error) {
+            console.error('Failed to set session:', error);
+            setIsValidSession(false);
+          } else {
+            console.log('Session set successfully for password reset');
+            setIsValidSession(true);
+          }
+        } catch (err) {
+          console.error('Error setting session:', err);
           setIsValidSession(false);
-        } else {
-          setIsValidSession(true);
         }
-      } else if (session) {
-        // User already has a session (possibly from clicking the email link)
-        setIsValidSession(true);
       } else {
-        // No valid session for password reset
-        setIsValidSession(false);
+        // Check if user already has an active session (e.g., from Supabase auto-login)
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          // Check if this is a recovery session by looking at the aal claim
+          // or just allow password update if user is logged in
+          console.log('Found existing session, allowing password reset');
+          setIsValidSession(true);
+        } else {
+          console.log('No valid recovery session found');
+          setIsValidSession(false);
+        }
       }
     };
 
-    checkSession();
-  }, []);
+    // Small delay to ensure Supabase client is ready
+    const timer = setTimeout(checkSession, 100);
+    return () => clearTimeout(timer);
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,6 +106,7 @@ export default function ResetPassword() {
       });
       
       if (error) {
+        console.error('Password update error:', error);
         toast.error(error.message);
       } else {
         setIsComplete(true);
@@ -97,6 +121,7 @@ export default function ResetPassword() {
         }, 2000);
       }
     } catch (err) {
+      console.error('Password update exception:', err);
       toast.error('Failed to update password. Please try again.');
     }
     
