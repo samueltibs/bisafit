@@ -31,13 +31,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-
-// Admin emails - add your email(s) here
-const ADMIN_EMAILS = [
-  'samuel.m.tibs@gmail.com',
-  'support@bisafit.com',
-  // Add more admin emails as needed
-];
+import { isAdminEmail } from '@/lib/adminConfig';
 
 interface FeedbackEntry {
   id: string;
