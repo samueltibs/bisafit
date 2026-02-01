@@ -243,17 +243,48 @@ async def generate_ai_plan(user_profile: Dict[str, Any]) -> Dict[str, Any]:
 async def generate_ai_plan_with_fallback(user_profile: Dict[str, Any]) -> Dict[str, Any]:
     """
     Generate plan with AI, with automatic retry on failure.
+    Falls back to template-based generation if AI fails repeatedly.
     """
+    from plan_generator import generate_4_week_plan
+    
     max_retries = 2
     last_error = None
     
     for attempt in range(max_retries):
         try:
-            return await generate_ai_plan(user_profile)
+            plan = await generate_ai_plan(user_profile)
+            return plan
         except Exception as e:
             last_error = e
             print(f"AI plan generation attempt {attempt + 1} failed: {e}")
             if attempt < max_retries - 1:
+                # Wait a bit before retrying
+                import asyncio
+                await asyncio.sleep(1)
                 continue
     
-    raise last_error
+    # AI failed, fall back to template-based generation
+    print(f"AI generation failed after {max_retries} attempts, using template fallback")
+    try:
+        template_plan = generate_4_week_plan(user_profile)
+        
+        # Add coach message for template plans
+        goal = user_profile.get("goal_primary", "fitness")
+        coach_messages = {
+            "fat_loss": "Your fat loss journey starts now! This plan is designed to maximize calorie burn while building lean muscle.",
+            "muscle_gain": "Time to build strength and muscle! Focus on progressive overload and proper nutrition.",
+            "endurance": "Let's build your stamina and endurance! Consistency is key to lasting results.",
+            "maintenance": "Great choice to maintain your fitness! This balanced plan keeps you active and healthy.",
+        }
+        template_plan["coach_message"] = coach_messages.get(goal, "Let's crush your fitness goals together!")
+        template_plan["_meta"] = {
+            "model": "template-fallback",
+            "note": "AI generation failed, using template-based plan",
+            "estimated_cost_usd": 0.0
+        }
+        
+        return template_plan
+    except Exception as template_error:
+        # If even template fails, raise the original AI error
+        raise last_error
+
