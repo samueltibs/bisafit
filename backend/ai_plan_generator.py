@@ -362,6 +362,7 @@ async def generate_ai_plan_with_fallback(user_profile: Dict[str, Any]) -> Dict[s
     """
     Generate plan with AI, with automatic retry on failure.
     Falls back to template-based generation if AI fails repeatedly.
+    Adds active rest days if configured by user.
     """
     from plan_generator import generate_4_week_plan
     
@@ -371,6 +372,8 @@ async def generate_ai_plan_with_fallback(user_profile: Dict[str, Any]) -> Dict[s
     for attempt in range(max_retries):
         try:
             plan = await generate_ai_plan(user_profile)
+            # Add active rest days if configured
+            plan = add_active_rest_to_plan(plan, user_profile)
             return plan
         except Exception as e:
             last_error = e
@@ -400,6 +403,9 @@ async def generate_ai_plan_with_fallback(user_profile: Dict[str, Any]) -> Dict[s
             "note": "AI generation failed, using template-based plan",
             "estimated_cost_usd": 0.0
         }
+        
+        # Add active rest days to template plan too
+        template_plan = add_active_rest_to_plan(template_plan, user_profile)
         
         return template_plan
     except Exception as template_error:
