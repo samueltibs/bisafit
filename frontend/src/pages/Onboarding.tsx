@@ -139,6 +139,9 @@ export default function Onboarding() {
         buffer_minutes?: number;
       } | null;
 
+      // Load active rest config if exists
+      const activeRestConfigJson = (profile as any).active_rest_config as ActiveRestConfig | null;
+
       setFormData((prev) => ({
         ...prev,
         fullName: profile.full_name || '',
@@ -159,6 +162,7 @@ export default function Onboarding() {
           fallback_duration_minutes: workoutTimePrefsJson.fallback_duration_minutes || 60,
           buffer_minutes: workoutTimePrefsJson.buffer_minutes || 5,
         } : null,
+        activeRestConfig: activeRestConfigJson || getDefaultActiveRestConfig(),
         equipment: equipmentJson || ['bodyweight'],
         constraints: {
           injury_flags: constraintsJson?.injury_flags || [],
