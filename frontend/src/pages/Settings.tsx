@@ -250,6 +250,7 @@ export default function Settings() {
       const timePreferences = parseTimePreferences((profile as any).workout_time_preferences_json);
       const calendarSyncEnabled = (profile as any).calendar_sync_enabled || false;
       const notificationsEnabledVal = (profile as any).notifications_enabled ?? false;
+      const activeRestConfig = (profile as any).active_rest_config || getDefaultActiveRestConfig();
 
       // Store original workout days to detect changes on save
       originalWorkoutDaysRef.current = [...workoutDays];
@@ -267,6 +268,7 @@ export default function Settings() {
         timePreferences,
         calendarSyncEnabled,
         notificationsEnabled: notificationsEnabledVal,
+        activeRestConfig,
       });
     }
   }, [isEditModalOpen, profile]);
