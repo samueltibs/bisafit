@@ -905,9 +905,31 @@ export default function Settings() {
               />
             </div>
 
-            {/* Goals Section - placeholder for future expansion */}
-            <div ref={goalsSectionRef} className="rounded-lg transition-all duration-300">
-              {/* Goals are currently set during onboarding - this section can be expanded */}
+            {/* Goals Section - includes Active Rest configuration */}
+            <div ref={goalsSectionRef} className="rounded-lg transition-all duration-300 space-y-4 py-4 border-t border-border">
+              <div className="flex items-center gap-2 text-base font-medium">
+                <Target className="h-5 w-5 text-primary" />
+                <span>Goals & Recovery</span>
+              </div>
+              
+              {/* Primary Goal Display */}
+              <div className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded-lg">
+                <div>
+                  <span className="text-sm text-muted-foreground">Primary Goal</span>
+                  <p className="font-medium">{profile?.goal_primary ? translateGoal(profile.goal_primary, t) : 'Not set'}</p>
+                </div>
+                <span className="text-xs text-muted-foreground">Set in onboarding</span>
+              </div>
+              
+              {/* Active Rest Days */}
+              <div className="pt-2">
+                <ActiveRestSelector
+                  workoutDays={editForm.workoutDays}
+                  config={editForm.activeRestConfig}
+                  onChange={(config) => setEditForm({ ...editForm, activeRestConfig: config })}
+                  showAISuggestions={true}
+                />
+              </div>
             </div>
 
             <div className="flex items-center justify-between py-2">
