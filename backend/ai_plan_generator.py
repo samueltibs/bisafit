@@ -240,6 +240,124 @@ async def generate_ai_plan(user_profile: Dict[str, Any]) -> Dict[str, Any]:
         raise Exception(f"AI plan generation failed: {str(e)}")
 
 
+def add_active_rest_to_plan(plan: Dict[str, Any], user_profile: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Add active rest days to a generated workout plan.
+    These appear as special 'active_rest' type workouts.
+    """
+    active_rest_config = user_profile.get('active_rest_config')
+    
+    if not active_rest_config or not active_rest_config.get('enabled'):
+        return plan
+    
+    activities = active_rest_config.get('activities', [])
+    if not activities:
+        return plan
+    
+    day_name_to_index = {
+        "Monday": 0, "Tuesday": 1, "Wednesday": 2, "Thursday": 3,
+        "Friday": 4, "Saturday": 5, "Sunday": 6
+    }
+    
+    # Activity type to exercise mapping for active rest
+    activity_exercises = {
+        'light_walk': {
+            'name': 'Light Walk',
+            'emoji': '🚶',
+            'exercises': [
+                {'name': 'Light Walking', 'sets': 1, 'reps': 'continuous', 'rest_seconds': 0, 'muscle_group': 'cardio', 'notes': 'Easy pace, focus on breathing'}
+            ]
+        },
+        'easy_run': {
+            'name': 'Easy Jog',
+            'emoji': '🏃',
+            'exercises': [
+                {'name': 'Easy Jogging', 'sets': 1, 'reps': 'continuous', 'rest_seconds': 0, 'muscle_group': 'cardio', 'notes': 'Conversational pace'}
+            ]
+        },
+        'yoga_stretch': {
+            'name': 'Yoga & Stretching',
+            'emoji': '🧘',
+            'exercises': [
+                {'name': 'Cat-Cow Stretch', 'sets': 1, 'reps': '10 breaths', 'rest_seconds': 0, 'muscle_group': 'full body', 'notes': 'Flow with breath'},
+                {'name': 'Downward Dog', 'sets': 1, 'reps': '30 seconds', 'rest_seconds': 0, 'muscle_group': 'full body', 'notes': 'Press heels toward floor'},
+                {'name': 'Child\'s Pose', 'sets': 1, 'reps': '1 minute', 'rest_seconds': 0, 'muscle_group': 'back', 'notes': 'Relax and breathe deeply'},
+                {'name': 'Seated Forward Fold', 'sets': 1, 'reps': '30 seconds', 'rest_seconds': 0, 'muscle_group': 'hamstrings', 'notes': 'Don\'t force, just relax into it'},
+                {'name': 'Supine Twist', 'sets': 1, 'reps': '30 sec each side', 'rest_seconds': 0, 'muscle_group': 'spine', 'notes': 'Keep shoulders grounded'},
+            ]
+        },
+        'light_bodyweight': {
+            'name': 'Light Bodyweight',
+            'emoji': '💪',
+            'exercises': [
+                {'name': 'Bodyweight Squats', 'sets': 2, 'reps': '10', 'rest_seconds': 30, 'muscle_group': 'legs', 'notes': 'Slow and controlled'},
+                {'name': 'Wall Push-ups', 'sets': 2, 'reps': '10', 'rest_seconds': 30, 'muscle_group': 'chest', 'notes': 'Easy variation'},
+                {'name': 'Glute Bridges', 'sets': 2, 'reps': '10', 'rest_seconds': 30, 'muscle_group': 'glutes', 'notes': 'Squeeze at top'},
+                {'name': 'Dead Bug', 'sets': 2, 'reps': '8 each side', 'rest_seconds': 30, 'muscle_group': 'core', 'notes': 'Keep lower back pressed to floor'},
+            ]
+        },
+        'light_cycling': {
+            'name': 'Light Cycling',
+            'emoji': '🚴',
+            'exercises': [
+                {'name': 'Easy Cycling', 'sets': 1, 'reps': 'continuous', 'rest_seconds': 0, 'muscle_group': 'cardio', 'notes': 'Low resistance, easy pace'}
+            ]
+        },
+        'swimming': {
+            'name': 'Swimming',
+            'emoji': '🏊',
+            'exercises': [
+                {'name': 'Leisurely Swimming', 'sets': 1, 'reps': 'continuous', 'rest_seconds': 0, 'muscle_group': 'full body', 'notes': 'Relaxed pace, focus on form'}
+            ]
+        }
+    }
+    
+    # Add active rest activities to each week
+    for week in plan.get('weeks', []):
+        week_start = datetime.strptime(week['start_date'], '%Y-%m-%d')
+        
+        for activity in activities:
+            if not activity.get('enabled', True):
+                continue
+                
+            day_name = activity.get('day', '')
+            activity_type = activity.get('activityType', 'light_walk')
+            duration = activity.get('durationMinutes', 30)
+            distance = activity.get('distanceMiles')
+            
+            day_index = day_name_to_index.get(day_name, 0)
+            scheduled_date = week_start + timedelta(days=day_index)
+            
+            # Get exercise template for this activity type
+            template = activity_exercises.get(activity_type, activity_exercises['light_walk'])
+            
+            # Build workout name with details
+            workout_name = f"{template['emoji']} {template['name']}"
+            if distance and activity_type in ['light_walk', 'easy_run', 'light_cycling']:
+                workout_name += f" ({distance} mi)"
+            else:
+                workout_name += f" ({duration} min)"
+            
+            active_rest_workout = {
+                'id': str(uuid.uuid4()),
+                'name': workout_name,
+                'day_name': day_name,
+                'day_of_week': day_index,
+                'day_number': len(week['workouts']) + 1,
+                'duration_minutes': duration,
+                'focus_areas': ['recovery', 'active rest'],
+                'is_active_rest': True,
+                'activity_type': activity_type,
+                'distance_miles': distance,
+                'exercises': template['exercises'],
+            }
+            
+            week['workouts'].append(active_rest_workout)
+            week['total_workouts'] += 1
+    
+    return plan
+
+
 async def generate_ai_plan_with_fallback(user_profile: Dict[str, Any]) -> Dict[str, Any]:
     """
     Generate plan with AI, with automatic retry on failure.
