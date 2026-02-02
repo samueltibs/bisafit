@@ -13,6 +13,7 @@ import { trackEvent } from '@/lib/analytics';
 import { SUPPORT_MESSAGE_SHORT, EMAIL_SUPPORT } from '@/lib/branding';
 import { type CoachTone, normalizeCoachTone } from '@/lib/coachTone';
 import { useIOSScrollUnlock } from '@/hooks/useIOSScrollUnlock';
+import { ActiveRestConfig, getDefaultActiveRestConfig } from '@/types/activeRest';
 
 import { OnboardingProgress, StepAboutYou } from '@/components/onboarding';
 import { StepGoals } from '@/components/onboarding/StepGoals';
