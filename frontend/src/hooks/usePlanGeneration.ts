@@ -96,6 +96,7 @@ export function usePlanGeneration() {
             session_minutes: profile.session_minutes || 45,
             constraints: profile.constraints_json || null,
             coach_tone: (profile as any).coach_tone || 'balanced',
+            active_rest_config: (profile as any).active_rest_config || null,
           }
         }),
       });
