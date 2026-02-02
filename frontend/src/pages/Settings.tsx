@@ -412,6 +412,7 @@ export default function Settings() {
         calendar_sync_enabled: editForm.calendarSyncEnabled,
         calendar_provider: editForm.calendarSyncEnabled ? 'ics' : null,
         notifications_enabled: editForm.notificationsEnabled,
+        active_rest_config: editForm.activeRestConfig,
       } as any);
 
       if (success) {
