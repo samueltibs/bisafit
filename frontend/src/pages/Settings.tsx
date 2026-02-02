@@ -78,7 +78,9 @@ import { MusicSettings } from '@/components/settings/MusicSettings';
 import { HealthPlatformSettings } from '@/components/settings/HealthPlatformSettings';
 import { ReminderSettings } from '@/components/settings/ReminderSettings';
 import { BetaFeedbackForm } from '@/components/settings/BetaFeedbackForm';
+import { ActiveRestSelector } from '@/components/settings/ActiveRestSelector';
 import { isAdminEmail } from '@/lib/adminConfig';
+import { ActiveRestConfig, getDefaultActiveRestConfig } from '@/types/activeRest';
 
 // Toggle this to switch between beta feedback form and simple feedback
 const BETA_MODE = true;
