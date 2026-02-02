@@ -595,6 +595,14 @@ export default function Settings() {
                     <span className="block font-medium">{t('settings.goals')}</span>
                     <span className="text-sm text-muted-foreground">
                       {profile?.goal_primary ? translateGoal(profile.goal_primary, t) : 'Not set'}
+                      {(() => {
+                        const activeRestConfig = (profile as any)?.active_rest_config;
+                        const activeCount = activeRestConfig?.activities?.length || 0;
+                        if (activeCount > 0) {
+                          return ` • ${activeCount} active rest ${activeCount === 1 ? 'day' : 'days'}`;
+                        }
+                        return '';
+                      })()}
                     </span>
                   </div>
                 </div>
