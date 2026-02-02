@@ -194,6 +194,39 @@ export function StepSchedule({
           </CollapsibleContent>
         </Collapsible>
       )}
+
+      {/* Active Rest Days (Optional/Collapsible) */}
+      {onActiveRestChange && workoutDays.length < 7 && (
+        <Collapsible open={activeRestOpen} onOpenChange={setActiveRestOpen}>
+          <CollapsibleTrigger asChild>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-between px-0 hover:bg-transparent"
+              type="button"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🔄</span>
+                <span className="text-base font-medium">Active rest days (optional)</span>
+              </div>
+              <ChevronDown className={cn(
+                "h-4 w-4 text-muted-foreground transition-transform",
+                activeRestOpen && "rotate-180"
+              )} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-4 pt-4">
+            <p className="text-sm text-muted-foreground">
+              Add light activities on rest days to stay active and aid recovery. These will be included in your workout plan.
+            </p>
+            <ActiveRestSelector
+              workoutDays={workoutDays}
+              config={currentActiveRestConfig}
+              onChange={onActiveRestChange}
+              showAISuggestions={true}
+            />
+          </CollapsibleContent>
+        </Collapsible>
+      )}
     </div>
   );
 }
