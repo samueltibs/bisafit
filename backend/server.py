@@ -150,6 +150,23 @@ async def send_weekly_report(request: AnalyticsReportRequest):
 # WORKOUT PLAN GENERATION
 # ============================================
 
+class ActiveRestActivity(BaseModel):
+    """Active rest activity configuration"""
+    id: str
+    day: str
+    activityType: str
+    distanceMiles: Optional[float] = None
+    durationMinutes: Optional[int] = None
+    description: Optional[str] = None
+    enabled: bool = True
+
+
+class ActiveRestConfig(BaseModel):
+    """Active rest days configuration"""
+    enabled: bool = False
+    activities: List[ActiveRestActivity] = []
+
+
 class UserProfileForPlan(BaseModel):
     """User profile data for generating a workout plan"""
     user_id: str
@@ -163,6 +180,7 @@ class UserProfileForPlan(BaseModel):
     session_minutes: int = 45
     constraints: Optional[Dict[str, Any]] = None
     coach_tone: str = "balanced"
+    active_rest_config: Optional[ActiveRestConfig] = None
 
 
 class GeneratePlanRequest(BaseModel):
