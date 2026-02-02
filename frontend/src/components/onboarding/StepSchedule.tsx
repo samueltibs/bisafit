@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils';
 import { Clock, ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { WorkoutDaysSelector } from '@/components/settings/WorkoutDaysSelector';
+import { ActiveRestSelector } from '@/components/settings/ActiveRestSelector';
+import { ActiveRestConfig, getDefaultActiveRestConfig } from '@/types/activeRest';
 
 const DURATION_OPTIONS = [30, 45, 60, 75, 90];
 const BUFFER_OPTIONS = [0, 5, 10, 15];
@@ -23,10 +25,12 @@ interface StepScheduleProps {
   sessionMinutes: number;
   workoutDays: string[];
   workoutTimePrefs?: WorkoutTimePrefs | null;
+  activeRestConfig?: ActiveRestConfig;
   onDaysChange: (value: number) => void;
   onSessionChange: (value: number) => void;
   onWorkoutDaysChange: (days: string[]) => void;
   onWorkoutTimePrefsChange?: (prefs: WorkoutTimePrefs | null) => void;
+  onActiveRestChange?: (config: ActiveRestConfig) => void;
 }
 
 export function StepSchedule({
