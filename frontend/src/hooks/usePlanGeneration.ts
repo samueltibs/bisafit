@@ -40,6 +40,9 @@ interface GeneratedPlan {
         is_cooldown?: boolean;
       }>;
       focus_areas: string[];
+      is_active_rest?: boolean;
+      activity_type?: string;
+      distance_miles?: number;
     }>;
     total_workouts: number;
   }>;
