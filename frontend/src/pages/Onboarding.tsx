@@ -239,7 +239,7 @@ export default function Onboarding() {
       const today = new Date();
       const programStartDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-      // Update user profile (include workout time prefs if set)
+      // Update user profile (include workout time prefs and active rest config if set)
       const profileSuccess = await update({
         full_name: formData.fullName.trim(),
         gender: formData.gender || null,
@@ -263,6 +263,8 @@ export default function Onboarding() {
         ...(formData.workoutTimePrefs && {
           workout_time_preferences_json: formData.workoutTimePrefs,
         }),
+        // Save active rest configuration
+        active_rest_config: formData.activeRestConfig,
       } as any);
 
       if (!profileSuccess) {
