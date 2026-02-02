@@ -170,62 +170,89 @@ export function usePlanGeneration() {
           const scheduledDate = new Date(weekStart);
           scheduledDate.setDate(weekStart.getDate() + workout.day_of_week);
           
+          // Handle active rest vs regular workouts differently
+          const isActiveRest = workout.is_active_rest === true;
+          
+          const workoutJson = isActiveRest ? {
+            title: workout.name,
+            duration_minutes: workout.duration_minutes,
+            focus_areas: workout.focus_areas,
+            total_estimated_minutes: workout.duration_minutes,
+            is_active_rest: true,
+            activity_type: workout.activity_type,
+            distance_miles: workout.distance_miles,
+            blocks: [
+              {
+                type: 'active_rest',
+                name: 'Active Recovery',
+                exercises: workout.exercises.map(e => ({
+                  name: e.name,
+                  sets: e.sets,
+                  reps: e.reps,
+                  rest_seconds: e.rest_seconds,
+                  muscle_group: e.muscle_group,
+                  notes: e.notes,
+                })),
+              },
+            ],
+          } : {
+            title: workout.name,
+            duration_minutes: workout.duration_minutes,
+            focus_areas: workout.focus_areas,
+            total_estimated_minutes: workout.duration_minutes,
+            blocks: [
+              {
+                type: 'warmup',
+                name: 'Warm Up',
+                exercises: workout.exercises
+                  .filter(e => e.is_warmup)
+                  .map(e => ({
+                    name: e.name,
+                    sets: e.sets,
+                    reps: e.reps,
+                    rest_seconds: e.rest_seconds,
+                    muscle_group: e.muscle_group,
+                    notes: e.notes,
+                  })),
+              },
+              {
+                type: 'strength',
+                name: 'Main Workout',
+                exercises: workout.exercises
+                  .filter(e => !e.is_warmup && !e.is_cooldown)
+                  .map(e => ({
+                    name: e.name,
+                    sets: e.sets,
+                    reps: e.reps,
+                    rest_seconds: e.rest_seconds,
+                    muscle_group: e.muscle_group,
+                    notes: e.notes,
+                  })),
+              },
+              {
+                type: 'cooldown',
+                name: 'Cool Down',
+                exercises: workout.exercises
+                  .filter(e => e.is_cooldown)
+                  .map(e => ({
+                    name: e.name,
+                    sets: e.sets,
+                    reps: e.reps,
+                    rest_seconds: e.rest_seconds,
+                    muscle_group: e.muscle_group,
+                    notes: e.notes,
+                  })),
+              },
+            ],
+          };
+          
           workoutsToInsert.push({
             id: workout.id,
             plan_id: generatedPlan.id,
             user_id: session.user.id,
             title: workout.name,
             scheduled_date: scheduledDate.toISOString().split('T')[0],
-            workout_json: {
-              title: workout.name,
-              duration_minutes: workout.duration_minutes,
-              focus_areas: workout.focus_areas,
-              total_estimated_minutes: workout.duration_minutes,
-              blocks: [
-                {
-                  type: 'warmup',
-                  name: 'Warm Up',
-                  exercises: workout.exercises
-                    .filter(e => e.is_warmup)
-                    .map(e => ({
-                      name: e.name,
-                      sets: e.sets,
-                      reps: e.reps,
-                      rest_seconds: e.rest_seconds,
-                      muscle_group: e.muscle_group,
-                      notes: e.notes,
-                    })),
-                },
-                {
-                  type: 'strength',
-                  name: 'Main Workout',
-                  exercises: workout.exercises
-                    .filter(e => !e.is_warmup && !e.is_cooldown)
-                    .map(e => ({
-                      name: e.name,
-                      sets: e.sets,
-                      reps: e.reps,
-                      rest_seconds: e.rest_seconds,
-                      muscle_group: e.muscle_group,
-                      notes: e.notes,
-                    })),
-                },
-                {
-                  type: 'cooldown',
-                  name: 'Cool Down',
-                  exercises: workout.exercises
-                    .filter(e => e.is_cooldown)
-                    .map(e => ({
-                      name: e.name,
-                      sets: e.sets,
-                      reps: e.reps,
-                      rest_seconds: e.rest_seconds,
-                      muscle_group: e.muscle_group,
-                      notes: e.notes,
-                    })),
-                },
-              ],
-            },
+            workout_json: workoutJson,
           });
         }
       }
