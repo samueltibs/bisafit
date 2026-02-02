@@ -397,6 +397,7 @@ export default function Onboarding() {
               sessionMinutes={formData.sessionMinutes}
               workoutDays={formData.workoutDays}
               workoutTimePrefs={formData.workoutTimePrefs}
+              activeRestConfig={formData.activeRestConfig}
               onDaysChange={(v) => setFormData(prev => ({ ...prev, daysPerWeek: v }))}
               onSessionChange={(v) => setFormData(prev => ({ ...prev, sessionMinutes: v }))}
               onWorkoutDaysChange={(v) => {
@@ -406,6 +407,7 @@ export default function Onboarding() {
                 setFormData(prev => ({ ...prev, workoutDays: v, daysPerWeek: v.length }));
               }}
               onWorkoutTimePrefsChange={(v) => setFormData(prev => ({ ...prev, workoutTimePrefs: v }))}
+              onActiveRestChange={(v) => setFormData(prev => ({ ...prev, activeRestConfig: v }))}
             />
           )}
 
