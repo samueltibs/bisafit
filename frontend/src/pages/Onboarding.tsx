@@ -49,6 +49,7 @@ interface FormData {
   sessionMinutes: number;
   workoutDays: string[];
   workoutTimePrefs: WorkoutTimePrefs | null;
+  activeRestConfig: ActiveRestConfig;
   // Step 4: Equipment
   equipment: string[];
   // Step 5: Health
