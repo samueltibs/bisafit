@@ -85,6 +85,7 @@ const initialFormData: FormData = {
   sessionMinutes: 45,
   workoutDays: ['Monday', 'Wednesday', 'Thursday', 'Friday'],
   workoutTimePrefs: null,
+  activeRestConfig: getDefaultActiveRestConfig(),
   equipment: ['bodyweight'],
   constraints: {
     injury_flags: [],
