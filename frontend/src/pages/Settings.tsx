@@ -168,6 +168,7 @@ export default function Settings() {
     timePreferences: getDefaultTimePreferences(),
     calendarSyncEnabled: false,
     notificationsEnabled: false,
+    activeRestConfig: getDefaultActiveRestConfig() as ActiveRestConfig,
   });
   const [equipmentList, setEquipmentList] = useState<string[]>([]);
 
