@@ -38,12 +38,18 @@ export function StepSchedule({
   sessionMinutes,
   workoutDays,
   workoutTimePrefs,
+  activeRestConfig,
   onDaysChange,
   onSessionChange,
   onWorkoutDaysChange,
   onWorkoutTimePrefsChange,
+  onActiveRestChange,
 }: StepScheduleProps) {
   const [timeOpen, setTimeOpen] = useState(false);
+  const [activeRestOpen, setActiveRestOpen] = useState(false);
+
+  // Initialize active rest config if not provided
+  const currentActiveRestConfig = activeRestConfig || getDefaultActiveRestConfig();
 
 
   const handleWorkoutDaysChange = (days: string[]) => {
