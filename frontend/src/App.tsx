@@ -172,15 +172,15 @@ const App = () => (
               <ProtectedRoute>
                 <AdminAnalytics />
               </ProtectedRoute>
-            } />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-            <AnalyticsDebugPanel />
-            <OverlayDebugPanel />
-            <IOSScrollDebugPanel />
-          </BrowserRouter>
-          </TooltipProvider>
-        </AppLanguageProvider>
+              } />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+                <AnalyticsDebugPanel />
+                <OverlayDebugPanel />
+                <IOSScrollDebugPanel />
+              </BrowserRouter>
+            </TooltipProvider>
+          </AppLanguageProvider>
         </AuthRedirectHandler>
       </AuthProvider>
     </PlatformProvider>
