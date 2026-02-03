@@ -9,6 +9,14 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children, requireVerifiedEmail = true }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
 
+  // Check for password recovery token - redirect to reset password page
+  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+  const type = hashParams.get('type');
+  
+  if (type === 'recovery') {
+    return <Navigate to={`/reset-password${window.location.hash}`} replace />;
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
