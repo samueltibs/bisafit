@@ -81,6 +81,7 @@ import { BetaFeedbackForm } from '@/components/settings/BetaFeedbackForm';
 import { ActiveRestSelector } from '@/components/settings/ActiveRestSelector';
 import { isAdminEmail } from '@/lib/adminConfig';
 import { ActiveRestConfig, getDefaultActiveRestConfig } from '@/types/activeRest';
+import { useNutritionSettings } from '@/hooks/useNutritionSettings';
 
 // Toggle this to switch between beta feedback form and simple feedback
 const BETA_MODE = true;
