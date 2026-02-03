@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { usePlan } from '@/hooks/usePlan';
+import { useNutritionSettings } from '@/hooks/useNutritionSettings';
 import { useRefreshOnResume } from '@/hooks/useAppLifecycle';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +22,7 @@ export default function Home() {
   const { user } = useAuth();
   const { profile, loading, refetch, update } = useUserProfile();
   const { getTodayWorkout, getNextUpcomingWorkout, plan } = usePlan();
+  const { enabled: nutritionEnabled, loading: nutritionLoading } = useNutritionSettings();
   const [greeting, setGreeting] = useState('');
   const [showIntroTour, setShowIntroTour] = useState(false);
 
