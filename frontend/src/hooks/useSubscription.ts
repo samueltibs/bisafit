@@ -3,13 +3,24 @@
  * 
  * Manages subscription state and trial logic.
  * NOTE: Stripe Checkout + webhooks will replace mock provider once LLC and Stripe account are live.
+ * 
+ * BETA MODE: Set BETA_MODE_ENABLED to true to give all users free access
+ * ADMIN: Admin emails always have full premium access
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { sendTrialStartedEmail } from '@/lib/emailService';
+import { isAdminEmail } from '@/lib/adminConfig';
 import type { SubscriptionStatus, SubscriptionPlan, SubscriptionState } from '@/types/subscription';
+
+// ============================================
+// BETA MODE TOGGLE
+// Set to true during beta testing - all users get free access
+// Set to false for soft launch - normal subscription rules apply
+// ============================================
+export const BETA_MODE_ENABLED = true;
 
 export function useSubscription() {
   const { user } = useAuth();
@@ -24,6 +35,12 @@ export function useSubscription() {
     hasPremiumAccess: false,
     daysLeftInTrial: null,
   });
+
+  // Check if user is admin (always has premium access)
+  const isAdmin = isAdminEmail(user?.email);
+  
+  // Check if user gets free access (admin OR beta mode)
+  const hasFreeAccess = isAdmin || BETA_MODE_ENABLED;
 
   const checkTrialExpiry = useCallback((
     status: SubscriptionStatus,
@@ -49,6 +66,22 @@ export function useSubscription() {
 
   const fetchSubscription = useCallback(async () => {
     if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    // Admin or beta mode = instant premium access
+    if (hasFreeAccess) {
+      setSubscription({
+        status: 'active',
+        provider: 'mock',
+        plan: 'yearly',
+        trialStartDate: null,
+        trialEndDate: null,
+        isTrialExpired: false,
+        hasPremiumAccess: true,
+        daysLeftInTrial: null,
+      });
       setLoading(false);
       return;
     }
@@ -89,10 +122,21 @@ export function useSubscription() {
     } finally {
       setLoading(false);
     }
-  }, [user, checkTrialExpiry]);
+  }, [user, checkTrialExpiry, hasFreeAccess]);
 
   const startTrial = async (plan: SubscriptionPlan): Promise<boolean> => {
     if (!user) return false;
+
+    // Admin or beta mode - just grant access without actually starting trial
+    if (hasFreeAccess) {
+      setSubscription(prev => ({
+        ...prev,
+        status: 'active',
+        plan,
+        hasPremiumAccess: true,
+      }));
+      return true;
+    }
 
     try {
       const now = new Date();
@@ -140,6 +184,9 @@ export function useSubscription() {
   const expireTrial = async (): Promise<void> => {
     if (!user) return;
 
+    // Admin or beta mode - never expire
+    if (hasFreeAccess) return;
+
     try {
       const { error } = await supabase
         .from('users_profile')
@@ -176,14 +223,14 @@ export function useSubscription() {
   // Check trial expiry on app focus
   useEffect(() => {
     const handleFocus = () => {
-      if (subscription.status === 'trialing') {
+      if (subscription.status === 'trialing' && !hasFreeAccess) {
         fetchSubscription();
       }
     };
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [subscription.status, fetchSubscription]);
+  }, [subscription.status, fetchSubscription, hasFreeAccess]);
 
   return {
     ...subscription,
@@ -192,5 +239,7 @@ export function useSubscription() {
     expireTrial,
     redirectToStripeCheckout,
     refetch: fetchSubscription,
+    isAdmin,
+    isBetaMode: BETA_MODE_ENABLED,
   };
 }
