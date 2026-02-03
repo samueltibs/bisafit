@@ -13,6 +13,7 @@ from workout_image_service import generate_workout_image, generate_workout_image
 from email_service import send_feedback_notification, send_weekly_analytics_report, send_store_interest_confirmation, send_store_interest_admin_notification
 from plan_generator import generate_4_week_plan, generate_weekly_plan
 from ai_plan_generator import generate_ai_plan_with_fallback
+from ai_plan_generator_fast import generate_ai_plan_with_fallback_fast
 
 
 ROOT_DIR = Path(__file__).parent
