@@ -91,10 +91,30 @@ export function useWorkoutPlayer(workoutId: string | undefined) {
       }
 
       if (data?.workout_json) {
+        const workoutJson = data.workout_json as unknown as WorkoutJson;
+        console.log('[WorkoutPlayer] Loaded workout:', {
+          id: data.id,
+          title: workoutJson.title,
+          blocksCount: workoutJson.blocks?.length,
+          blocks: workoutJson.blocks?.map(b => ({
+            type: b.type,
+            itemsCount: b.items?.length
+          }))
+        });
+        
+        // Validate that blocks have items
+        if (!workoutJson.blocks || workoutJson.blocks.length === 0) {
+          console.error('[WorkoutPlayer] ERROR: Workout has no blocks!', workoutJson);
+        } else if (workoutJson.blocks.some(b => !b.items || b.items.length === 0)) {
+          console.error('[WorkoutPlayer] ERROR: Some blocks have no items!', workoutJson.blocks);
+        }
+        
         setState(prev => ({
           ...prev,
-          workout: data.workout_json as unknown as WorkoutJson,
+          workout: workoutJson,
         }));
+      } else {
+        console.error('[WorkoutPlayer] No workout_json in data:', data);
       }
       setIsLoading(false);
     }
