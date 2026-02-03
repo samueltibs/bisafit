@@ -2,19 +2,26 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, Calendar, Dumbbell, Apple } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation, type TranslationKey } from '@/lib/i18n';
+import { useNutritionSettings } from '@/hooks/useNutritionSettings';
 
-// Optimized for mobile: Only 4 primary tabs
+// Optimized for mobile: Only 4 primary tabs (or 3 if nutrition disabled)
 // Progress, Store, and Settings moved to top-right menu
-const navItems: { path: string; icon: typeof Home; labelKey: TranslationKey; colorClass: string }[] = [
+const baseNavItems: { path: string; icon: typeof Home; labelKey: TranslationKey; colorClass: string; requiresNutrition?: boolean }[] = [
   { path: '/home', icon: Home, labelKey: 'nav.home', colorClass: 'icon-energy' },
   { path: '/plan', icon: Calendar, labelKey: 'nav.plan', colorClass: 'icon-calendar' },
-  { path: '/nutrition', icon: Apple, labelKey: 'nav.nutrition', colorClass: 'icon-nutrition' },
+  { path: '/nutrition', icon: Apple, labelKey: 'nav.nutrition', colorClass: 'icon-nutrition', requiresNutrition: true },
   { path: '/workout/today', icon: Dumbbell, labelKey: 'nav.workout', colorClass: 'icon-workout' },
 ];
 
 export function BottomNav() {
   const location = useLocation();
   const { t } = useTranslation();
+  const { enabled: nutritionEnabled, loading: nutritionLoading } = useNutritionSettings();
+
+  // Filter out nutrition tab if disabled
+  const navItems = baseNavItems.filter(item => 
+    !item.requiresNutrition || nutritionEnabled
+  );
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-card/95 backdrop-blur-xl supports-[backdrop-filter]:bg-card/90 safe-bottom">
