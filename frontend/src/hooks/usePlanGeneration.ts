@@ -205,50 +205,6 @@ export function usePlanGeneration() {
           workout_json: workoutJson,
         };
       });
-        
-        if (cooldownExercises.length > 0) {
-          blocks.push({
-            type: 'cooldown',
-            name: 'Cool Down',
-            exercises: cooldownExercises.map((e: any) => ({
-              name: e.name,
-              sets: e.sets,
-              reps: e.reps,
-              rest_seconds: e.rest_seconds,
-              muscle_group: e.muscle_group,
-            })),
-          });
-        }
-
-        // If no blocks were created (AI didn't use warmup/cooldown flags), put all in main
-        if (blocks.length === 0 && workout.exercises && workout.exercises.length > 0) {
-          blocks.push({
-            type: 'main',
-            name: 'Workout',
-            exercises: workout.exercises.map((e: any) => ({
-              name: e.name,
-              sets: e.sets,
-              reps: e.reps,
-              rest_seconds: e.rest_seconds,
-              muscle_group: e.muscle_group,
-            })),
-          });
-        }
-
-        return {
-          plan_id: savedPlan.id,
-          user_id: session.user.id,
-          title: workout.name,
-          scheduled_date: workout.scheduled_date,
-          workout_json: {
-            title: workout.name,
-            duration_minutes: workout.duration_minutes,
-            focus_areas: workout.focus_areas || [],
-            total_estimated_minutes: workout.duration_minutes,
-            blocks,
-          },
-        };
-      });
 
       console.log(`[PlanGeneration] Inserting ${workoutsToInsert.length} workouts...`);
 
