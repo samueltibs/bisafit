@@ -24,7 +24,7 @@ import { usePremiumFeature } from '@/hooks/usePremiumFeature';
 import { useWorkoutTitle } from '@/hooks/useWorkoutTitle';
 import { useTranslation, translateDay } from '@/lib/i18n';
 import { BlockFeedbackDialog, NextBlockSuccessDialog } from '@/components/progression';
-import { BlockSelector, ScheduleMismatchBanner, ScheduleDebugBanner } from '@/components/plan';
+import { ScheduleMismatchBanner, ScheduleDebugBanner } from '@/components/plan';
 import { PremiumFeatureModal } from '@/components/subscription';
 import type { DisplayWorkout, WorkoutType } from '@/types/plan';
 import { transformCoachNotes, getFirstName } from '@/lib/coachNotesUtils';
