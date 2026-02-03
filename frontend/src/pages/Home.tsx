@@ -268,22 +268,25 @@ export default function Home() {
             </Link>
           )}
           
-        <Link to="/nutrition?openLogMeal=1">
-            <Card className="cursor-pointer border-border transition-all hover:border-primary/50 hover:shadow-md">
-              <CardContent className="flex items-center justify-between p-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl icon-bg-nutrition">
-                    <Apple className="h-6 w-6 icon-nutrition" />
+          {/* Log Meal - Only show if nutrition is enabled */}
+          {nutritionEnabled && (
+            <Link to="/nutrition?openLogMeal=1">
+              <Card className="cursor-pointer border-border transition-all hover:border-primary/50 hover:shadow-md">
+                <CardContent className="flex items-center justify-between p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl icon-bg-nutrition">
+                      <Apple className="h-6 w-6 icon-nutrition" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Log Meal</p>
+                      <p className="text-sm text-muted-foreground">Track your nutrition</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">Log Meal</p>
-                    <p className="text-sm text-muted-foreground">Track your nutrition</p>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </CardContent>
-            </Card>
-          </Link>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            </Link>
+          )}
         </div>
 
         {/* Weekly Overview */}
