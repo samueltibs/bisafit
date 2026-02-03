@@ -240,13 +240,15 @@ async function generatePlanCore(): Promise<GeneratePlanResult> {
   // Transform exercises to WorkoutItem format with images
   const transformExercise = (e: any) => {
     const normalizedName = e.name?.toLowerCase().trim();
+    const imgUrl = imageMap[normalizedName] || null;
+    console.log(`[PlanGeneration] Exercise "${e.name}" -> normalized: "${normalizedName}" -> image: ${imgUrl ? 'FOUND' : 'NOT FOUND'}`);
     return {
       name: e.name,
       sets: e.sets || 3,
       reps: String(e.reps || '10'),
       rest_sec: e.rest_seconds || 60,
       instructions: `Focus on ${e.muscle_group || 'proper form'}. Perform ${e.sets || 3} sets of ${e.reps || '10'} reps.`,
-      image_url: imageMap[normalizedName] || null, // Include cached image URL
+      image_url: imgUrl, // Include cached image URL
     };
   };
 
