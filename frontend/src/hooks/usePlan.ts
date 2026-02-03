@@ -662,7 +662,8 @@ function findPlanDayForDate(
   const diffTime = date.getTime() - planStartDate.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   
-  if (diffDays < 0 || diffDays >= 28) return null; // Outside 4-week plan
+  // Allow any number of weeks (plan grows as new weeks are generated)
+  if (diffDays < 0) return null; // Before plan start
   
   const weekNumber = Math.floor(diffDays / 7) + 1;
   const dayOfWeek = diffDays % 7;
