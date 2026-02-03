@@ -172,8 +172,11 @@ export function usePlanGeneration() {
         console.error('Error saving plan:', planError);
         throw new Error('Failed to save plan: ' + planError.message);
       }
+      
+      console.log('[PlanGeneration] Plan saved successfully with ID:', savedPlan.id);
 
       // Create individual workouts in Supabase
+      // Use savedPlan.id to ensure we're referencing the correct plan
       const workoutsToInsert = [];
       for (const week of generatedPlan.weeks) {
         for (const workout of week.workouts) {
