@@ -147,6 +147,45 @@ async def send_weekly_report(request: AnalyticsReportRequest):
 
 
 # ============================================
+# STORE INTEREST / WAITLIST
+# ============================================
+
+class StoreInterestRequest(BaseModel):
+    """Request body for store waitlist signup"""
+    email: str
+    interests: List[str] = []
+
+
+@api_router.post("/store-interest-notification")
+async def store_interest_notification(request: StoreInterestRequest):
+    """
+    Send confirmation email when user signs up for store notifications.
+    Called from the frontend after interest is saved to Supabase.
+    """
+    try:
+        # Send confirmation email to user
+        user_result = await send_store_interest_confirmation(
+            to_email=request.email,
+            interests=request.interests
+        )
+        
+        # Send notification to admin
+        admin_result = await send_store_interest_admin_notification(
+            user_email=request.email,
+            interests=request.interests
+        )
+        
+        return {
+            "status": "success",
+            "user_email": user_result,
+            "admin_notification": admin_result
+        }
+    except Exception as e:
+        logger.error(f"Error sending store interest notification: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
 # WORKOUT PLAN GENERATION
 # ============================================
 
