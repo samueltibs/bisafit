@@ -259,7 +259,7 @@ export function usePlanGeneration() {
           };
           
           workoutsToInsert.push({
-            id: workout.id,
+            // Let Supabase generate the ID to avoid any UUID conflicts
             plan_id: generatedPlan.id,
             user_id: session.user.id,
             title: workout.name,
