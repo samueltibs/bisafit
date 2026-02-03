@@ -293,6 +293,73 @@ async def generate_plan_from_template(request: GeneratePlanRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ============================================
+# SINGLE WEEK GENERATION (NEW - FASTER)
+# ============================================
+
+class SingleWeekRequest(BaseModel):
+    """Request for generating a single week"""
+    user_id: str
+    goal_primary: str = "maintenance"
+    experience_level: str = "intermediate"
+    workout_days: List[str] = ["Monday", "Wednesday", "Friday"]
+    equipment: List[str] = ["bodyweight"]
+    session_minutes: int = 45
+    week_number: int = 1
+    start_date: Optional[str] = None  # YYYY-MM-DD, defaults to current week
+
+
+@api_router.post("/generate-week")
+async def generate_single_week_endpoint(request: SingleWeekRequest):
+    """
+    Generate a SINGLE week workout plan.
+    
+    Much faster than full plan generation (~5-10 seconds vs 20-30 seconds).
+    Costs ~$0.0003 per week (0.03 cents).
+    
+    Use this for:
+    - Initial plan creation (just Week 1)
+    - Auto-generating next week when current week ends
+    - Regenerating a specific week
+    """
+    try:
+        logger.info(f"Generating single week for user: {request.user_id}, week {request.week_number}")
+        
+        profile_data = {
+            "user_id": request.user_id,
+            "goal_primary": request.goal_primary,
+            "experience_level": request.experience_level,
+            "workout_days": request.workout_days,
+            "equipment": request.equipment,
+            "session_minutes": request.session_minutes,
+        }
+        
+        # Parse start_date if provided
+        start_date = None
+        if request.start_date:
+            from datetime import datetime
+            start_date = datetime.strptime(request.start_date, "%Y-%m-%d")
+        
+        week_data = await generate_single_week_with_fallback(
+            profile_data, 
+            week_number=request.week_number,
+            start_date=start_date
+        )
+        
+        logger.info(f"Single week generated: {week_data['id']} with {week_data['total_workouts']} workouts")
+        
+        return {
+            "success": True,
+            "week": week_data,
+            "message": f"Week {request.week_number} is ready!",
+            "cost_info": week_data.get("_meta", {})
+        }
+        
+    except Exception as e:
+        logger.error(f"Error generating week: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
