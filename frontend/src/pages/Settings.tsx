@@ -681,6 +681,31 @@ export default function Settings() {
                 </div>
                 <HealthPlatformSettings compact />
               </div>
+
+              {/* Nutrition Tracking Toggle */}
+              <div className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-3">
+                  <ChefHat className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <span className="block font-medium">Nutrition Tracking</span>
+                    <span className="text-sm text-muted-foreground">
+                      {nutritionEnabled ? 'Meal plans & tracking active' : 'Disabled'}
+                    </span>
+                  </div>
+                </div>
+                <Switch
+                  checked={nutritionEnabled}
+                  onCheckedChange={async (checked) => {
+                    const success = await toggleNutrition(checked);
+                    if (success) {
+                      toast.success(checked ? 'Nutrition tracking enabled' : 'Nutrition tracking disabled');
+                    } else {
+                      toast.error('Failed to update nutrition settings');
+                    }
+                  }}
+                  disabled={nutritionLoading}
+                />
+              </div>
             </CardContent>
           </Card>
 
