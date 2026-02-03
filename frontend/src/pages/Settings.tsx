@@ -93,6 +93,7 @@ export default function Settings() {
   const { user, signOut } = useAuth();
   const { profile, loading, update, refetch } = useUserProfile();
   const { realignSchedule, haveWorkoutDaysChanged, isRealigning } = useScheduleRealignment();
+  const { enabled: nutritionEnabled, toggleNutrition, loading: nutritionLoading } = useNutritionSettings();
   
   // Check if user is admin
   const isAdmin = isAdminEmail(user?.email);
