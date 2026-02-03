@@ -259,7 +259,7 @@ export default function Home() {
                     </div>
                     <div>
                       <p className="font-medium">Get Your Training Plan</p>
-                      <p className="text-sm text-muted-foreground">Generate a personalized 4-week plan</p>
+                      <p className="text-sm text-muted-foreground">AI generates your week, auto-renews weekly</p>
                     </div>
                   </div>
                   <ChevronRight className="h-5 w-5 text-muted-foreground" />
