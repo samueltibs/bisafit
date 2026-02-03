@@ -220,20 +220,31 @@ async function generatePlanCore(): Promise<GeneratePlanResult> {
 
     // Fallback if no categorization
     if (blocks.length === 0 && workout.exercises?.length > 0) {
+      console.log(`[PlanGeneration] No warmup/cooldown flags, using fallback for ${workout.name}`);
       blocks.push({ type: 'strength' as const, items: workout.exercises.map(transformExercise) });
     }
+
+    // Extra safety check - if still no blocks, create a placeholder
+    if (blocks.length === 0) {
+      console.warn(`[PlanGeneration] WARNING: No exercises for workout ${workout.name}!`);
+    }
+
+    const workoutJson = {
+      title: workout.name,
+      week_number: 1,
+      total_estimated_minutes: workout.duration_minutes || 45,
+      blocks,
+    };
+
+    console.log(`[PlanGeneration] Workout "${workout.name}" has ${blocks.length} blocks with items:`, 
+      blocks.map(b => `${b.type}: ${b.items.length} items`).join(', '));
 
     return {
       plan_id: savedPlan.id,
       user_id: session.user.id,
       title: workout.name,
       scheduled_date: workout.scheduled_date,
-      workout_json: {
-        title: workout.name,
-        week_number: 1,
-        total_estimated_minutes: workout.duration_minutes || 45,
-        blocks,
-      },
+      workout_json: workoutJson,
     };
   });
 
