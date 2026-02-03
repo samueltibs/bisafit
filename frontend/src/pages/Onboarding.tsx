@@ -436,7 +436,9 @@ export default function Onboarding() {
           {currentStep === 6 && (
             <StepNutrition
               preferences={formData.nutritionPreferences}
+              nutritionEnabled={formData.nutritionEnabled}
               onPreferencesChange={(v) => setFormData(prev => ({ ...prev, nutritionPreferences: v }))}
+              onNutritionEnabledChange={(v) => setFormData(prev => ({ ...prev, nutritionEnabled: v }))}
             />
           )}
 
