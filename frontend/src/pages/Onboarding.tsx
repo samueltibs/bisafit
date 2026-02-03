@@ -271,20 +271,24 @@ export default function Onboarding() {
         }),
         // Save active rest configuration
         active_rest_config: formData.activeRestConfig,
+        // Save nutrition preference (opt-in/out)
+        nutrition_enabled: formData.nutritionEnabled,
       } as any);
 
       if (!profileSuccess) {
         throw new Error('Failed to save profile - update returned false');
       }
 
-      // Upsert nutrition profile
-      const nutritionSuccess = await upsertNutritionProfile({
-        user_id: user.id,
-        dietary_preferences_json: formData.nutritionPreferences,
-      });
+      // Only save nutrition profile if user opted in
+      if (formData.nutritionEnabled) {
+        const nutritionSuccess = await upsertNutritionProfile({
+          user_id: user.id,
+          dietary_preferences_json: formData.nutritionPreferences,
+        });
 
-      if (!nutritionSuccess) {
-        throw new Error('Failed to save nutrition preferences');
+        if (!nutritionSuccess) {
+          throw new Error('Failed to save nutrition preferences');
+        }
       }
 
       toast.success('Profile saved! Generating your plan...');
