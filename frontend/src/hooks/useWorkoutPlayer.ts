@@ -266,12 +266,22 @@ export function useWorkoutPlayer(workoutId: string | undefined) {
 
   // Start workout
   const startWorkout = useCallback(async () => {
-    if (!workoutId || !user || !state.workout) return;
+    console.log('[WorkoutPlayer] startWorkout called', { workoutId, hasUser: !!user, hasWorkout: !!state.workout });
+    
+    if (!workoutId || !user || !state.workout) {
+      console.error('[WorkoutPlayer] Cannot start workout - missing:', {
+        workoutId: !workoutId ? 'MISSING' : 'OK',
+        user: !user ? 'MISSING' : 'OK',
+        workout: !state.workout ? 'MISSING' : 'OK',
+      });
+      return;
+    }
 
     const now = new Date();
     startTimeRef.current = now;
 
     // Create session in database
+    console.log('[WorkoutPlayer] Creating workout session...');
     const { data: session, error } = await supabase
       .from('workout_sessions')
       .insert({
@@ -284,12 +294,16 @@ export function useWorkoutPlayer(workoutId: string | undefined) {
       .single();
 
     if (error) {
-      console.error('Error creating session:', error);
-      return;
+      console.error('[WorkoutPlayer] Error creating session:', error);
+      // Don't block - continue without session tracking
+    } else {
+      console.log('[WorkoutPlayer] Session created:', session?.id);
     }
 
     const firstBlock = state.workout.blocks[0];
     const firstItem = firstBlock?.items[0];
+    
+    console.log('[WorkoutPlayer] Starting with block:', firstBlock?.type, 'item:', firstItem?.name);
 
     setState(prev => ({
       ...prev,
