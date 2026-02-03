@@ -219,6 +219,21 @@ CREATE TABLE IF NOT EXISTS public.store_interest (
 );
 
 -- =====================================================
+-- 13. EXERCISE IMAGE CACHE (AI-generated images)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS public.exercise_image_cache (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    exercise_name TEXT NOT NULL UNIQUE,
+    exercise_name_normalized TEXT NOT NULL,
+    image_url TEXT NOT NULL,
+    gender TEXT DEFAULT 'neutral',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Index for fast lookups
+CREATE INDEX IF NOT EXISTS idx_exercise_image_name ON public.exercise_image_cache(exercise_name_normalized);
+
+-- =====================================================
 -- ROW LEVEL SECURITY (RLS)
 -- =====================================================
 
