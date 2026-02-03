@@ -47,6 +47,7 @@ import {
   Music,
   Activity,
   BarChart3,
+  ChefHat,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
