@@ -115,6 +115,18 @@ export function usePlanGeneration() {
       // Save the generated plan to Supabase
       const generatedPlan = data.plan as GeneratedPlan;
       
+      // Debug logging
+      console.log('[PlanGeneration] Received plan from backend:', {
+        id: generatedPlan.id,
+        name: generatedPlan.name,
+        totalWeeks: generatedPlan.weeks?.length,
+        week1Workouts: generatedPlan.weeks?.[0]?.workouts?.length,
+      });
+      
+      if (!generatedPlan.weeks || generatedPlan.weeks.length === 0) {
+        throw new Error('Backend returned plan with no weeks');
+      }
+      
       // Create plan in Supabase
       const { data: savedPlan, error: planError } = await supabase
         .from('plans')
