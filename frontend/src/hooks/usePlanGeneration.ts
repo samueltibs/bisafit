@@ -29,7 +29,7 @@ export function usePlanGeneration() {
 
     // Show initial toast
     const toastId = toast.loading('Generating your personalized workout plan...', {
-      description: 'This takes about 30 seconds. You can continue using the app!',
+      description: 'This takes about 30 seconds. You can continue using the app and we\'ll notify you when it\'s ready!',
     });
 
     try {
