@@ -1,249 +1,153 @@
 <analysis>**original_problem_statement:**
-The user wants to enhance an existing MVP-level fitness application named BisaFit with the ultimate goal of launching it as a mobile app on the Apple App Store and Google Play Store.
+The user wants to enhance an existing MVP-level fitness application named BisaFit with the ultimate goal of launching it as a mobile app. Key goals include fixing bugs, improving UI/UX, adding features like optional nutrition and active rest days, and reducing operational costs.
 
-**PRODUCT REQUIREMENTS:**
-1.  **Bug Fixes & Feature Improvements:** Address existing issues and optimize the UI/UX, particularly focusing on a premium, sophisticated look and feel.
-2.  **New Features:** Implement a secure email verification flow, password recovery, a beta feedback system, and legally-required documents (Privacy Policy, Terms of Service).
-3.  **Sustainability:** Remove reliance on pay-per-use AI services for core features where possible, or switch to more cost-effective models.
-4.  **Third-Party Integrations:** Integrate with payment processors (RevenueCat), health data providers (Apple Health, etc.), music services, and an e-commerce platform (Shopify).
-5.  **Launch Readiness:** Prepare the application for submission to mobile app stores by ensuring all features are stable and functional.
-6.  **Recent User Requests:**
-    *   Implement an Active Rest Days feature that is trackable and customizable.
-    *   Implement an Optional Nutrition feature to allow users to opt-out of meal planning, saving AI credits and simplifying the UI for those users.
+During this session, the user's primary requests were:
+1.  Implement an Optional Nutrition feature.
+2.  Implement a Store waitlist with email notifications.
+3.  Drastically improve the slow (~3 minute) workout plan generation time.
+4.  Fix a bug where generated plans showed Rest Day for all days.
+5.  Fix a bug where the workout screen was blank after starting a workout.
+6.  Fix missing exercise images and implement a cost-saving image caching system.
+7.  Refactor the UI to remove confusing block terminology and simplify to a weekly view.
+8.  Make plan generation a background process so the user isn't stuck on a loading screen.
+9.  Remove a floating debug button from the UI.
 
 **User's preferred language**: English
 
 **what currently exists?**
-A full-stack application with a React/Vite frontend and a FastAPI backend. The application now uses the user's personal Supabase project for authentication, database, and storage. The backend leverages the user's own OpenAI API key for  plan generation and their Resend API key for sending all emails (including Supabase transactional emails).
-
-Key work from this session includes:
-*   **AI Plan Generation Upgrade:** Replaced the previous template-based system with a robust, AI-powered plan generator using . It includes error handling and a fallback to a template if the AI fails.
-*   **Supabase Project Migration:** Successfully migrated the entire application from an old, inaccessible Supabase project to a new one fully controlled by the user. This involved generating a complete SQL schema, guiding the user through setup, and debugging numerous configuration issues (SMTP, database constraints).
-*   **Password Reset Flow Fix:** After extensive debugging, the password reset flow was fixed. It now correctly redirects users to a dedicated reset page.
-*   **Paywall & Beta Mode:** Implemented a  flag that grants all new users premium access, bypassing the paywall. A permanent bypass is also in place for the admin user ().
-*   **Active Rest Days Feature:** The feature has been added to the onboarding flow and settings page. The backend AI generator is aware of it.
-*   **Optional Nutrition Feature:** The frontend logic and UI have been implemented to allow users to opt-out of nutrition planning during onboarding, which conditionally hides nutrition-related elements across the app.
+A full-stack application with a React/Vite frontend and a FastAPI backend using Supabase for the database, auth, and storage. The application's core logic has been significantly refactored in this session. Plan generation is now based on a fast, single-week model. A smart image caching system has been implemented on the backend to generate exercise images once and store them for future use, saving API credits. The frontend has been updated to be simpler, weekly-focused, and fetches data like exercise images on-demand.
 
 **Last working item**:
-*   **Last item agent was working:** Implementing the Optional Nutrition feature to save AI credits and simplify the UI for users who don't need meal planning.
-*   **Status:** IN PROGRESS
-*   **Agent Testing Done:** N
-*   **Which testing method agent to use?** Both. The backend needs a schema change, and the frontend flow needs to be verified end-to-end.
-*   **User Testing Done:** N
+-   **Last item agent was working:** Diagnosing and fixing a cascade of critical errors reported by the user. The root cause was identified as multiple database tables (, ) having missing columns, which caused workout sessions to fail to start. The previous attempt to fix images by embedding large base64 data in the JSON payload was also causing database inserts to fail.
+-   **The fix involved:** A complete strategy shift for images. The agent removed image data from the plan generation payload and instead implemented an on-demand fetching system using a new hook () and a dedicated backend endpoint (). This makes the plan data small and efficient, while images are loaded as needed.
+-   **Status:** IN PROGRESS
+-   **Agent Testing Done:** N
+-   **Which testing method agent to use?** Frontend testing agent. The next agent must verify the entire user flow after the user applies the database fixes.
+-   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-*   **Issue 1: Finalize and Test Optional Nutrition Feature (P0)**
-    *   **Description:** The implementation for making nutrition planning optional is incomplete. The frontend UI and hooks are in place, but the necessary database schema change is missing, and the full flow has not been tested.
-    *   **Attempted fixes:** The agent has added conditional rendering to  and  based on a new  hook and updated the onboarding UI.
-    *   **Next debug checklist:**
-        1.  Provide the user with the SQL command to add a  (BOOLEAN) column to the  table in their Supabase project.
-        2.  Ensure the onboarding process correctly saves the user's choice to this new column.
-        3.  Verify that if a user opts out, no AI call is made for a meal plan.
-        4.  Test the full user flow: a user opts out, confirming that the Log Meal button and Nutrition tab are hidden. Then, enable nutrition via settings and confirm the UI elements reappear.
-    *   **Status:** IN PROGRESS
-    *   **Is recurring issue?** N
-    *   **Should Test frontend/backend/both after fix?** Both
+-   **Issue 1: Fix Critical Database Schema Errors (P0)**
+    -   **Description:** The application is throwing numerous console errors because the  and  tables are missing required columns (, , etc.). This is preventing workout sessions from being created and analytics from being logged.
+    -   **Attempted fixes:** The agent has implemented frontend code that relies on these columns and has identified the exact missing columns from the user's error logs.
+    -   **Next debug checklist:**
+        1.  Provide the user with a single, comprehensive SQL script to create/alter the , , and  tables to add all missing columns.
+        2.  Instruct the user to run this script in their Supabase SQL Editor.
+        3.  After the user confirms, test the full user flow (regenerate plan, start workout).
+    -   **Why fix this issue and what will be achieved with the fix?** This is a critical blocker. Fixing the schema will allow workout sessions to start correctly and will resolve all related console errors.
+    -   **Status:** BLOCKED
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Frontend
 
-*   **Issue 2: Password Reset Flow Needs Final User Verification (P1)**
-    *   **Description:** A long-standing bug where clicking the password reset link redirected users to the wrong page. This was tied to using an incorrect Supabase project with wrong URL configurations.
-    *   **Attempted fixes:** The app now uses the user's new Supabase project, where the Site and Redirect URLs have been correctly configured by the user. The agent added logic to the frontend to handle the recovery event.
-    *   **Next debug checklist:**
-        1.  The user needs to perform a full password reset test on a fresh user account created within the new Supabase project.
-    *   **Status:** USER VERIFICATION PENDING
-    *   **Is recurring issue?** Y
-    *   **Should Test frontend/backend/both after fix?** Frontend
-
-*   **Issue 3: Admin Analytics Dashboard Functionality (P2)**
-    *   **Description:** The admin analytics page was previously insecure and non-functional. The security aspect (hiding it from non-admins) has been addressed.
-    *   **Attempted fixes:** A shared  was created to correctly identify the admin user.
-    *   **Next debug checklist:**
-        1.  Log in as the admin ().
-        2.  Navigate to the  page.
-        3.  Verify that the page loads correctly and displays feedback/analytics data without errors.
-    *   **Status:** TESTING PENDING
-    *   **Is recurring issue?** N
-    *   **Should Test frontend/backend/both after fix?** Frontend
+-   **Issue 2: Verify On-Demand Image Loading (P1)**
+    -   **Description:** The user has consistently reported that exercise images are not displaying. The latest implementation uses an on-demand caching system, but it cannot be fully tested until the database schema is fixed, as plan generation is currently failing.
+    -   **Attempted fixes:** A robust backend image cache is in place, populated with 86 exercises. The frontend  component now uses the  hook to fetch these images.
+    -   **Next debug checklist:**
+        1.  This issue is blocked by Fix Critical Database Schema Errors.
+        2.  Once the database is fixed, guide the user to regenerate their plan.
+        3.  Start a workout and verify that images load correctly in the workout player.
+    -   **Why fix this issue and what will be achieved with the fix?** This will complete a major user experience requirement and validate the new, efficient image caching architecture.
+    -   **Status:** BLOCKED
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Frontend
+    -   **Blocked on other issue:** Issue 1: Fix Critical Database Schema Errors
 
 **In progress Task List**:
-*   **Task 1: Complete Active Rest Days Feature (P1)**
-    *   **Where to resume:** Integrate the active rest day information into the main plan/home view, so users can see their scheduled light activities in their weekly calendar.
-    *   **What will be achieved?** Users will have a complete view of their workout and recovery schedule.
-    *   **Status:** IN PROGRESS
-    *   **Should Test frontend/backend/both after fix?** Frontend
+*   None. All current work is classified as fixing issues.
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks:**
-    *   **P1: Scheduled PDF Analytics Reports:** Implement a backend scheduled task to email a weekly PDF summary of analytics and feedback to the admin.
-    *   **P1: Link to Shopify Store:** Once the user provides the URL, update the Store button to link to their Shopify page. (Status: BLOCKED)
-    *   **P2: Generate Legal Documents:** Create pages for the Privacy Policy and Terms of Service. (Status: BLOCKED until user registers their business).
+    *   **P1: Automatic Next-Week Generation:** Implement a backend mechanism (e.g., a scheduled function or trigger) to automatically generate the next week's plan on the last day of the current week.
+    *   **P2: Integrate Active Rest Days into Plan UI:** Display scheduled Active Rest Day activities on the main weekly plan view.
+    *   **P2: Activate Shopify Store Link:** The URL () is saved. Implement the logic to make the Store button a direct link when the user gives the go-ahead.
 *   **Future Tasks:**
-    *   **P2: RevenueCat Integration:** For in-app subscriptions.
-    *   **P3: Native Music Integration:** Implement native Spotify/Apple Music integration.
-    *   **P3: App Store Launch:** Final preparation and submission to app stores.
+    *   Scheduled PDF Analytics Reports
+    *   RevenueCat Integration
+    *   Native Music Integration
+    *   App Store Launch Preparation
 
 **Completed work in this session**
-- **AI Plan Generation with :** Implemented a robust AI workout plan generator using the user's own OpenAI key, complete with error handling and a template-based fallback.
-- **Full Supabase Project Migration:** Guided the user to set up a new Supabase project and migrated the application to it, resolving all associated database schema and configuration issues.
-- **Paywall Bypass for Beta:** Created a system with an admin bypass and a global  flag to provide free premium access to all users during the beta phase.
-- **Password Reset Flow:** Resolved a complex, recurring bug with the password reset redirect after extensive debugging of Supabase configurations.
-- **Admin Analytics Security:** Fixed a bug that made the admin link visible to non-admin users.
-- **Active Rest Days (Partial):** Implemented the feature in the onboarding and settings UI, and updated the backend AI to recognize it.
-- **Optional Nutrition (Partial):** Implemented the frontend logic to allow users to opt-out of nutrition tracking.
+-   **Plan Generation Overhaul:** Replaced the slow, 4-week plan generator with a fast (~30s) single-week generator (), fixing the critical bug where plans started in the next week.
+-   **Smart Image Caching System:** Implemented a backend service () and database table () to generate exercise images once and cache them. Pre-populated the cache with 86 common exercises.
+-   **On-Demand Image Loading:** Refactored the frontend to fetch images on-demand via a new  hook, resolving the payload too large database error.
+-   **Background Plan Generation:** Updated the plan generation flow to run in the background with toast notifications, so the user isn't blocked on a loading screen.
+-   **UI Simplification:** Completely refactored the Plan page UI to remove the confusing Block concept, creating a clean, weekly-focused view as requested by the user.
+-   **Workout Player Bug Fix:** Fixed the blank workout screen bug by correcting the  data structure created during plan generation to match the player's expected format.
+-   **Store Waitlist Feature:** Implemented the  table and a backend endpoint () to handle waitlist signups with email notifications.
+-   **Debug UI Removal:** Removed the floating bug report button from the app.
+
+**Earlier issues found/mentioned but not fixed**
+-   **Issue 1: Active Rest Days UI on Home/Plan page**
+    -   **Debug checklist:** Edit  to properly display workouts that are marked as .
+    -   **Why to solve this issue and what will be achieved with this?** To complete the Active Rest Days feature, ensuring users see their scheduled light activities in their weekly plan.
+    -   **Should Test frontend/backend/both after fix:** Frontend
+    -   **Is recurring issue?** N
+
+**Known issue recurrence from previous fork**
+-   **Issue recurrence in previous fork:** Database Schema Drift.
+-   **Recurrence count:** High. Issues with missing tables or columns have occurred multiple times.
+-   **Status:** IN PROGRESS. The latest recurrence (missing columns in  and ) is the current top-priority blocker.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-*   **Frontend:** React, Vite, TypeScript, Tailwind CSS, shadcn/ui
+*   **Frontend:** React, Vite, TypeScript, Tailwind CSS, shadcn/ui, TanStack Query
 *   **Backend:** FastAPI (Python)
-*   **Database:** Supabase (Auth, Database, Storage)
-*   **AI:**  via the official usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
-              [-o ORGANIZATION] [-t {openai,azure}]
-              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
-              [--azure-ad-token AZURE_AD_TOKEN] [-V]
-              {api,tools,migrate,grit} ...
-
-positional arguments:
-  {api,tools,migrate,grit}
-    api                 Direct API calls
-    tools               Client side tools for convenience
-
-options:
-  -h, --help            show this help message and exit
-  -v, --verbose         Set verbosity.
-  -b API_BASE, --api-base API_BASE
-                        What API base url to use.
-  -k API_KEY, --api-key API_KEY
-                        What API key to use.
-  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
-                        What proxy to use.
-  -o ORGANIZATION, --organization ORGANIZATION
-                        Which organization to run as (will use your default
-                        organization if not specified)
-  -t {openai,azure}, --api-type {openai,azure}
-                        The backend API to call, must be `openai` or `azure`
-  --api-version API_VERSION
-                        The Azure API version, e.g.
-                        'https://learn.microsoft.com/en-us/azure/ai-
-                        services/openai/reference#rest-api-versioning'
-  --azure-endpoint AZURE_ENDPOINT
-                        The Azure endpoint, e.g.
-                        'https://endpoint.openai.azure.com'
-  --azure-ad-token AZURE_AD_TOKEN
-                        A token from Azure Active Directory,
-                        https://www.microsoft.com/en-
-                        us/security/business/identity-access/microsoft-entra-
-                        id
-  -V, --version         show program's version number and exit Python library, using a user-provided API key.
-*   **Email:** Resend, configured as a custom SMTP provider in Supabase for all transactional auth emails.
+*   **Database:** Supabase (PostgreSQL)
+*   **AI:**  for plan generation, DALL-E for image generation (via Emergent LLM Key).
+*   **Architecture:** On-demand image fetching, background frontend tasks with toast notifications, weekly plan generation model.
 
 **key DB schema**
-*   **:** This table was migrated and updated multiple times. It now includes , , , etc. It requires a new  column to be added.
-*   All tables (, , , , etc.) were successfully created in the user's new Supabase project using the  script.
-
-**changes in tech stack**
-*   **Added:** usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
-              [-o ORGANIZATION] [-t {openai,azure}]
-              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
-              [--azure-ad-token AZURE_AD_TOKEN] [-V]
-              {api,tools,migrate,grit} ...
-
-positional arguments:
-  {api,tools,migrate,grit}
-    api                 Direct API calls
-    tools               Client side tools for convenience
-
-options:
-  -h, --help            show this help message and exit
-  -v, --verbose         Set verbosity.
-  -b API_BASE, --api-base API_BASE
-                        What API base url to use.
-  -k API_KEY, --api-key API_KEY
-                        What API key to use.
-  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
-                        What proxy to use.
-  -o ORGANIZATION, --organization ORGANIZATION
-                        Which organization to run as (will use your default
-                        organization if not specified)
-  -t {openai,azure}, --api-type {openai,azure}
-                        The backend API to call, must be `openai` or `azure`
-  --api-version API_VERSION
-                        The Azure API version, e.g.
-                        'https://learn.microsoft.com/en-us/azure/ai-
-                        services/openai/reference#rest-api-versioning'
-  --azure-endpoint AZURE_ENDPOINT
-                        The Azure endpoint, e.g.
-                        'https://endpoint.openai.azure.com'
-  --azure-ad-token AZURE_AD_TOKEN
-                        A token from Azure Active Directory,
-                        https://www.microsoft.com/en-
-                        us/security/business/identity-access/microsoft-entra-
-                        id
-  -V, --version         show program's version number and exit Python SDK for direct API calls.
-*   **Switched:** The application now runs entirely on the user's personal Supabase project ().
+-   **:** (NEW)  - Stores base64 exercise images.
+-   **:** (NEEDS FIX) Missing  column.
+-   **:** (NEEDS FIX) Missing  column.
+-   **:** (NEEDS FIX) Table is missing entirely.
 
 **All files of reference**
-*   : **(NEW)** Manages the state for the Optional Nutrition feature.
-*   : **(MODIFIED)** Contains the  flag that controls the paywall.
-*   : **(MODIFIED)** Contains the core logic for AI plan generation and fallback.
-*   : **(NEW)** The master script used to initialize the user's new database.
-*   : Contains the user's  and .
-*   : Contains the keys for the user's new Supabase project.
+-   : **(NEW)** Crucial hook for fetching images on-demand.
+-   : **(NEW)** Backend logic for the image caching system.
+-   : **(HEAVILY MODIFIED)** Contains the simplified weekly UI.
+-   : **(NEW)** Contains the current, fast plan generation logic.
 
 **key api endpoints**
-*   : The primary endpoint for creating workout plans. It is now AI-powered using the user's OpenAI key.
+-   : Generates a single week of workouts.
+-   : Fetches a cached exercise image as base64 data.
 
 **Critical Info for New Agent**
-*   **User-Controlled Infrastructure:** The app is now fully running on the user's personal Supabase project () and uses their personal API keys for OpenAI and Resend. Any database/auth changes must be made in their Supabase dashboard.
-*   **Beta Mode is Active:** The paywall is disabled for all users via a  flag in . The admin () has a permanent bypass regardless of this flag.
-*   **Top Priority:** Your first task is to finalize the Optional Nutrition feature. This requires providing the user with an SQL command to alter the  table.
-
-**documents and test reports created in this job**
-*   
-*   
+1.  **Your first action MUST be to provide the user with a consolidated SQL script.** This script needs to fix the missing columns in  and , and create the  table. The app is critically broken until this is done.
+2.  **The image loading strategy is now on-demand.** Do NOT try to embed image data in the . The correct pattern is using the  hook in the frontend to call the  endpoint.
+3.  **All block and 4-week logic is deprecated.** The application now operates on a simple, weekly-generation model.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Requests to make the Nutrition Plan optional during onboarding to save AI credits. (IN PROGRESS)
-2.  **User:** Confirms that enabling beta mode and admin bypass for the paywall has worked. (COMPLETED)
-3.  **User:** Asks to remove price restraints for the admin and enable a free trial for all beta testers. (COMPLETED)
-4.  **User:** Reports that after deleting a stuck user and re-signing up, onboarding worked but they got stuck at the paywall. (ADDRESSED by implementing beta mode)
-5.  **User:** Confirms they are now using their own Supabase project but sign-up emails are not being sent. (ADDRESSED by guiding SMTP setup)
-6.  **User:** Reports an error failed to save meal preferences during onboarding. (ADDRESSED by adding a DB constraint)
-7.  **User:** Asks to delete the Supabase project and start over due to persistent issues. (ADDRESSED by finalizing the switch to the new project)
-8.  **User:** Provides a new Supabase API key to switch projects. (COMPLETED)
-9.  **User:** Reports the password reset link redirects to a lovable version of the app. (ADDRESSED, was a Supabase config issue)
-10. **User:** Reports that the password reset link still redirects to the onboarding page. (ADDRESSED)
+1.  **User:** Provided console logs showing errors about missing columns in  and . (IN PROGRESS)
+2.  **User:** Regenerated the plan but images are still not seen. (ADDRESSED - The new on-demand architecture is implemented but blocked by DB errors).
+3.  **User:** Asked to generate and save images in the database. (COMPLETED - A cache of 86 images was created).
+4.  **User:** Stated they would wait for images to generate before testing again. (PENDING)
+5.  **User:** Asked for background plan generation and major UI cleanup on the Plan page. (COMPLETED)
+6.  **User:** Noticed the UI text still said 4 week plan. (COMPLETED)
+7.  **User:** Confirmed background generation works but the Start Workout button does nothing. (COMPLETED - Workout player is fixed but blocked by DB error).
+8.  **User:** Reported the Start Workout button leads to a blank page and asked to remove the bug button. (COMPLETED)
+9.  **User:** Confirmed that single-week plan generation worked. (COMPLETED)
+10. **User:** Suggested switching to single-week generation to fix bugs. (COMPLETED)
 
 **Project Health Check:**
-*   **Broken:** No features are critically broken for a new user starting from scratch.
+*   **Broken:**
+    *   **Workout Sessions:** Cannot start due to missing DB columns.
+    *   **Analytics:** Failing due to missing DB columns.
 *   **Mocked:**
     *   Store page link.
-    *   Native mobile features (Music, Health integrations).
-*   **In Progress / Needs Verification:**
-    *   Optional Nutrition Feature (needs DB column and testing).
-    *   Active Rest Days Feature (needs home page UI integration).
-    *   Admin Analytics Dashboard (functionality needs testing).
-    *   Password Reset Flow (needs final user verification).
 
 **3rd Party Integrations**
-*   **OpenAI GPT-4o-mini:** Generates workout plans. Uses the User's API Key.
-*   **Supabase:** Handles User Auth, Database, and Storage. Uses the User's API Keys for their own project.
-*   **Resend:** Sends all transactional emails (auth and feedback notifications). Uses the User's API Key.
-*   **Shopify (Planned):** For e-commerce store. Blocked on user providing URL.
-*   **RevenueCat (Planned):** For in-app subscriptions. Blocked, requires User API Key.
-*   **Apple Health / Google Fit (Planned):** For health data sync. Blocked on native build environment.
+*   **OpenAI GPT-4o-mini:** Generates workout plans. Uses User's API Key.
+*   **DALL-E (via Emergent LLM Key):** Generates exercise images for the cache.
+*   **Supabase:** Auth, Database, Storage. Uses User's API Keys.
+*   **Resend:** Sends emails. Uses User's API Key.
 
 **Testing status**
-*   **Testing agent used after significant changes:** YES
-*   **Troubleshoot agent used after agent stuck in loop:** NO
-*   **Test files created:** []
-*   **Known regressions:** The switch to a new Supabase project introduced several configuration-related bugs, which have been resolved one by one. The core application logic is stable.
-
-**Credentials to test flow:**
-*   **Admin user:** 
-*   **Non-admin user:** Create any new account through the signup flow.
+-   **Testing agent used after significant changes:** NO
+-   **Test files created:** []
+-   **Known regressions:** Workout sessions are currently broken due to database schema errors.
 
 **What agent forgot to execute**
-*   The agent implemented the frontend logic for the Optional Nutrition feature but forgot to provide the user with the necessary SQL to add the  column to the  table.
-*   The agent has not yet implemented the UI on the home/plan page to display the Active Rest Days that are generated by the backend.
-*   The functionality of the Admin Analytics page has not been tested since its security was fixed.</analysis>
+*   The agent has not yet provided the final, consolidated SQL script to the user to fix all the database errors identified in the last user message.
+*   The agent has not yet implemented the UI for the Active Rest Days feature on the main plan page.</analysis>
