@@ -31,11 +31,26 @@ if SUPABASE_URL and SUPABASE_KEY:
 
 def normalize_exercise_name(name: str) -> str:
     """Normalize exercise name for consistent cache lookups"""
-    return (name.lower()
+    normalized = (name.lower()
             .strip()
             .replace('-', ' ')
             .replace('_', ' ')
             .replace('  ', ' '))
+    
+    # Remove common plurals for consistency
+    # e.g., "push ups" -> "push up", "jumping jacks" stays as is
+    if normalized.endswith('s') and not normalized.endswith('ss'):
+        # Check if removing 's' gives a common exercise pattern
+        singular = normalized[:-1]
+        # Keep "jumping jacks", "arm circles" etc as-is (they're proper names)
+        if singular not in ['jumping jack', 'high knee', 'arm circle', 'hip circle', 
+                           'butt kick', 'leg swing', 'flutter kick', 'mountain climber']:
+            # For others like "push ups" -> "push up", "crunches" -> "crunch"
+            if normalized in ['push ups', 'crunches', 'lunges', 'squats', 'planks', 
+                             'deadlifts', 'curls', 'rows', 'dips', 'raises']:
+                normalized = singular
+    
+    return normalized
 
 
 async def get_cached_image(exercise_name: str, gender: str = 'neutral') -> Optional[str]:
