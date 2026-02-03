@@ -464,62 +464,26 @@ export default function Plan() {
 
         {/* Block Selector and Week Navigation */}
         <div className="flex flex-col gap-4 animate-fade-in">
-          {/* Block Selector Row */}
+          {/* Week Navigation - Simplified */}
           <div className="flex items-center justify-between">
-            <BlockSelector
-              plans={allPlans}
-              selectedPlanId={selectedPlanId}
-              currentPlanId={currentPlanId}
-              onSelectPlan={setSelectedPlanId}
-              disabled={isGenerating || isGeneratingNextBlock}
-            />
-            <div className="flex items-center gap-2">
-              {/* Queued block: Show "Start This Block" button */}
-              {allPlans.find(p => p.id === selectedPlanId)?.status === 'queued' && (
-                <Button size="sm" onClick={handleStartBlock}>
-                  <Play className="h-3 w-3 mr-1" />
-                  Start This Block
-                </Button>
-              )}
-              {/* Current block: Show "Mark Complete" button */}
-              {isViewingCurrentPlan && (
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => setShowMarkCompleteConfirm(true)}
-                >
-                  <Check className="h-3 w-3 mr-1" />
-                  Mark Complete
-                </Button>
-              )}
-              {!isViewingCurrentPlan && allPlans.find(p => p.id === selectedPlanId)?.status !== 'queued' && (
-                <Badge variant="outline" className="text-xs flex items-center gap-1">
-                  <Lock className="h-3 w-3" />
-                  Completed
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          {/* Week Navigation */}
-          <div className="flex items-center justify-between">
-            <Button variant="ghost" size="icon" onClick={goToPreviousWeek}>
+            <Button variant="ghost" size="icon" onClick={goToPreviousWeek} disabled={weekOffset <= 0}>
               <ChevronLeft className="h-5 w-5" />
             </Button>
             <div className="text-center">
               <h2 className="text-lg font-semibold">
-                {format(currentWeekStart, 'MMM d')} - {format(addDays(currentWeekStart, 6), 'MMM d, yyyy')}
+                Week {viewingPlanWeek} Plan
               </h2>
-              {planJson && (
               <p className="text-xs text-muted-foreground">
-                  Week {viewingPlanWeek} of 4 • {workoutDaysCount} workouts
-                  {isViewingCurrentWeek && isViewingCurrentPlan && (
-                    <Badge variant="outline" className="ml-2 text-[10px]">Current</Badge>
-                  )}
-                </p>
-              )}
+                {format(currentWeekStart, 'MMM d')} - {format(addDays(currentWeekStart, 6), 'MMM d, yyyy')}
+                {isViewingCurrentWeek && isViewingCurrentPlan && (
+                  <Badge variant="outline" className="ml-2 text-[10px]">Current</Badge>
+                )}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {workoutDaysCount} workouts scheduled
+              </p>
             </div>
-            <Button variant="ghost" size="icon" onClick={goToNextWeek}>
+            <Button variant="ghost" size="icon" onClick={goToNextWeek} disabled={weekOffset >= (planJson?.weeks?.length || 1) - 1}>
               <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
