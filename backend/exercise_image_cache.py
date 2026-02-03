@@ -2,8 +2,8 @@
 Exercise Image Cache Service
 
 Smart caching for AI-generated exercise images:
-- First request: Generate with AI, save to Supabase storage, cache URL
-- Subsequent requests: Return cached URL instantly (no credits used)
+- First request: Generate with AI, save base64 to database
+- Subsequent requests: Return cached image instantly (no credits used)
 
 Saves credits by generating each exercise image only ONCE.
 """
@@ -19,11 +19,14 @@ load_dotenv()
 
 # Initialize Supabase client
 SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
-SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY', os.environ.get('SUPABASE_KEY', ''))
+SUPABASE_KEY = os.environ.get('SUPABASE_KEY', '')
 
 supabase: Client = None
 if SUPABASE_URL and SUPABASE_KEY:
-    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    try:
+        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    except Exception as e:
+        print(f"[ImageCache] Failed to create Supabase client: {e}")
 
 
 def normalize_exercise_name(name: str) -> str:
@@ -37,10 +40,11 @@ def normalize_exercise_name(name: str) -> str:
 
 async def get_cached_image(exercise_name: str, gender: str = 'neutral') -> Optional[str]:
     """
-    Get cached image URL for an exercise.
+    Get cached image (base64) for an exercise.
     Returns None if not cached.
     """
     if not supabase:
+        print("[ImageCache] No Supabase client")
         return None
     
     normalized = normalize_exercise_name(exercise_name)
@@ -58,14 +62,17 @@ async def get_cached_image(exercise_name: str, gender: str = 'neutral') -> Optio
     return None
 
 
-async def save_to_cache(exercise_name: str, image_url: str, gender: str = 'neutral') -> bool:
+async def save_to_cache(exercise_name: str, image_base64: str, gender: str = 'neutral') -> bool:
     """
-    Save an image URL to the cache.
+    Save an image (as base64 data URL) to the cache.
     """
     if not supabase:
         return False
     
     normalized = normalize_exercise_name(exercise_name)
+    
+    # Create a data URL for the base64 image
+    image_url = f"data:image/png;base64,{image_base64}"
     
     try:
         supabase.table('exercise_image_cache').upsert({
@@ -74,44 +81,11 @@ async def save_to_cache(exercise_name: str, image_url: str, gender: str = 'neutr
             'image_url': image_url,
             'gender': gender,
         }, on_conflict='exercise_name_normalized').execute()
+        print(f"[ImageCache] Saved to cache: {exercise_name}")
         return True
     except Exception as e:
         print(f"[ImageCache] Error saving to cache: {e}")
         return False
-
-
-async def upload_image_to_storage(
-    image_base64: str, 
-    exercise_name: str
-) -> Optional[str]:
-    """
-    Upload a base64 image to Supabase storage and return the public URL.
-    """
-    if not supabase:
-        return None
-    
-    try:
-        # Create a unique filename
-        normalized = normalize_exercise_name(exercise_name)
-        filename = f"exercises/{hashlib.md5(normalized.encode()).hexdigest()}.png"
-        
-        # Decode base64
-        image_data = base64.b64decode(image_base64)
-        
-        # Upload to storage
-        result = supabase.storage.from_('exercise-images').upload(
-            filename,
-            image_data,
-            {'content-type': 'image/png', 'upsert': 'true'}
-        )
-        
-        # Get public URL
-        public_url = supabase.storage.from_('exercise-images').get_public_url(filename)
-        return public_url
-        
-    except Exception as e:
-        print(f"[ImageCache] Error uploading to storage: {e}")
-        return None
 
 
 async def get_or_generate_exercise_image(
@@ -144,6 +118,7 @@ async def get_or_generate_exercise_image(
     try:
         from workout_image_service import generate_workout_image
         
+        print(f"[ImageCache] Generating image for: {exercise_name}")
         result = await generate_workout_image(
             exercise_name=exercise_name,
             gender=gender,
@@ -151,22 +126,15 @@ async def get_or_generate_exercise_image(
         )
         
         if result.get('image_base64'):
-            # Upload to storage
-            public_url = await upload_image_to_storage(
-                result['image_base64'],
-                exercise_name
-            )
+            # Save to cache as base64 data URL
+            await save_to_cache(exercise_name, result['image_base64'], gender)
             
-            if public_url:
-                # Save to cache
-                await save_to_cache(exercise_name, public_url, gender)
-                
-                return {
-                    "exercise_name": exercise_name,
-                    "image_url": public_url,
-                    "cached": False,
-                    "generated": True
-                }
+            return {
+                "exercise_name": exercise_name,
+                "image_url": f"data:image/png;base64,{result['image_base64']}",
+                "cached": False,
+                "generated": True
+            }
         
         return {
             "exercise_name": exercise_name,
