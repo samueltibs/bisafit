@@ -5,6 +5,15 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+// CRITICAL: Check for password recovery BEFORE Supabase client processes the hash
+// This runs at module load time, before React
+const hashParams = new URLSearchParams(window.location.hash.substring(1));
+if (hashParams.get('type') === 'recovery' && !window.location.pathname.includes('/reset-password')) {
+  console.log('[Supabase Client] Recovery token detected, redirecting to /reset-password');
+  // Use replace to avoid adding to history
+  window.location.replace('/reset-password' + window.location.hash);
+}
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
