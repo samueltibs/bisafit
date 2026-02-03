@@ -152,7 +152,7 @@ export function usePlanGeneration() {
                     day_name: dayName,
                     type: 'workout',
                     focus: workout.name,
-                    workout_id: workout.id,
+                    // Don't store workout_id - workouts are found by scheduled_date
                   };
                 }
                 return {
