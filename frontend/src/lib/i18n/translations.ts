@@ -143,9 +143,9 @@ export const en = {
   'plan.coachNotes': 'Coach Notes',
   'plan.workoutsPerWeek': 'workouts this week',
   'plan.planNotReady': "Your Plan Isn't Ready Yet",
-  'plan.generateFirst': 'Generate your first plan to begin your personalized 4-week training journey.',
-  'plan.readyForNextBlock': 'Ready for Your Next Block!',
-  'plan.currentBlockInProgress': 'Current Block in Progress',
+  'plan.generateFirst': 'Generate your first week to begin your personalized training journey. New weeks auto-generate!',
+  'plan.readyForNextBlock': 'Ready for Your Next Week!',
+  'plan.currentBlockInProgress': 'Current Week in Progress',
   'plan.workoutsCompleted': 'workouts completed',
   
   // Goals
