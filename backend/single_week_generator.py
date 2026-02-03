@@ -62,33 +62,17 @@ def get_week_prompt(user_profile: Dict[str, Any], week_number: int = 1) -> str:
     }
     theme = week_themes.get(week_number, f"Week {week_number}")
     
-    return f"""Create a 1-week workout plan JSON for Week {week_number} ({theme}):
-- Goal: {user_profile.get('goal_primary', 'maintenance')}
-- Experience: {user_profile.get('experience_level', 'intermediate')}
-- Gender: {user_profile.get('gender', 'Not specified')}
-- Workout Days: {', '.join(workout_days)}
-- Equipment: {', '.join(equipment_list)}
-- Session Length: {user_profile.get('session_minutes', 45)} min
+    # Create a simpler, more reliable prompt
+    return f"""Create Week {week_number} workout plan. Goal: {user_profile.get('goal_primary', 'fitness')}. Level: {user_profile.get('experience_level', 'intermediate')}.
 
-Return this exact JSON structure:
-{{
-  "week_theme": "{theme}",
-  "coach_tip": "One sentence tip for this week",
-  "workouts": [
-    {{
-      "day_name": "{workout_days[0] if workout_days else 'Monday'}",
-      "workout_name": "Descriptive Name",
-      "duration_minutes": {user_profile.get('session_minutes', 45)},
-      "focus_areas": ["muscle1", "muscle2"],
-      "exercises": [
-        {{"name": "Exercise Name", "sets": 3, "reps": "10-12", "rest_seconds": 60, "muscle_group": "chest", "is_warmup": false, "is_cooldown": false}}
-      ]
-    }}
-  ]
-}}
+Days: {', '.join(workout_days)}
+Equipment: {', '.join(equipment_list)}
+Duration: {user_profile.get('session_minutes', 45)} min per workout
 
-Generate workouts ONLY for: {', '.join(workout_days)}
-Total workouts needed: {len(workout_days)}"""
+Return JSON:
+{{"week_theme":"{theme}","coach_tip":"Brief tip","workouts":[{{"day_name":"Monday","workout_name":"Name","duration_minutes":45,"focus_areas":["area1"],"exercises":[{{"name":"Exercise","sets":3,"reps":"10","rest_seconds":60,"muscle_group":"chest","is_warmup":false,"is_cooldown":false}}]}}]}}
+
+Create {len(workout_days)} workouts for: {', '.join(workout_days)}. Each with 6-8 exercises (2 warmup, 4-5 main, 1-2 cooldown)."""
 
 
 async def generate_single_week(
