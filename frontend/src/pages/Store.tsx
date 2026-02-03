@@ -61,10 +61,26 @@ export default function Store() {
 
       if (error) throw error;
 
+      // Send confirmation email via backend
+      const backendUrl = import.meta.env.VITE_REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      try {
+        await fetch(`${backendUrl}/api/store-interest-notification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: user.email || '',
+            interests: selectedInterests,
+          }),
+        });
+      } catch (emailError) {
+        // Log but don't fail - email is nice to have
+        console.error('Failed to send confirmation email:', emailError);
+      }
+
       setHasSubmitted(true);
       toast({
         title: "You're on the list!",
-        description: "We'll notify you when the store goes live.",
+        description: "Check your email for confirmation. We'll notify you when the store goes live.",
       });
     } catch (error) {
       console.error('Failed to save interest:', error);
