@@ -71,7 +71,7 @@ export default function Plan() {
     const firstName = getFirstName(userProfile?.full_name);
     return transformCoachNotes(planJson.coach_notes, firstName);
   }, [planJson?.coach_notes, userProfile?.full_name]);
-  const { generatePlan, isGenerating } = usePlanGeneration();
+  const { generatePlan, generatePlanInBackground, isGenerating } = usePlanGeneration();
   const { showModal: showPremiumModal, setShowModal: setShowPremiumModal, checkPremiumAccess } = usePremiumFeature();
   
   // For non-current plans, default to week 0 (Week 1) instead of using today's date
