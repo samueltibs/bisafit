@@ -528,37 +528,22 @@ export default function Plan() {
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Week {viewingPlanWeek} Plan</h3>
             <div className="flex items-center gap-2">
-              {planJson?.progression_notes && (
-                <Badge variant="secondary" className="text-xs">
-                  {planJson.progression_strategy}
-                </Badge>
-              )}
-              {isViewingCurrentPlan ? (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleRegenerateClick}
-                  disabled={isGenerating}
-                >
-                  {isGenerating ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      <RefreshCw className="h-3 w-3 mr-1" />
-                      Regenerate
-                    </>
-                  )}
-                </Button>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedPlanId(currentPlanId)}
-                >
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  Go to Current Block
-                </Button>
-              )}
+              {/* Regenerate button - always visible */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRegenerateClick}
+                disabled={isGenerating}
+              >
+                {isGenerating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Regenerate
+                  </>
+                )}
+              </Button>
             </div>
           </div>
           
