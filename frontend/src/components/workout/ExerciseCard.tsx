@@ -170,7 +170,7 @@ export function ExerciseCard({
           <div className="sm:w-1/3 flex-shrink-0">
             <ExerciseMedia
               videoUrl={item.video_url_optional}
-              imageUrl={item.image_url}
+              imageUrl={cachedImageUrl || item.image_url}
               exerciseName={item.name}
               className="w-full"
             />
