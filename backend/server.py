@@ -108,6 +108,111 @@ async def create_workout_images_batch(request: WorkoutImagesBatchRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# In-memory storage for pre-generated images (keyed by plan_id)
+pre_generated_images: Dict[str, Dict[str, str]] = {}
+
+
+class PreGenerateImagesRequest(BaseModel):
+    """Request to pre-generate images for a workout plan"""
+    plan_id: str
+    exercises: List[ExerciseInfo]
+    gender: str = "male"
+
+
+async def background_generate_images(plan_id: str, exercises: List[dict], gender: str):
+    """Background task to generate all images for a plan"""
+    logger.info(f"Starting background image generation for plan {plan_id}")
+    
+    if plan_id not in pre_generated_images:
+        pre_generated_images[plan_id] = {}
+    
+    for exercise in exercises:
+        exercise_name = exercise.get("exercise_name", "")
+        muscle_group = exercise.get("muscle_group", "full body")
+        
+        # Skip if already generated
+        if exercise_name in pre_generated_images[plan_id]:
+            continue
+        
+        try:
+            result = await generate_workout_image(
+                exercise_name=exercise_name,
+                gender=gender,
+                muscle_group=muscle_group
+            )
+            if result.get("image_base64"):
+                pre_generated_images[plan_id][exercise_name] = result["image_base64"]
+                logger.info(f"Generated image for {exercise_name}")
+        except Exception as e:
+            logger.error(f"Failed to generate image for {exercise_name}: {e}")
+            # Store a placeholder to avoid re-attempting
+            pre_generated_images[plan_id][exercise_name] = ""
+    
+    logger.info(f"Completed image generation for plan {plan_id}")
+
+
+@api_router.post("/pregenerate-workout-images")
+async def pregenerate_workout_images(
+    request: PreGenerateImagesRequest, 
+    background_tasks: BackgroundTasks
+):
+    """
+    Start background generation of all workout images for a plan.
+    Returns immediately - images are generated in background.
+    Call /get-pregenerated-images/{plan_id} to check progress.
+    """
+    try:
+        # Initialize storage for this plan
+        pre_generated_images[request.plan_id] = {}
+        
+        # Add background task
+        background_tasks.add_task(
+            background_generate_images,
+            request.plan_id,
+            [ex.dict() for ex in request.exercises],
+            request.gender
+        )
+        
+        return {
+            "status": "started",
+            "plan_id": request.plan_id,
+            "total_exercises": len(request.exercises),
+            "message": "Image generation started in background"
+        }
+    except Exception as e:
+        logger.error(f"Error starting image pregeneration: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/get-pregenerated-images/{plan_id}")
+async def get_pregenerated_images(plan_id: str, exercise_name: Optional[str] = None):
+    """
+    Get pre-generated images for a plan.
+    
+    If exercise_name is provided, returns just that image.
+    Otherwise returns all images with their generation status.
+    """
+    if plan_id not in pre_generated_images:
+        return {"status": "not_found", "images": {}}
+    
+    images = pre_generated_images[plan_id]
+    
+    if exercise_name:
+        image = images.get(exercise_name)
+        return {
+            "status": "found" if image else "not_ready",
+            "exercise_name": exercise_name,
+            "image_base64": image
+        }
+    
+    return {
+        "status": "ok",
+        "plan_id": plan_id,
+        "total_generated": len([k for k, v in images.items() if v]),
+        "images": images
+    }
+
+
 # Email Notification Models
 class FeedbackNotificationRequest(BaseModel):
     feedback_data: Dict[str, Any]
