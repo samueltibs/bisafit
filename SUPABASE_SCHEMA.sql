@@ -280,6 +280,10 @@ CREATE POLICY "Users can view own feedback" ON public.beta_feedback FOR SELECT U
 CREATE POLICY "Users can insert events" ON public.events FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can view own events" ON public.events FOR SELECT USING (auth.uid() = user_id);
 
+CREATE POLICY "Users can view own store interest" ON public.store_interest FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert store interest" ON public.store_interest FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own store interest" ON public.store_interest FOR UPDATE USING (auth.uid() = user_id);
+
 -- =====================================================
 -- AUTO-CREATE PROFILE ON USER SIGNUP
 -- =====================================================
