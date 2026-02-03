@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Calendar, Dumbbell, Apple } from 'lucide-react';
+import { Home, Calendar, Dumbbell, Apple, ChefHat } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation, type TranslationKey } from '@/lib/i18n';
 import { useNutritionSettings } from '@/hooks/useNutritionSettings';
