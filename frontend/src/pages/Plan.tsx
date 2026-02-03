@@ -388,7 +388,7 @@ export default function Plan() {
               {/* Helper text for manual override */}
               {!eligibility?.isEligible && (
                 <p className="text-xs text-muted-foreground pl-13">
-                  You don't have to wait 4 weeks if you're ready to progress.
+                  Need a fresh start? You can regenerate anytime.
                 </p>
               )}
             </div>
