@@ -234,6 +234,7 @@ ALTER TABLE public.progress_photos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.health_uploads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.beta_feedback ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.store_interest ENABLE ROW LEVEL SECURITY;
 
 -- Users can only access their own data
 CREATE POLICY "Users can view own profile" ON public.users_profile FOR SELECT USING (auth.uid() = id);
