@@ -189,53 +189,8 @@ async function generatePlanCore(): Promise<GeneratePlanResult> {
   
   console.log('[PlanGeneration] Plan saved with ID:', savedPlan.id);
 
-  // Collect all unique exercises for image pre-fetching
-  const allExercises: Array<{name: string, muscle_group: string}> = [];
-  const exerciseSet = new Set<string>();
-  
-  for (const workout of generatedWeek.workouts || []) {
-    for (const ex of workout.exercises || []) {
-      const normalizedName = ex.name?.toLowerCase().trim();
-      if (normalizedName && !exerciseSet.has(normalizedName)) {
-        exerciseSet.add(normalizedName);
-        allExercises.push({
-          name: ex.name,
-          muscle_group: ex.muscle_group || 'full body'
-        });
-      }
-    }
-  }
-
-  // Fetch/generate images for all exercises (with caching)
-  console.log(`[PlanGeneration] Fetching images for ${allExercises.length} unique exercises...`);
-  const imageMap: Record<string, string> = {};
-  
-  try {
-    const imageResponse = await fetch(`${BACKEND_URL}/api/exercise-images-batch`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        exercises: allExercises.map(ex => ({
-          exercise_name: ex.name,
-          muscle_group: ex.muscle_group
-        })),
-        gender: profile.gender || 'neutral'
-      }),
-    });
-    
-    if (imageResponse.ok) {
-      const imageData = await imageResponse.json();
-      console.log(`[PlanGeneration] Images: ${imageData.summary?.from_cache || 0} cached, ${imageData.summary?.newly_generated || 0} generated`);
-      
-      for (const result of imageData.results || []) {
-        if (result.image_url) {
-          imageMap[result.exercise_name.toLowerCase().trim()] = result.image_url;
-        }
-      }
-    }
-  } catch (imgError) {
-    console.log('[PlanGeneration] Image fetch failed, continuing without images:', imgError);
-  }
+  // Note: Images are fetched on-demand from cache when workout is displayed
+  // This avoids huge payloads (base64 images are ~2.5MB each)
 
   // Transform exercises to WorkoutItem format (images fetched on-demand, not stored)
   const transformExercise = (e: any) => {
