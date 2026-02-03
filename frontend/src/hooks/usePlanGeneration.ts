@@ -229,6 +229,46 @@ export function usePlanGeneration() {
         .update({ current_plan_id: savedPlan.id })
         .eq('id', session.user.id);
 
+      // Trigger background image pre-generation
+      try {
+        // Collect all unique exercises from all workouts
+        const allExercises: Array<{exercise_name: string, muscle_group: string}> = [];
+        const seenExercises = new Set<string>();
+        
+        for (const workout of workoutsToInsert) {
+          const blocks = (workout.workout_json as any).blocks || [];
+          for (const block of blocks) {
+            for (const item of block.items || []) {
+              if (!seenExercises.has(item.name)) {
+                seenExercises.add(item.name);
+                allExercises.push({
+                  exercise_name: item.name,
+                  muscle_group: block.type || 'full body',
+                });
+              }
+            }
+          }
+        }
+
+        if (allExercises.length > 0) {
+          console.log(`[PlanGeneration] Starting background image pre-generation for ${allExercises.length} exercises`);
+          
+          // Fire and forget - don't await, let it run in background
+          fetch(`${BACKEND_URL}/api/pregenerate-workout-images`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              plan_id: savedPlan.id,
+              exercises: allExercises,
+              gender: profile.gender || 'male',
+            }),
+          }).catch(err => console.log('[PlanGeneration] Image pregeneration request sent'));
+        }
+      } catch (imgError) {
+        // Don't fail plan generation if image pregeneration fails
+        console.log('[PlanGeneration] Image pregeneration skipped:', imgError);
+      }
+
       return {
         success: true,
         plan_id: savedPlan.id,
