@@ -270,7 +270,7 @@ export default function Plan() {
             </div>
             <h2 className="mb-2 text-xl font-semibold">Your Plan Isn't Ready Yet</h2>
             <p className="mb-6 max-w-sm text-muted-foreground">
-              Generate your first plan to begin your personalized 4-week training journey.
+              Generate your first week to begin your personalized training journey. New weeks generate automatically!
             </p>
             <div className="flex flex-col gap-3 w-full max-w-xs">
               <Button onClick={handleGeneratePlan} disabled={isGenerating} className="w-full">
