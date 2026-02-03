@@ -141,42 +141,70 @@ export function usePlanGeneration() {
       
       console.log('[PlanGeneration] Plan saved with ID:', savedPlan.id);
 
-      // Build workouts to insert
+      // Build workouts to insert - must match WorkoutJson interface
       const workoutsToInsert = generatedWeek.workouts.map((workout: any) => {
         // Separate exercises by type
         const warmupExercises = (workout.exercises || []).filter((e: any) => e.is_warmup);
         const mainExercises = (workout.exercises || []).filter((e: any) => !e.is_warmup && !e.is_cooldown);
         const cooldownExercises = (workout.exercises || []).filter((e: any) => e.is_cooldown);
 
+        // Transform exercises to WorkoutItem format (uses 'items' not 'exercises')
+        const transformExercise = (e: any) => ({
+          name: e.name,
+          sets: e.sets || 3,
+          reps: String(e.reps || '10'),
+          rest_sec: e.rest_seconds || 60,
+          instructions: `Focus on ${e.muscle_group || 'proper form'}. Perform ${e.sets || 3} sets of ${e.reps || '10'} reps.`,
+        });
+
         const blocks = [];
         
         if (warmupExercises.length > 0) {
           blocks.push({
-            type: 'warmup',
-            name: 'Warm Up',
-            exercises: warmupExercises.map((e: any) => ({
-              name: e.name,
-              sets: e.sets,
-              reps: e.reps,
-              rest_seconds: e.rest_seconds,
-              muscle_group: e.muscle_group,
-            })),
+            type: 'warmup' as const,
+            items: warmupExercises.map(transformExercise),
           });
         }
         
+        // Main exercises should be 'strength' type for the player to work correctly
         if (mainExercises.length > 0) {
           blocks.push({
-            type: 'main',
-            name: 'Main Workout',
-            exercises: mainExercises.map((e: any) => ({
-              name: e.name,
-              sets: e.sets,
-              reps: e.reps,
-              rest_seconds: e.rest_seconds,
-              muscle_group: e.muscle_group,
-            })),
+            type: 'strength' as const,
+            items: mainExercises.map(transformExercise),
           });
         }
+        
+        if (cooldownExercises.length > 0) {
+          blocks.push({
+            type: 'cooldown' as const,
+            items: cooldownExercises.map(transformExercise),
+          });
+        }
+
+        // If no blocks were created (AI didn't use warmup/cooldown flags), put all in strength
+        if (blocks.length === 0 && workout.exercises && workout.exercises.length > 0) {
+          blocks.push({
+            type: 'strength' as const,
+            items: workout.exercises.map(transformExercise),
+          });
+        }
+
+        // Create the workout_json in the correct format
+        const workoutJson = {
+          title: workout.name,
+          week_number: 1,
+          total_estimated_minutes: workout.duration_minutes || 45,
+          blocks,
+        };
+
+        return {
+          plan_id: savedPlan.id,
+          user_id: session.user.id,
+          title: workout.name,
+          scheduled_date: workout.scheduled_date,
+          workout_json: workoutJson,
+        };
+      });
         
         if (cooldownExercises.length > 0) {
           blocks.push({
