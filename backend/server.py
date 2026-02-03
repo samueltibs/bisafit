@@ -14,6 +14,7 @@ from email_service import send_feedback_notification, send_weekly_analytics_repo
 from plan_generator import generate_4_week_plan, generate_weekly_plan
 from ai_plan_generator import generate_ai_plan_with_fallback
 from ai_plan_generator_fast import generate_ai_plan_with_fallback_fast
+from single_week_generator import generate_single_week_with_fallback
 
 
 ROOT_DIR = Path(__file__).parent
