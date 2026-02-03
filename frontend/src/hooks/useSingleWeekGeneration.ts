@@ -217,6 +217,7 @@ export function useSingleWeekGeneration() {
       }
 
       // Insert workouts into database
+      // IMPORTANT: workout_json.blocks must use 'items' not 'exercises' (matches WorkoutBlock type)
       const workoutsToInsert = generatedWeek.workouts.map(workout => ({
         plan_id: planId,
         user_id: session.user.id,
@@ -224,44 +225,47 @@ export function useSingleWeekGeneration() {
         scheduled_date: workout.scheduled_date,
         workout_json: {
           title: workout.name,
+          week_number: weekNumber,
           duration_minutes: workout.duration_minutes,
           focus_areas: workout.focus_areas,
           total_estimated_minutes: workout.duration_minutes,
           blocks: [
             {
-              type: 'warmup',
-              name: 'Warm Up',
-              exercises: workout.exercises.filter(e => e.is_warmup).map(e => ({
+              type: 'warmup' as const,
+              items: workout.exercises.filter(e => e.is_warmup).map(e => ({
                 name: e.name,
                 sets: e.sets,
                 reps: e.reps,
-                rest_seconds: e.rest_seconds,
+                rest_sec: e.rest_seconds,
+                duration_sec: 30, // Default for warmup
+                instructions: `Perform ${e.name} to warm up`,
                 muscle_group: e.muscle_group,
               })),
             },
             {
-              type: 'main',
-              name: 'Main Workout',
-              exercises: workout.exercises.filter(e => !e.is_warmup && !e.is_cooldown).map(e => ({
+              type: 'strength' as const,
+              items: workout.exercises.filter(e => !e.is_warmup && !e.is_cooldown).map(e => ({
                 name: e.name,
                 sets: e.sets,
                 reps: e.reps,
-                rest_seconds: e.rest_seconds,
+                rest_sec: e.rest_seconds,
+                instructions: `Complete ${e.sets} sets of ${e.reps} ${e.name}`,
                 muscle_group: e.muscle_group,
               })),
             },
             {
-              type: 'cooldown',
-              name: 'Cool Down',
-              exercises: workout.exercises.filter(e => e.is_cooldown).map(e => ({
+              type: 'cooldown' as const,
+              items: workout.exercises.filter(e => e.is_cooldown).map(e => ({
                 name: e.name,
                 sets: e.sets,
                 reps: e.reps,
-                rest_seconds: e.rest_seconds,
+                rest_sec: e.rest_seconds,
+                duration_sec: 30, // Default for cooldown
+                instructions: `${e.name} to cool down`,
                 muscle_group: e.muscle_group,
               })),
             },
-          ].filter(block => block.exercises.length > 0),
+          ].filter(block => block.items.length > 0),
         },
       }));
 
