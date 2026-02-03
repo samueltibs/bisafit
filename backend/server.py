@@ -214,6 +214,89 @@ async def get_pregenerated_images(plan_id: str, exercise_name: Optional[str] = N
     }
 
 
+# ============================================
+# EXERCISE IMAGE CACHE (Smart Caching)
+# ============================================
+
+class ExerciseImageRequest(BaseModel):
+    """Request for a single exercise image"""
+    exercise_name: str
+    muscle_group: str = "full body"
+    gender: str = "neutral"
+
+
+class BatchExerciseImageRequest(BaseModel):
+    """Request for multiple exercise images"""
+    exercises: List[ExerciseImageRequest]
+    gender: str = "neutral"
+
+
+@api_router.post("/exercise-image")
+async def get_exercise_image(request: ExerciseImageRequest):
+    """
+    Get or generate an exercise image with smart caching.
+    
+    - If cached: Returns instantly (no credits used)
+    - If not cached: Generates with AI, saves to cache, returns URL
+    
+    Subsequent requests for the same exercise are FREE and instant.
+    """
+    try:
+        result = await get_or_generate_exercise_image(
+            exercise_name=request.exercise_name,
+            muscle_group=request.muscle_group,
+            gender=request.gender
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Error getting exercise image: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/exercise-images-batch")
+async def get_exercise_images_batch(request: BatchExerciseImageRequest):
+    """
+    Get or generate multiple exercise images with smart caching.
+    
+    Cached images return instantly. Only uncached images use credits.
+    Great for pre-loading all images during plan generation.
+    """
+    try:
+        exercises = [{"exercise_name": ex.exercise_name, "muscle_group": ex.muscle_group} 
+                     for ex in request.exercises]
+        results = await batch_get_or_generate_images(exercises, request.gender)
+        
+        cached_count = sum(1 for r in results if r.get('cached'))
+        generated_count = sum(1 for r in results if r.get('generated'))
+        
+        return {
+            "results": results,
+            "summary": {
+                "total": len(results),
+                "from_cache": cached_count,
+                "newly_generated": generated_count,
+                "credits_used": generated_count  # Only new generations use credits
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error getting batch exercise images: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/exercise-image-cached/{exercise_name}")
+async def check_exercise_image_cache(exercise_name: str):
+    """
+    Check if an exercise image is already cached.
+    Quick check without generating anything.
+    """
+    cached_url = await get_cached_image(exercise_name)
+    return {
+        "exercise_name": exercise_name,
+        "cached": cached_url is not None,
+        "image_url": cached_url
+    }
+
+
 # Email Notification Models
 class FeedbackNotificationRequest(BaseModel):
     feedback_data: Dict[str, Any]
