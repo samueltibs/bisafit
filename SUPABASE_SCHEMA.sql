@@ -57,7 +57,10 @@ CREATE TABLE IF NOT EXISTS public.users_profile (
     
     -- Onboarding & Tutorials
     has_seen_intro_tour BOOLEAN DEFAULT false,
-    welcome_email_sent BOOLEAN DEFAULT false
+    welcome_email_sent BOOLEAN DEFAULT false,
+    
+    -- Feature Toggles
+    nutrition_enabled BOOLEAN DEFAULT true
 );
 
 -- =====================================================
