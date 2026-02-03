@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Loader2 } from 'lucide-react';
@@ -6,6 +6,16 @@ import { Loader2 } from 'lucide-react';
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
   const { hasPremiumAccess, loading: subscriptionLoading } = useSubscription();
+  const location = useLocation();
+
+  // Check for password recovery token in URL hash FIRST
+  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+  const type = hashParams.get('type');
+  
+  if (type === 'recovery') {
+    // Redirect to reset password page with the hash intact
+    return <Navigate to={`/reset-password${window.location.hash}`} replace />;
+  }
 
   // Show loading only for auth check
   if (authLoading) {
