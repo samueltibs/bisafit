@@ -165,16 +165,23 @@ export default function Plan() {
   const displayWorkouts = plan ? getWorkoutsForWeek(currentWeekStart) : [];
   const workoutDaysCount = displayWorkouts.filter(w => !w.isRest).length;
 
+  // Handle plan generation - runs in background with toast notifications
   const handleGeneratePlan = async () => {
     // Gate plan generation behind premium
     if (!checkPremiumAccess()) return;
     
-    const result = await generatePlan();
-    if (result.success) {
+    // Use background generation with toast notifications
+    // This allows user to continue using app while plan generates
+    generatePlanInBackground().then(() => {
+      // Refetch when complete
+      refetch();
       setWeekOffset(0);
-      await refetch();
-    }
+    });
+    
     setShowRegenerateConfirm(false);
+    
+    // Navigate away so user can explore the app
+    // The toast will notify them when plan is ready
   };
 
   const handleRegenerateClick = () => {
