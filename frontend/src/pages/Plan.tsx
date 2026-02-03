@@ -645,8 +645,9 @@ export default function Plan() {
           <DialogHeader>
             <DialogTitle>Regenerate Training Plan?</DialogTitle>
             <DialogDescription>
-              This will create a new 4-week plan and replace your current workouts. 
-              Any completed workout history will be preserved, but scheduled workouts will be replaced.
+              This will create a fresh week of workouts tailored to your goals. 
+              Your next week will automatically generate when this week ends.
+              Completed workout history is preserved.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
