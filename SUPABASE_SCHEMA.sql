@@ -207,6 +207,18 @@ CREATE TABLE IF NOT EXISTS public.events (
 );
 
 -- =====================================================
+-- 12. STORE INTEREST TABLE (Waitlist for Shopify Store)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS public.store_interest (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    interests_json JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    notified_at TIMESTAMP WITH TIME ZONE
+);
+
+-- =====================================================
 -- ROW LEVEL SECURITY (RLS)
 -- =====================================================
 
