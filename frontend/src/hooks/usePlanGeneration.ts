@@ -177,8 +177,24 @@ export function usePlanGeneration() {
 
       // Create individual workouts in Supabase
       // Use savedPlan.id to ensure we're referencing the correct plan
-      const workoutsToInsert = [];
+      const workoutsToInsert: Array<{
+        plan_id: string;
+        user_id: string;
+        title: string;
+        scheduled_date: string;
+        workout_json: Record<string, unknown>;
+      }> = [];
+      
+      console.log('[PlanGeneration] Processing weeks:', generatedPlan.weeks.length);
+      
       for (const week of generatedPlan.weeks) {
+        console.log(`[PlanGeneration] Week ${week.week_number}: ${week.workouts?.length || 0} workouts, start_date: ${week.start_date}`);
+        
+        if (!week.workouts || week.workouts.length === 0) {
+          console.warn(`[PlanGeneration] Week ${week.week_number} has no workouts!`);
+          continue;
+        }
+        
         for (const workout of week.workouts) {
           // Calculate scheduled date
           const weekStart = new Date(week.start_date);
