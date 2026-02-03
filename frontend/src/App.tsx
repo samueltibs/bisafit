@@ -175,9 +175,6 @@ const App = () => (
               } />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
-                <AnalyticsDebugPanel />
-                <OverlayDebugPanel />
-                <IOSScrollDebugPanel />
               </BrowserRouter>
             </TooltipProvider>
           </AppLanguageProvider>
