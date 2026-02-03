@@ -149,19 +149,30 @@ def create_progressive_weeks(week1_workouts: List[Dict], goal: str, experience: 
                     if mods["sets_mod"]:
                         new_ex["sets"] = ex.get("sets", 3) + mods["sets_mod"]
                     
-                    # Modify reps (handle string reps like "10-12")
+                    # Modify reps (handle string reps like "10-12" or "12 per leg")
                     reps = ex.get("reps", "10")
                     if isinstance(reps, str) and mods["reps_mod"]:
-                        if "-" in reps:
-                            low, high = reps.split("-")
-                            mod_val = int(mods["reps_mod"].replace("+", "")) if isinstance(mods["reps_mod"], str) else mods["reps_mod"]
-                            new_ex["reps"] = f"{int(low)+mod_val}-{int(high)+mod_val}"
-                        else:
-                            try:
-                                mod_val = int(mods["reps_mod"].replace("+", "")) if isinstance(mods["reps_mod"], str) else mods["reps_mod"]
-                                new_ex["reps"] = str(int(reps) + mod_val)
-                            except:
-                                pass
+                        mod_val = int(mods["reps_mod"].replace("+", "")) if isinstance(mods["reps_mod"], str) else (mods["reps_mod"] if mods["reps_mod"] else 0)
+                        
+                        # Try to parse and modify numeric reps
+                        try:
+                            if "-" in reps and reps.split("-")[0].strip().isdigit():
+                                parts = reps.split("-")
+                                low = int(parts[0].strip())
+                                # Handle cases like "10-12 per side"
+                                high_part = parts[1].strip().split()[0]
+                                if high_part.isdigit():
+                                    high = int(high_part)
+                                    suffix = parts[1].strip()[len(high_part):].strip()
+                                    new_ex["reps"] = f"{low+mod_val}-{high+mod_val}" + (f" {suffix}" if suffix else "")
+                            elif reps.split()[0].isdigit():
+                                # Handle "12 per leg" -> just increase the number
+                                num = int(reps.split()[0])
+                                suffix = " ".join(reps.split()[1:])
+                                new_ex["reps"] = f"{num+mod_val}" + (f" {suffix}" if suffix else "")
+                        except (ValueError, IndexError):
+                            # Can't parse, keep original
+                            pass
                     
                     # Modify rest
                     if mods["rest_mod"]:
