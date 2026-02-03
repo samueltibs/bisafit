@@ -29,7 +29,12 @@ Each workout has:
 - 4-5 main exercises  
 - 2 cooldown stretches (is_cooldown: true)
 
-Match difficulty to experience level. Only use available equipment."""
+Match difficulty to experience level. Only use available equipment.
+
+USE THESE COMMON EXERCISE NAMES for better matching:
+Warmups: jumping jacks, high knees, arm circles, leg swings, jog in place
+Strength: push ups, squats, lunges, plank, deadlifts, bench press, rows, shoulder press, bicep curls, tricep dips
+Cooldown: standing quad stretch, hamstring stretch, child's pose, cat cow stretch"""
 
 
 def get_current_week_monday() -> datetime:
