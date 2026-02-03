@@ -258,14 +258,24 @@ export function usePlanGeneration() {
       }
 
       if (workoutsToInsert.length > 0) {
-        const { error: workoutsError } = await supabase
+        console.log(`[PlanGeneration] Inserting ${workoutsToInsert.length} workouts...`);
+        console.log('[PlanGeneration] Sample workout:', JSON.stringify(workoutsToInsert[0], null, 2));
+        
+        const { data: insertedWorkouts, error: workoutsError } = await supabase
           .from('workouts')
-          .insert(workoutsToInsert);
+          .insert(workoutsToInsert)
+          .select();
 
         if (workoutsError) {
-          console.error('Error saving workouts:', workoutsError);
-          // Don't throw, plan was created
+          console.error('[PlanGeneration] Error saving workouts:', workoutsError);
+          console.error('[PlanGeneration] Error details:', JSON.stringify(workoutsError, null, 2));
+          // Show error to user instead of silently failing
+          throw new Error(`Failed to save workouts: ${workoutsError.message}`);
+        } else {
+          console.log(`[PlanGeneration] Successfully inserted ${insertedWorkouts?.length || 0} workouts`);
         }
+      } else {
+        console.warn('[PlanGeneration] No workouts to insert!');
       }
 
       // Update user profile with current_plan_id
