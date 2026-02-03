@@ -9,7 +9,7 @@ import json
 import time
 
 # Backend URL from review request
-BACKEND_URL = "http://localhost:8001"  # As specified in review request
+BACKEND_URL = "https://bisafit-enhance.preview.emergentagent.com"  # Production URL
 API_BASE = f"{BACKEND_URL}/api"
 
 def test_health_check():
