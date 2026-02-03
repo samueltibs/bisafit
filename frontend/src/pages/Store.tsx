@@ -8,6 +8,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { APP_NAME, EMAIL_STORE } from '@/lib/branding';
 
+// Shopify Store URL - to be activated when products are ready
+const SHOPIFY_STORE_URL = 'https://www.bybisa.com/pages/bisa-fit';
+
 const INTEREST_OPTIONS = [
   { id: 'apparel', label: 'Apparel', icon: Shirt },
   { id: 'accessories', label: 'Accessories', icon: Watch },
