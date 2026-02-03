@@ -737,6 +737,146 @@ def test_ai_powered_plan_generation():
     print("✅ AI-Powered Plan Generation PASSED - All test cases successful")
     return True
 
+def test_plan_generation_fast_mode():
+    """Test POST /api/generate-plan-template with fast_mode=true (FAST AI generation)"""
+    print("\n=== Testing Fast Mode AI Plan Generation ===")
+    try:
+        test_data = {
+            "user_profile": {
+                "user_id": "test-user-123",
+                "goal_primary": "fat_loss",
+                "experience_level": "beginner",
+                "workout_days": ["Monday", "Wednesday", "Friday"],
+                "equipment": ["bodyweight"],
+                "session_minutes": 30
+            },
+            "use_ai": True,
+            "fast_mode": True
+        }
+        
+        print("⏳ Generating fast mode AI plan (this may take 20-30 seconds)...")
+        response = requests.post(f"{API_BASE}/generate-plan-template", json=test_data, timeout=90)
+        print(f"Status Code: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            # Check response structure
+            required_fields = ['success', 'plan', 'message', 'ai_powered']
+            missing_fields = [field for field in required_fields if field not in data]
+            
+            if missing_fields:
+                print(f"❌ Missing top-level fields: {missing_fields}")
+                return False
+            
+            if not data.get('success'):
+                print(f"❌ Success field is False: {data}")
+                return False
+            
+            if not data.get('ai_powered'):
+                print(f"❌ ai_powered should be True for AI generation: {data.get('ai_powered')}")
+                return False
+            
+            plan = data.get('plan', {})
+            
+            # Validate plan structure
+            weeks = plan.get('weeks', [])
+            if len(weeks) != 4:
+                print(f"❌ Expected 4 weeks array, got {len(weeks)} weeks")
+                return False
+            
+            print(f"✅ Fast Mode AI Plan Generated Successfully")
+            print(f"Plan ID: {plan.get('id', 'N/A')}")
+            print(f"Plan Name: {plan.get('name', 'N/A')}")
+            print(f"AI Powered: {data['ai_powered']}")
+            return True
+            
+        else:
+            print(f"❌ Fast Mode Plan Generation FAILED - Status code: {response.status_code}")
+            print(f"Response: {response.text}")
+            return False
+            
+    except requests.exceptions.Timeout:
+        print("❌ Fast Mode Plan Generation FAILED - Request timed out (>90s)")
+        return False
+    except Exception as e:
+        print(f"❌ Fast Mode Plan Generation FAILED - Exception: {str(e)}")
+        return False
+
+def test_store_interest_notification():
+    """Test POST /api/store-interest-notification endpoint"""
+    print("\n=== Testing Store Interest Notification ===")
+    try:
+        test_data = {
+            "email": "test@example.com",
+            "interests": ["apparel", "equipment"]
+        }
+        
+        print("⏳ Sending store interest notification (email will be sent via Resend)...")
+        response = requests.post(f"{API_BASE}/store-interest-notification", json=test_data, timeout=30)
+        print(f"Status Code: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            # Check response structure
+            required_fields = ['status', 'user_email', 'admin_notification']
+            missing_fields = [field for field in required_fields if field not in data]
+            
+            if missing_fields:
+                print(f"❌ Missing fields: {missing_fields}")
+                return False
+            
+            if data.get('status') != 'success':
+                print(f"❌ Status is not success: {data}")
+                return False
+            
+            print(f"✅ Store Interest Notification PASSED")
+            print(f"Status: {data['status']}")
+            print(f"User Email Result: {data['user_email']}")
+            print(f"Admin Notification Result: {data['admin_notification']}")
+            return True
+            
+        else:
+            print(f"❌ Store Interest Notification FAILED - Status code: {response.status_code}")
+            print(f"Response: {response.text}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Store Interest Notification FAILED - Exception: {str(e)}")
+        return False
+
+def test_feedback_notification():
+    """Test POST /api/send-feedback-notification endpoint"""
+    print("\n=== Testing Feedback Notification ===")
+    try:
+        test_data = {
+            "feedback_data": {
+                "overallRating": 4,
+                "wouldRecommend": "likely",
+                "oneImprovement": "Faster plan generation"
+            }
+        }
+        
+        print("⏳ Sending feedback notification...")
+        response = requests.post(f"{API_BASE}/send-feedback-notification", json=test_data, timeout=30)
+        print(f"Status Code: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            print(f"✅ Feedback Notification PASSED")
+            print(f"Response: {data}")
+            return True
+            
+        else:
+            print(f"❌ Feedback Notification FAILED - Status code: {response.status_code}")
+            print(f"Response: {response.text}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Feedback Notification FAILED - Exception: {str(e)}")
+        return False
+
 def run_all_tests():
     """Run all backend tests"""
     print("🚀 Starting BisaFit Backend API Testing Suite")
@@ -756,6 +896,9 @@ def run_all_tests():
     test_results['workout_images_batch'] = test_workout_images_batch()
     test_results['template_plan_generation'] = test_template_plan_generation()
     test_results['ai_powered_plan_generation'] = test_ai_powered_plan_generation()
+    test_results['plan_generation_fast_mode'] = test_plan_generation_fast_mode()
+    test_results['store_interest_notification'] = test_store_interest_notification()
+    test_results['feedback_notification'] = test_feedback_notification()
     
     # Summary
     print("\n" + "="*50)
