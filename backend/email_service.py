@@ -268,3 +268,119 @@ async def send_weekly_analytics_report(analytics_data: Dict[str, Any]) -> Dict[s
         subject=f"📊 BisaFit Weekly Report: {total_feedback} feedback, {avg_rating:.1f}⭐ avg rating",
         html_content=html_content
     )
+
+
+async def send_store_interest_confirmation(
+    to_email: str,
+    interests: List[str]
+) -> Dict[str, Any]:
+    """Send confirmation email when user signs up for store notifications"""
+    
+    # Map interests to friendly names
+    interest_labels = {
+        'apparel': '👕 Workout Apparel',
+        'accessories': '⌚ Accessories',
+        'equipment': '🏋️ Fitness Equipment',
+    }
+    
+    interests_html = ""
+    if interests:
+        interests_html = "<ul style='margin: 10px 0; padding-left: 20px;'>"
+        for interest in interests:
+            label = interest_labels.get(interest, interest.title())
+            interests_html += f"<li>{label}</li>"
+        interests_html += "</ul>"
+    else:
+        interests_html = "<p>All categories</p>"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #121212, #2d2d2d); color: white; padding: 30px; border-radius: 12px 12px 0 0; text-align: center; }}
+            .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 12px 12px; }}
+            .highlight {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981; }}
+            .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1 style="margin: 0; font-size: 24px;">🛍️ You're on the list!</h1>
+                <p style="margin: 10px 0 0 0; opacity: 0.9;">BisaFit Store Waitlist</p>
+            </div>
+            <div class="content">
+                <p>Hey there! 👋</p>
+                
+                <p>Thanks for joining the BisaFit Store waitlist! We're working hard to bring you premium fitness gear that matches your dedication.</p>
+                
+                <div class="highlight">
+                    <strong>Your interests:</strong>
+                    {interests_html}
+                </div>
+                
+                <p>Here's what you can expect:</p>
+                <ul>
+                    <li>🎯 Early access to new product drops</li>
+                    <li>💰 Exclusive member discounts</li>
+                    <li>📦 First dibs on limited editions</li>
+                </ul>
+                
+                <p>We'll email you the moment the store goes live. Until then, keep crushing those workouts! 💪</p>
+                
+                <div class="footer">
+                    <p>Questions? Reply to this email or reach out at support@bisafit.com</p>
+                    <p style="opacity: 0.6;">BisaFit • Your Fitness Journey Partner</p>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return await send_email(
+        to_email=to_email,
+        subject="🛍️ You're on the BisaFit Store waitlist!",
+        html_content=html_content
+    )
+
+
+async def send_store_interest_admin_notification(
+    user_email: str,
+    interests: List[str]
+) -> Dict[str, Any]:
+    """Notify admin when someone joins the store waitlist"""
+    
+    interests_str = ', '.join(interests) if interests else 'All categories'
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 500px; margin: 0 auto; padding: 20px; }}
+            .card {{ background: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>🛍️ New Store Waitlist Signup</h2>
+            <div class="card">
+                <p><strong>Email:</strong> {user_email}</p>
+                <p><strong>Interests:</strong> {interests_str}</p>
+                <p><strong>Time:</strong> {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return await send_email(
+        to_email=ADMIN_EMAIL,
+        subject=f"🛍️ Store Waitlist: {user_email}",
+        html_content=html_content
+    )
