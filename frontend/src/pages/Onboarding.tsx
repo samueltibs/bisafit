@@ -59,6 +59,7 @@ interface FormData {
     notes: string;
   };
   // Step 6: Nutrition
+  nutritionEnabled: boolean;
   nutritionPreferences: {
     goal_style: string;
     dietary: string[];
@@ -92,6 +93,7 @@ const initialFormData: FormData = {
     preferences: [],
     notes: '',
   },
+  nutritionEnabled: true,
   nutritionPreferences: {
     goal_style: 'simple',
     dietary: [],
