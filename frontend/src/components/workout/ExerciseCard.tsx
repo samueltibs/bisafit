@@ -5,6 +5,7 @@ import { Dumbbell, Timer, RotateCcw, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ExerciseMedia } from './ExerciseMedia';
 import { CoachingCues } from './CoachingCues';
+import { useExerciseImage } from '@/hooks/useExerciseImage';
 
 interface ExerciseCardProps {
   item: WorkoutItem;
@@ -25,6 +26,9 @@ export function ExerciseCard({
   isPaused,
   bigMode = false 
 }: ExerciseCardProps) {
+  // Fetch exercise image from cache
+  const { imageUrl: cachedImageUrl } = useExerciseImage(item.name);
+  
   const isStrength = block.type === 'strength';
   const isConditioning = block.type === 'conditioning';
   const hasRounds = block.protocol && block.protocol.rounds > 1;
