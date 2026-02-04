@@ -39,15 +39,26 @@ export default function Auth() {
     e.preventDefault();
     setIsLoading(true);
     
-    const { error } = await signIn(signInData.email, signInData.password);
-    
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success('Welcome back!');
+    try {
+      const { error } = await signIn(signInData.email, signInData.password);
+      
+      if (error) {
+        // Check if it's a timeout error
+        if (error.message.includes('timed out')) {
+          toast.error('Connection to server timed out. Please try again in a moment.', {
+            duration: 5000,
+          });
+        } else {
+          toast.error(error.message);
+        }
+      } else {
+        toast.success('Welcome back!');
+      }
+    } catch (err) {
+      toast.error('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
