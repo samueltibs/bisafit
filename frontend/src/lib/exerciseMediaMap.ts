@@ -32,26 +32,24 @@ export function normalizeExerciseName(name: string): string {
     .replace(/-/g, ' ') // Normalize hyphens to spaces for matching
     .replace(/\s+/g, ' '); // Clean up any double spaces
   
-  // Handle common plurals - convert to singular for matching
-  // e.g., "bodyweight squats" -> "bodyweight squat"
-  // e.g., "jumping jacks" stays as is (it's the proper name)
-  const keepPlural = ['jumping jacks', 'high knees', 'butt kicks', 'mountain climbers', 'flutter kicks', 'bicycle crunches'];
-  if (!keepPlural.includes(normalized)) {
-    if (normalized.endsWith('es') && !normalized.endsWith('ches') && !normalized.endsWith('sses')) {
-      // lunges -> lunge, crunches stays
-      const singular = normalized.slice(0, -1); // lunges -> lunge (keep the 'e')
-      if (singular.endsWith('ch') || singular.endsWith('ss')) {
-        // Don't change crunches, presses
-      } else {
-        normalized = normalized.slice(0, -2); // raises -> rais... hmm
-      }
-    } else if (normalized.endsWith('s') && !normalized.endsWith('ss')) {
-      // squats -> squat, curls -> curl
-      normalized = normalized.slice(0, -1);
-    }
-  }
-  
   return normalized;
+}
+
+/**
+ * Try to find singular form of exercise name
+ */
+function getSingularForm(name: string): string | null {
+  // Keep certain plurals as-is (they're proper names)
+  const keepPlural = ['jumping jacks', 'high knees', 'butt kicks', 'flutter kicks'];
+  if (keepPlural.includes(name)) return null;
+  
+  if (name.endsWith('es') && !name.endsWith('sses') && !name.endsWith('ches')) {
+    return name.slice(0, -1); // lunges -> lunge
+  }
+  if (name.endsWith('s') && !name.endsWith('ss')) {
+    return name.slice(0, -1); // squats -> squat
+  }
+  return null;
 }
 
 /**
