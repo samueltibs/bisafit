@@ -411,7 +411,7 @@ export default function Workout() {
     return (
       <AppLayout showNav={false}>
         <div className="container px-4 py-6">
-          <WorkoutComplete workoutTitle={workout.title} sessionLog={sessionLog} />
+          <WorkoutComplete workoutTitle={toTitleCase(workout.title)} sessionLog={sessionLog} />
         </div>
       </AppLayout>
     );
