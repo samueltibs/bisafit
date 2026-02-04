@@ -57,7 +57,7 @@ async def get_cached_image(exercise_name: str, gender: str = 'neutral') -> Optio
     """
     Get cached image (base64) for an exercise.
     Returns None if not cached.
-    Uses fuzzy matching to find similar exercise names.
+    Uses pattern matching to find similar exercise names.
     """
     if not supabase:
         print("[ImageCache] No Supabase client")
@@ -74,28 +74,27 @@ async def get_cached_image(exercise_name: str, gender: str = 'neutral') -> Optio
         if result.data and len(result.data) > 0:
             return result.data[0]['image_url']
         
-        # Try partial/fuzzy match - find exercises that contain our search term
-        # or that our search term contains
+        # Try pattern match - search for exercises containing our term
         result = supabase.table('exercise_image_cache').select(
             'exercise_name_normalized, image_url'
-        ).ilike('exercise_name_normalized', f'%{normalized}%').execute()
+        ).ilike('exercise_name_normalized', f'%{normalized}%').limit(1).execute()
         
         if result.data and len(result.data) > 0:
-            # Return the first match
-            print(f"[ImageCache] Fuzzy match: '{exercise_name}' -> '{result.data[0]['exercise_name_normalized']}'")
+            print(f"[ImageCache] Pattern match: '{exercise_name}' -> '{result.data[0]['exercise_name_normalized']}'")
             return result.data[0]['image_url']
         
-        # Try the other direction - our term contains a cached exercise name
-        # Get all cached names and check
-        all_cached = supabase.table('exercise_image_cache').select(
-            'exercise_name_normalized, image_url'
-        ).execute()
-        
-        for cached in all_cached.data or []:
-            cached_name = cached['exercise_name_normalized']
-            if cached_name in normalized or normalized in cached_name:
-                print(f"[ImageCache] Reverse fuzzy match: '{exercise_name}' -> '{cached_name}'")
-                return cached['image_url']
+        # Try with first word only for compound exercises (e.g., "dumbbell bench press" -> "bench press")
+        words = normalized.split()
+        if len(words) > 1:
+            # Try without first word (often equipment name like "dumbbell", "barbell")
+            shorter_name = ' '.join(words[1:])
+            result = supabase.table('exercise_image_cache').select(
+                'exercise_name_normalized, image_url'
+            ).ilike('exercise_name_normalized', f'%{shorter_name}%').limit(1).execute()
+            
+            if result.data and len(result.data) > 0:
+                print(f"[ImageCache] Short pattern match: '{exercise_name}' -> '{result.data[0]['exercise_name_normalized']}'")
+                return result.data[0]['image_url']
                 
     except Exception as e:
         print(f"[ImageCache] Error checking cache: {e}")
