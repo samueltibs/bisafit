@@ -700,7 +700,7 @@ function WorkoutDayCard({ workout }: WorkoutDayCardProps) {
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <p className={cn("font-medium", workout.completed && "line-through")}>
-                {displayTitle}
+                {toTitleCase(displayTitle)}
               </p>
               {isLocalToday(workout.dayDate) && (
                 <Badge variant="secondary" className="text-xs">Today</Badge>
