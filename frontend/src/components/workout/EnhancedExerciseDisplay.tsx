@@ -110,23 +110,23 @@ export function EnhancedExerciseDisplay({
         </div>
       </div>
 
-      {/* Main Content Area - Optimized for Quick Glances */}
-      <div className="flex-1 px-4 py-4 overflow-y-auto">
+      {/* Main Content Area - Compact to fit all elements */}
+      <div className="flex-1 px-4 py-2 overflow-y-auto">
         
         {/* EXERCISE NAME - Large, Bold, All Caps for Quick Recognition */}
-        <div className="text-center mb-4">
-          <h1 className="text-2xl sm:text-3xl font-black tracking-wide uppercase text-foreground">
+        <div className="text-center mb-2">
+          <h1 className="text-xl sm:text-2xl font-black tracking-wide uppercase text-foreground">
             {(exerciseName || '').toUpperCase()}
           </h1>
-          <p className="text-lg font-semibold text-muted-foreground mt-1">
+          <p className="text-base font-semibold text-muted-foreground">
             Set {currentSet} of {totalSets} · {repsTarget} Reps
           </p>
         </div>
 
         {/* TIMER - Prominent and Easy to Read */}
-        <div className="text-center mb-5">
+        <div className="text-center mb-3">
           <div className={cn(
-            "text-6xl sm:text-7xl font-bold tabular-nums tracking-tight",
+            "text-5xl sm:text-6xl font-bold tabular-nums tracking-tight",
             timerConfig.color
           )}>
             {formatTime(timerSeconds)}
