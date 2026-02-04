@@ -38,13 +38,24 @@ export function LargeDemoPanel({
   const [showFormTips, setShowFormTips] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Look up media from central map with gender preference
+  // Fetch from Supabase image cache (Storage URLs)
+  const { imageUrl: cachedImageUrl } = useExerciseImage(exerciseName);
+
+  // Look up media from local map with gender preference
   const mediaLookup = lookupExerciseMedia(exerciseName, userGender);
   
-  // Priority: direct videoUrl > direct imageUrl > lookup video > lookup image
+  // Priority: direct videoUrl > direct imageUrl > cached image > lookup video > lookup image
   const resolvedVideoUrl = videoUrl || mediaLookup?.video_url_optional || null;
-  const resolvedImageUrl = imageUrl || mediaLookup?.image_url || null;
+  const resolvedImageUrl = imageUrl || cachedImageUrl || mediaLookup?.image_url || null;
   const resolvedFormTips = formTips.length > 0 ? formTips : (mediaLookup?.default_cues || []);
+
+  // Debug logging
+  console.log(`[LargeDemoPanel] ${exerciseName}:`, {
+    propImageUrl: imageUrl?.substring(0, 40),
+    cachedImageUrl: cachedImageUrl?.substring(0, 60),
+    localLookup: mediaLookup?.image_url,
+    finalUrl: resolvedImageUrl?.substring(0, 60),
+  });
 
   const hasMedia = (resolvedVideoUrl || resolvedImageUrl) && !mediaError;
   const hasFormTipsData = resolvedFormTips.length > 0;
