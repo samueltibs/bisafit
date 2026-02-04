@@ -466,7 +466,7 @@ export default function Workout() {
         <div className="fixed inset-0 flex flex-col bg-background">
           {/* Top App Bar */}
           <ActiveWorkoutHeader
-            workoutTitle={workout.title}
+            workoutTitle={toTitleCase(workout.title)}
             onBack={handleBackClick}
             onMusicClick={() => setShowMusicPanel(!showMusicPanel)}
             onCastClick={() => setShowCastSheet(true)}
