@@ -134,7 +134,7 @@ export function EnhancedExerciseDisplay({
         </div>
 
         {/* Progress Dots */}
-        <div className="flex items-center justify-center gap-1.5 mb-5">
+        <div className="flex items-center justify-center gap-1.5 mb-3">
           {Array.from({ length: totalExercises }, (_, i) => (
             <div
               key={i}
@@ -150,28 +150,28 @@ export function EnhancedExerciseDisplay({
           ))}
         </div>
 
-        {/* Form Guide Image */}
+        {/* Form Guide Image - Compact to fit all elements on screen */}
         {showImage && (
-          <Card className="mb-4 overflow-hidden border-0 shadow-lg">
-            <div className="relative aspect-[4/3] bg-gradient-to-b from-muted/50 to-muted">
+          <Card className="mb-3 overflow-hidden border-0 shadow-lg">
+            <div className="relative h-40 sm:h-48 bg-gradient-to-b from-muted/50 to-muted">
               {formImage ? (
                 <img
                   src={formImage}
                   alt={`${exerciseName} form guide`}
-                  className="w-full h-full object-contain p-2"
+                  className="w-full h-full object-contain p-1"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
                   }}
                 />
               ) : isLoading ? (
-                <div className="flex flex-col items-center justify-center h-full gap-3">
-                  <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                  <p className="text-sm text-muted-foreground">Loading...</p>
+                <div className="flex flex-col items-center justify-center h-full gap-2">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-xs text-muted-foreground">Loading...</p>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center h-full gap-3">
-                  <Dumbbell className="h-10 w-10 text-muted-foreground/50" />
-                  <p className="text-sm text-muted-foreground">No image available</p>
+                <div className="flex flex-col items-center justify-center h-full gap-2">
+                  <Dumbbell className="h-8 w-8 text-muted-foreground/50" />
+                  <p className="text-xs text-muted-foreground">No image available</p>
                 </div>
               )}
             </div>
