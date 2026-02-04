@@ -179,21 +179,21 @@ export function EnhancedExerciseDisplay({
         )}
 
         {/* Toggle Image Button */}
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center mb-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowImage(!showImage)}
-            className="text-xs h-8 px-4"
+            className="text-xs h-7 px-3"
           >
             {showImage ? (
               <>
-                <EyeOff className="h-3.5 w-3.5 mr-1.5" />
+                <EyeOff className="h-3 w-3 mr-1" />
                 Hide Image
               </>
             ) : (
               <>
-                <Eye className="h-3.5 w-3.5 mr-1.5" />
+                <Eye className="h-3 w-3 mr-1" />
                 Show Image
               </>
             )}
@@ -203,13 +203,13 @@ export function EnhancedExerciseDisplay({
         {/* Next Exercise Preview */}
         {nextExerciseName && (
           <Card className="bg-muted/30 border-border/50">
-            <div className="p-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-background shadow-sm flex-shrink-0">
-                  <SkipForward className="h-5 w-5 text-muted-foreground" />
+            <div className="p-2">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background shadow-sm flex-shrink-0">
+                  <SkipForward className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">
+                  <p className="text-xs font-semibold text-foreground truncate">
                     Up Next: {toTitleCase(nextExerciseName)}
                   </p>
                   <p className="text-xs text-muted-foreground">
