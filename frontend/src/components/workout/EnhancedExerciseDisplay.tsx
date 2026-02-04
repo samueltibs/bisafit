@@ -63,28 +63,15 @@ export function EnhancedExerciseDisplay({
   onSkipBack,
   onGenerateImage,
 }: ExerciseDisplayProps) {
-  const { getImageForExercise, generateImage, isGenerating } = useWorkoutImages(userGender);
+  // Simple hook that directly uses Supabase Storage URLs
+  const { imageUrl: formImage, loading: isGenerating } = useSupabaseImage(exerciseName);
   const [showImage, setShowImage] = useState(true);
-  const [imageRequested, setImageRequested] = useState(false);
-
-  const formImage = getImageForExercise(exerciseName, muscleGroup);
 
   // Debug logging
-  console.log(`[EnhancedExerciseDisplay] Exercise: ${exerciseName}`, {
-    formImage: formImage?.substring(0, 60),
-    isGenerating,
-    imageRequested,
-    showImage,
+  console.log(`[EnhancedExerciseDisplay] ${exerciseName}:`, {
+    imageUrl: formImage,
+    loading: isGenerating,
   });
-
-  // Auto-generate image on mount if not in cache
-  useEffect(() => {
-    if (!formImage && !imageRequested && !isGenerating && exerciseName) {
-      console.log('[EnhancedExerciseDisplay] Auto-generating for:', exerciseName, 'Gender:', userGender);
-      setImageRequested(true);
-      generateImage(exerciseName, muscleGroup, userGender);
-    }
-  }, [formImage, exerciseName, muscleGroup, userGender, imageRequested, isGenerating, generateImage]);
 
   // Format timer display
   const formatTime = (seconds: number) => {
