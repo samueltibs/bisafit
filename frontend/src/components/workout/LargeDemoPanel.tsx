@@ -6,6 +6,7 @@ import { type UserGender } from '@/lib/exerciseMediaData';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Button } from '@/components/ui/button';
 import { FormTipsModal } from './FormTipsModal';
+import { useExerciseImage } from '@/hooks/useExerciseImage';
 
 interface LargeDemoPanelProps {
   videoUrl?: string;
