@@ -133,8 +133,9 @@ export function clearMediaMapCache(): void {
  * 
  * Uses multiple matching strategies:
  * 1. Direct match after normalization
- * 2. Partial match (exercise name contains key or key contains exercise name)
- * 3. Word-based matching for compound names
+ * 2. Singular form matching (squats -> squat)
+ * 3. Partial match (exercise name contains key or key contains exercise name)
+ * 4. Word-based matching for compound names
  */
 export function lookupExerciseMedia(
   exerciseName: string,
@@ -154,6 +155,12 @@ export function lookupExerciseMedia(
     return mediaMap[withoutHyphens];
   }
 
+  // Try singular form (squats -> squat, lunges -> lunge)
+  const singular = getSingularForm(normalized);
+  if (singular && mediaMap[singular]) {
+    return mediaMap[singular];
+  }
+
   // Try partial matching for variations
   let bestMatch: ExerciseMediaInfo | null = null;
   let bestMatchLength = 0;
@@ -167,6 +174,16 @@ export function lookupExerciseMedia(
       if (normalizedKey.length > bestMatchLength) {
         bestMatch = value;
         bestMatchLength = normalizedKey.length;
+      }
+    }
+
+    // Also check singular form
+    if (singular) {
+      if (singular.includes(normalizedKey) || normalizedKey.includes(singular)) {
+        if (normalizedKey.length > bestMatchLength) {
+          bestMatch = value;
+          bestMatchLength = normalizedKey.length;
+        }
       }
     }
 
