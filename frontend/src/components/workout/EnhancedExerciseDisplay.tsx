@@ -1,11 +1,11 @@
 /**
  * Enhanced Workout Exercise Display
  * 
- * TV-style workout interface with large timer, AI-generated form guide,
+ * TV-style workout interface with large timer, form guide images,
  * and intuitive controls. Optimized for mobile viewing.
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +20,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useWorkoutImages } from '@/hooks/useWorkoutImages';
+import { useSupabaseImage } from '@/hooks/useSupabaseImage';
 
 interface ExerciseDisplayProps {
   exerciseName: string;
