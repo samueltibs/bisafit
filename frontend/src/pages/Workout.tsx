@@ -635,7 +635,7 @@ export default function Workout() {
               {playerState === 'idle' && (
                 <div className="space-y-6 animate-fade-in">
                   <div className="text-center">
-                    <h1 className="text-2xl font-bold mb-2">{workout.title}</h1>
+                    <h1 className="text-2xl font-bold mb-2">{toTitleCase(workout.title)}</h1>
                     <p className="text-muted-foreground">
                       {workout.total_estimated_minutes} min • {totalExercises} exercises
                     </p>
@@ -651,7 +651,7 @@ export default function Workout() {
                           key={itemIndex} 
                           className="flex items-center justify-between rounded-xl border border-border/50 bg-card/50 p-3 text-sm"
                         >
-                          <span className="font-medium">{item.name}</span>
+                          <span className="font-medium">{toTitleCase(item.name)}</span>
                           <span className="text-muted-foreground">
                             {item.sets && item.reps 
                               ? `${item.sets}×${item.reps}`
