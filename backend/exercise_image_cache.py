@@ -1,16 +1,21 @@
 """
-Exercise Image Cache Service
+Exercise Image Cache Service - OPTIMIZED FOR LOW DISK IO
 
-Smart caching for AI-generated exercise images:
-- First request: Generate with AI, save base64 to database
-- Subsequent requests: Return cached image instantly (no credits used)
+Uses Supabase Storage for images instead of storing base64 in the database.
+This dramatically reduces database disk IO:
+- Database only stores small URL strings (~100 bytes) instead of ~2-3MB base64
+- Images served directly from Supabase Storage CDN
+- Cache lookups are tiny, fast queries
 
-Saves credits by generating each exercise image only ONCE.
+Flow:
+1. Check database for cached URL (tiny query)
+2. If found, return Storage URL directly
+3. If not found, generate image, upload to Storage, save URL to database
 """
 
 import os
 import base64
-import hashlib
+import uuid
 from typing import Optional, Dict, Any
 from supabase import create_client, Client
 from dotenv import load_dotenv
@@ -20,6 +25,7 @@ load_dotenv()
 # Initialize Supabase client
 SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
 SUPABASE_KEY = os.environ.get('SUPABASE_KEY', '')
+STORAGE_BUCKET = 'exercise-images'  # Supabase Storage bucket name
 
 supabase: Client = None
 if SUPABASE_URL and SUPABASE_KEY:
@@ -38,14 +44,10 @@ def normalize_exercise_name(name: str) -> str:
             .replace('  ', ' '))
     
     # Remove common plurals for consistency
-    # e.g., "push ups" -> "push up", "jumping jacks" stays as is
     if normalized.endswith('s') and not normalized.endswith('ss'):
-        # Check if removing 's' gives a common exercise pattern
         singular = normalized[:-1]
-        # Keep "jumping jacks", "arm circles" etc as-is (they're proper names)
         if singular not in ['jumping jack', 'high knee', 'arm circle', 'hip circle', 
                            'butt kick', 'leg swing', 'flutter kick', 'mountain climber']:
-            # For others like "push ups" -> "push up", "crunches" -> "crunch"
             if normalized in ['push ups', 'crunches', 'lunges', 'squats', 'planks', 
                              'deadlifts', 'curls', 'rows', 'dips', 'raises']:
                 normalized = singular
@@ -53,11 +55,77 @@ def normalize_exercise_name(name: str) -> str:
     return normalized
 
 
+def get_storage_url(file_path: str) -> str:
+    """Generate public URL for a file in Supabase Storage"""
+    return f"{SUPABASE_URL}/storage/v1/object/public/{STORAGE_BUCKET}/{file_path}"
+
+
+async def ensure_storage_bucket_exists():
+    """Create the storage bucket if it doesn't exist"""
+    if not supabase:
+        return False
+    
+    try:
+        # Try to get bucket info - if it fails, create it
+        buckets = supabase.storage.list_buckets()
+        bucket_names = [b.name for b in buckets]
+        
+        if STORAGE_BUCKET not in bucket_names:
+            print(f"[ImageCache] Creating storage bucket: {STORAGE_BUCKET}")
+            supabase.storage.create_bucket(
+                STORAGE_BUCKET,
+                options={"public": True}  # Make bucket public for direct URL access
+            )
+            print(f"[ImageCache] Storage bucket created successfully")
+        return True
+    except Exception as e:
+        print(f"[ImageCache] Error with storage bucket: {e}")
+        return False
+
+
+async def upload_image_to_storage(exercise_name: str, image_base64: str) -> Optional[str]:
+    """
+    Upload an image to Supabase Storage and return the public URL.
+    
+    Returns:
+        Public URL of the uploaded image, or None if upload failed
+    """
+    if not supabase:
+        return None
+    
+    try:
+        # Ensure bucket exists
+        await ensure_storage_bucket_exists()
+        
+        # Create a safe filename from exercise name
+        safe_name = normalize_exercise_name(exercise_name).replace(' ', '_')
+        file_name = f"{safe_name}_{uuid.uuid4().hex[:8]}.png"
+        
+        # Decode base64 to bytes
+        image_bytes = base64.b64decode(image_base64)
+        
+        # Upload to Storage
+        result = supabase.storage.from_(STORAGE_BUCKET).upload(
+            file_name,
+            image_bytes,
+            {"content-type": "image/png"}
+        )
+        
+        # Generate public URL
+        public_url = get_storage_url(file_name)
+        print(f"[ImageCache] Uploaded to Storage: {public_url}")
+        
+        return public_url
+        
+    except Exception as e:
+        print(f"[ImageCache] Error uploading to storage: {e}")
+        return None
+
+
 async def get_cached_image(exercise_name: str, gender: str = 'neutral') -> Optional[str]:
     """
-    Get cached image (base64) for an exercise.
-    Returns None if not cached.
-    Uses pattern matching to find similar exercise names.
+    Get cached image URL for an exercise.
+    Returns Storage URL (not base64) - very fast, minimal IO.
     """
     if not supabase:
         print("[ImageCache] No Supabase client")
@@ -66,35 +134,41 @@ async def get_cached_image(exercise_name: str, gender: str = 'neutral') -> Optio
     normalized = normalize_exercise_name(exercise_name)
     
     try:
-        # First try exact match
+        # OPTIMIZED: Only select the URL column, not the whole row
         result = supabase.table('exercise_image_cache').select('image_url').eq(
             'exercise_name_normalized', normalized
-        ).execute()
+        ).limit(1).execute()
         
         if result.data and len(result.data) > 0:
-            return result.data[0]['image_url']
+            url = result.data[0]['image_url']
+            # Skip base64 data URLs - they're from the old system
+            if url and not url.startswith('data:'):
+                return url
         
-        # Try pattern match - search for exercises containing our term
+        # Try pattern match for similar names
         result = supabase.table('exercise_image_cache').select(
             'exercise_name_normalized, image_url'
         ).ilike('exercise_name_normalized', f'%{normalized}%').limit(1).execute()
         
         if result.data and len(result.data) > 0:
-            print(f"[ImageCache] Pattern match: '{exercise_name}' -> '{result.data[0]['exercise_name_normalized']}'")
-            return result.data[0]['image_url']
+            url = result.data[0]['image_url']
+            if url and not url.startswith('data:'):
+                print(f"[ImageCache] Pattern match: '{exercise_name}' -> '{result.data[0]['exercise_name_normalized']}'")
+                return url
         
-        # Try with first word only for compound exercises (e.g., "dumbbell bench press" -> "bench press")
+        # Try without first word for compound exercises
         words = normalized.split()
         if len(words) > 1:
-            # Try without first word (often equipment name like "dumbbell", "barbell")
             shorter_name = ' '.join(words[1:])
             result = supabase.table('exercise_image_cache').select(
                 'exercise_name_normalized, image_url'
             ).ilike('exercise_name_normalized', f'%{shorter_name}%').limit(1).execute()
             
             if result.data and len(result.data) > 0:
-                print(f"[ImageCache] Short pattern match: '{exercise_name}' -> '{result.data[0]['exercise_name_normalized']}'")
-                return result.data[0]['image_url']
+                url = result.data[0]['image_url']
+                if url and not url.startswith('data:'):
+                    print(f"[ImageCache] Short match: '{exercise_name}' -> '{result.data[0]['exercise_name_normalized']}'")
+                    return url
                 
     except Exception as e:
         print(f"[ImageCache] Error checking cache: {e}")
@@ -102,26 +176,24 @@ async def get_cached_image(exercise_name: str, gender: str = 'neutral') -> Optio
     return None
 
 
-async def save_to_cache(exercise_name: str, image_base64: str, gender: str = 'neutral') -> bool:
+async def save_to_cache(exercise_name: str, storage_url: str, gender: str = 'neutral') -> bool:
     """
-    Save an image (as base64 data URL) to the cache.
+    Save a Storage URL reference to the cache.
+    Only stores the URL string - very small, minimal IO.
     """
     if not supabase:
         return False
     
     normalized = normalize_exercise_name(exercise_name)
     
-    # Create a data URL for the base64 image
-    image_url = f"data:image/png;base64,{image_base64}"
-    
     try:
         supabase.table('exercise_image_cache').upsert({
             'exercise_name': exercise_name,
             'exercise_name_normalized': normalized,
-            'image_url': image_url,
+            'image_url': storage_url,  # Now a real URL, not base64!
             'gender': gender,
         }, on_conflict='exercise_name_normalized').execute()
-        print(f"[ImageCache] Saved to cache: {exercise_name}")
+        print(f"[ImageCache] Saved URL to cache: {exercise_name}")
         return True
     except Exception as e:
         print(f"[ImageCache] Error saving to cache: {e}")
@@ -136,15 +208,9 @@ async def get_or_generate_exercise_image(
     """
     Get exercise image from cache, or generate and cache it.
     
-    Returns:
-        {
-            "exercise_name": str,
-            "image_url": str or None,
-            "cached": bool,
-            "generated": bool
-        }
+    Now returns Storage URLs instead of base64 - much more efficient!
     """
-    # Check cache first
+    # Check cache first (fast, minimal IO)
     cached_url = await get_cached_image(exercise_name, gender)
     if cached_url:
         return {
@@ -166,15 +232,28 @@ async def get_or_generate_exercise_image(
         )
         
         if result.get('image_base64'):
-            # Save to cache as base64 data URL
-            await save_to_cache(exercise_name, result['image_base64'], gender)
+            # Upload to Storage instead of storing base64 in database
+            storage_url = await upload_image_to_storage(exercise_name, result['image_base64'])
             
-            return {
-                "exercise_name": exercise_name,
-                "image_url": f"data:image/png;base64,{result['image_base64']}",
-                "cached": False,
-                "generated": True
-            }
+            if storage_url:
+                # Save the URL reference (tiny database write)
+                await save_to_cache(exercise_name, storage_url, gender)
+                
+                return {
+                    "exercise_name": exercise_name,
+                    "image_url": storage_url,
+                    "cached": False,
+                    "generated": True
+                }
+            else:
+                # Fallback to base64 if storage upload fails
+                return {
+                    "exercise_name": exercise_name,
+                    "image_url": f"data:image/png;base64,{result['image_base64']}",
+                    "cached": False,
+                    "generated": True,
+                    "storage_fallback": True
+                }
         
         return {
             "exercise_name": exercise_name,
@@ -201,7 +280,6 @@ async def batch_get_or_generate_images(
 ) -> list:
     """
     Process multiple exercises - check cache first, generate missing ones.
-    Returns list of results with image URLs.
     """
     results = []
     
@@ -220,3 +298,56 @@ async def batch_get_or_generate_images(
         results.append(result)
     
     return results
+
+
+async def migrate_base64_to_storage() -> Dict[str, Any]:
+    """
+    Utility function to migrate existing base64 images to Storage.
+    Call this once to convert old data.
+    
+    Returns migration stats.
+    """
+    if not supabase:
+        return {"error": "No Supabase client"}
+    
+    stats = {"total": 0, "migrated": 0, "skipped": 0, "errors": 0}
+    
+    try:
+        # Get all cached images
+        result = supabase.table('exercise_image_cache').select('*').execute()
+        stats["total"] = len(result.data)
+        
+        for row in result.data:
+            image_url = row.get('image_url', '')
+            
+            # Skip if already a Storage URL
+            if not image_url.startswith('data:'):
+                stats["skipped"] += 1
+                continue
+            
+            try:
+                # Extract base64 from data URL
+                base64_data = image_url.split(',')[1] if ',' in image_url else image_url
+                
+                # Upload to Storage
+                storage_url = await upload_image_to_storage(row['exercise_name'], base64_data)
+                
+                if storage_url:
+                    # Update the database record with the new URL
+                    supabase.table('exercise_image_cache').update({
+                        'image_url': storage_url
+                    }).eq('id', row['id']).execute()
+                    
+                    stats["migrated"] += 1
+                    print(f"[Migration] Migrated: {row['exercise_name']}")
+                else:
+                    stats["errors"] += 1
+                    
+            except Exception as e:
+                print(f"[Migration] Error migrating {row['exercise_name']}: {e}")
+                stats["errors"] += 1
+                
+    except Exception as e:
+        return {"error": str(e)}
+    
+    return stats
