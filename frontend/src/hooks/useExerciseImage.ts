@@ -7,7 +7,7 @@ const imageCache: Record<string, string | null> = {};
 
 /**
  * Hook to fetch exercise image from cache
- * Images are stored in Supabase, fetched on-demand, and cached locally
+ * Images are stored in Supabase Storage, URLs fetched on-demand
  */
 export function useExerciseImage(exerciseName: string | undefined) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -23,30 +23,48 @@ export function useExerciseImage(exerciseName: string | undefined) {
 
     // Check local memory cache first
     if (normalizedName in imageCache) {
-      setImageUrl(imageCache[normalizedName]);
+      const cachedUrl = imageCache[normalizedName];
+      setImageUrl(cachedUrl);
       return;
     }
 
-    // Fetch from backend cache
+    // Fetch from backend cache with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
     const fetchImage = async () => {
       setLoading(true);
       try {
         const response = await fetch(
-          `${BACKEND_URL}/api/exercise-image-cached/${encodeURIComponent(normalizedName)}`
+          `${BACKEND_URL}/api/exercise-image-cached/${encodeURIComponent(normalizedName)}`,
+          { signal: controller.signal }
         );
+        
+        clearTimeout(timeoutId);
         
         if (response.ok) {
           const data = await response.json();
           if (data.cached && data.image_url) {
+            console.log(`[ExerciseImage] Loaded: ${exerciseName} -> ${data.image_url.substring(0, 60)}...`);
             imageCache[normalizedName] = data.image_url;
             setImageUrl(data.image_url);
           } else {
+            console.log(`[ExerciseImage] Not cached: ${exerciseName}`);
             imageCache[normalizedName] = null;
             setImageUrl(null);
           }
+        } else {
+          console.log(`[ExerciseImage] Failed response for ${exerciseName}: ${response.status}`);
+          imageCache[normalizedName] = null;
+          setImageUrl(null);
         }
       } catch (error) {
-        console.log(`[ExerciseImage] Failed to fetch image for ${exerciseName}`);
+        clearTimeout(timeoutId);
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.log(`[ExerciseImage] Timeout for ${exerciseName}`);
+        } else {
+          console.log(`[ExerciseImage] Error for ${exerciseName}:`, error);
+        }
         imageCache[normalizedName] = null;
         setImageUrl(null);
       } finally {
@@ -55,6 +73,11 @@ export function useExerciseImage(exerciseName: string | undefined) {
     };
 
     fetchImage();
+
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
   }, [exerciseName]);
 
   return { imageUrl, loading };
