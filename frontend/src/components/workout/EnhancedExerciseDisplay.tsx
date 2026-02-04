@@ -15,7 +15,6 @@ import {
   SkipForward, 
   SkipBack, 
   Loader2,
-  Dumbbell,
   Eye,
   EyeOff
 } from 'lucide-react';
