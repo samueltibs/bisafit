@@ -85,12 +85,13 @@ export function EnhancedExerciseDisplay({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Timer color and label based on type
-  const timerConfig = {
+  // Timer color and label based on type - with fallback for safety
+  const timerConfigs = {
     work: { color: 'text-primary', label: 'Working', bgColor: 'bg-primary/10' },
     rest: { color: 'text-orange-500', label: 'Rest', bgColor: 'bg-orange-500/10' },
     prepare: { color: 'text-blue-500', label: 'Get Ready', bgColor: 'bg-blue-500/10' },
-  }[timerType];
+  };
+  const timerConfig = timerConfigs[timerType] || timerConfigs.work;
 
   return (
     <div className="flex flex-col h-full bg-background">
