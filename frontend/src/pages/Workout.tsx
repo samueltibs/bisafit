@@ -39,6 +39,17 @@ import { trackEvent } from '@/lib/analytics';
 import { hasExerciseMedia } from '@/lib/exerciseMediaMap';
 import { type UserGender } from '@/lib/exerciseMediaData';
 
+/**
+ * Convert string to Title Case (capitalize first letter of each word)
+ */
+function toTitleCase(str: string): string {
+  if (!str) return '';
+  return str
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
 export default function Workout() {
   const { id } = useParams();
   const navigate = useNavigate();
