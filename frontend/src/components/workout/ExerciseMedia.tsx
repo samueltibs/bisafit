@@ -33,6 +33,14 @@ export function ExerciseMedia({
   const resolvedVideoUrl = videoUrl || mediaLookup?.video_url_optional || null;
   const resolvedImageUrl = imageUrl || mediaLookup?.image_url || null;
 
+  // Debug logging
+  console.log(`[ExerciseMedia] ${exerciseName}:`, {
+    propImageUrl: imageUrl?.substring(0, 50),
+    lookupFound: !!mediaLookup,
+    lookupUrl: mediaLookup?.image_url,
+    resolvedUrl: resolvedImageUrl?.substring(0, 50),
+  });
+
   const hasMedia = (resolvedVideoUrl || resolvedImageUrl) && !mediaError;
 
   // Reset error state when URLs change
