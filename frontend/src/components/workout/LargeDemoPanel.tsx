@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { Dumbbell, Play, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { lookupExerciseMedia, hasExerciseMedia } from '@/lib/exerciseMediaMap';
 import { type UserGender } from '@/lib/exerciseMediaData';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Button } from '@/components/ui/button';
 import { FormTipsModal } from './FormTipsModal';
-import { useExerciseImage } from '@/hooks/useExerciseImage';
+import { useSupabaseImage } from '@/hooks/useSupabaseImage';
 
 interface LargeDemoPanelProps {
   videoUrl?: string;
