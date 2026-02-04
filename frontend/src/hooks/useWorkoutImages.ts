@@ -1,8 +1,9 @@
 /**
  * Workout Images Hook
  * 
- * Serves exercise form guide images from static library.
- * NO AI CREDITS REQUIRED - images are pre-generated and stored locally.
+ * Serves exercise form guide images from:
+ * 1. Static library in /public/exercise-media/ (first priority)
+ * 2. Supabase Storage cache (fallback for AI-generated images)
  * 
  * Images are stored in /public/exercise-media/
  * - Neutral images: /exercise-media/{filename}.png
@@ -10,8 +11,10 @@
  * - Female variants: /exercise-media/female/{filename}.png
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { allExerciseMediaData } from '@/lib/exerciseMediaData';
+
+const BACKEND_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
 
 interface UseWorkoutImagesReturn {
   getImageForExercise: (exerciseName: string, muscleGroup?: string) => string | null;
