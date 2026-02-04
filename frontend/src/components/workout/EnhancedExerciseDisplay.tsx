@@ -69,10 +69,18 @@ export function EnhancedExerciseDisplay({
 
   const formImage = getImageForExercise(exerciseName, muscleGroup);
 
+  // Debug logging
+  console.log(`[EnhancedExerciseDisplay] Exercise: ${exerciseName}`, {
+    formImage: formImage?.substring(0, 60),
+    isGenerating,
+    imageRequested,
+    showImage,
+  });
+
   // Auto-generate image on mount if not in cache
   useEffect(() => {
     if (!formImage && !imageRequested && !isGenerating && exerciseName) {
-      console.log('Auto-generating workout image for:', exerciseName, 'Gender:', userGender);
+      console.log('[EnhancedExerciseDisplay] Auto-generating for:', exerciseName, 'Gender:', userGender);
       setImageRequested(true);
       generateImage(exerciseName, muscleGroup, userGender);
     }
