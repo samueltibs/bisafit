@@ -29,6 +29,17 @@ import { PremiumFeatureModal } from '@/components/subscription';
 import type { DisplayWorkout, WorkoutType } from '@/types/plan';
 import { transformCoachNotes, getFirstName } from '@/lib/coachNotesUtils';
 
+/**
+ * Convert string to Title Case (capitalize first letter of each word)
+ */
+function toTitleCase(str: string): string {
+  if (!str) return '';
+  return str
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
 const typeColors: Record<WorkoutType, string> = {
   strength: 'bg-primary/10 text-primary',
   cardio: 'bg-orange-500/10 text-orange-500',
