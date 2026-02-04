@@ -288,6 +288,7 @@ async def check_exercise_image_cache(exercise_name: str):
     """
     Check if an exercise image is already cached.
     Quick check without generating anything.
+    Returns Storage URL (not base64) for efficient loading.
     """
     cached_url = await get_cached_image(exercise_name)
     return {
@@ -295,6 +296,43 @@ async def check_exercise_image_cache(exercise_name: str):
         "cached": cached_url is not None,
         "image_url": cached_url
     }
+
+
+@api_router.post("/setup-image-storage")
+async def setup_image_storage():
+    """
+    Initialize Supabase Storage bucket for exercise images.
+    Call this once to set up the storage infrastructure.
+    """
+    try:
+        result = await ensure_storage_bucket_exists()
+        return {
+            "success": result,
+            "message": "Storage bucket ready" if result else "Failed to create storage bucket"
+        }
+    except Exception as e:
+        logger.error(f"Error setting up storage: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/migrate-images-to-storage")
+async def migrate_images_to_storage(background_tasks: BackgroundTasks):
+    """
+    Migrate existing base64 images to Supabase Storage.
+    This reduces database disk IO significantly.
+    
+    Runs in background - returns immediately.
+    """
+    try:
+        # Run migration in background
+        background_tasks.add_task(migrate_base64_to_storage)
+        return {
+            "success": True,
+            "message": "Migration started in background. Check server logs for progress."
+        }
+    except Exception as e:
+        logger.error(f"Error starting migration: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # Email Notification Models
