@@ -111,6 +111,40 @@ function getStaticImageUrl(exerciseName: string, gender: string = 'neutral'): st
 // In-memory cache for verified image URLs
 const verifiedImageCache: Record<string, string> = {};
 
+// Cache for Supabase Storage URLs
+const supabaseImageCache: Record<string, string | null> = {};
+
+// Fetch image from Supabase Storage cache
+async function fetchSupabaseImage(exerciseName: string): Promise<string | null> {
+  const normalizedName = exerciseName.toLowerCase().trim();
+  
+  // Check local cache first
+  if (normalizedName in supabaseImageCache) {
+    return supabaseImageCache[normalizedName];
+  }
+  
+  try {
+    const response = await fetch(
+      `${BACKEND_URL}/api/exercise-image-cached/${encodeURIComponent(normalizedName)}`,
+      { signal: AbortSignal.timeout(10000) }
+    );
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.cached && data.image_url) {
+        console.log(`[WorkoutImages] Supabase cache hit: ${exerciseName} -> ${data.image_url.substring(0, 60)}...`);
+        supabaseImageCache[normalizedName] = data.image_url;
+        return data.image_url;
+      }
+    }
+  } catch (error) {
+    console.log(`[WorkoutImages] Failed to fetch from Supabase: ${exerciseName}`);
+  }
+  
+  supabaseImageCache[normalizedName] = null;
+  return null;
+}
+
 export function useWorkoutImages(userGender: string = 'male'): UseWorkoutImagesReturn {
   const [cache, setCache] = useState<Record<string, { image_url: string }>>(
     Object.entries(verifiedImageCache).reduce((acc, [key, url]) => {
@@ -118,18 +152,24 @@ export function useWorkoutImages(userGender: string = 'male'): UseWorkoutImagesR
       return acc;
     }, {} as Record<string, { image_url: string }>)
   );
-  const [isGenerating] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  // Get image URL from static library
+  // Get image URL from static library OR Supabase cache
   const getImageForExercise = useCallback((exerciseName: string, muscleGroup?: string): string | null => {
     const cacheKey = `${exerciseName.toLowerCase()}_${userGender}`;
     
-    // Check cache first
+    // Check verified cache first
     if (verifiedImageCache[cacheKey]) {
       return verifiedImageCache[cacheKey];
     }
     
-    // Get static image URL
+    // Check Supabase cache (synchronous check of already-fetched URLs)
+    const normalizedName = exerciseName.toLowerCase().trim();
+    if (supabaseImageCache[normalizedName]) {
+      return supabaseImageCache[normalizedName];
+    }
+    
+    // Try static image URL
     const imageUrl = getStaticImageUrl(exerciseName, userGender);
     
     if (imageUrl) {
@@ -141,20 +181,39 @@ export function useWorkoutImages(userGender: string = 'male'): UseWorkoutImagesR
     return null;
   }, [userGender]);
 
-  // "Generate" image - just looks up from static library (no API call needed)
+  // "Generate" image - tries static library first, then Supabase cache
   const generateImage = useCallback(async (exerciseName: string, muscleGroup: string = 'full body', gender?: string) => {
     const genderToUse = gender || userGender || 'male';
     const cacheKey = `${exerciseName.toLowerCase()}_${genderToUse}`;
     
-    // Get static image URL
-    const imageUrl = getStaticImageUrl(exerciseName, genderToUse);
+    setIsGenerating(true);
     
-    if (imageUrl) {
-      verifiedImageCache[cacheKey] = imageUrl;
-      setCache(prev => ({
-        ...prev,
-        [cacheKey]: { image_url: imageUrl }
-      }));
+    try {
+      // First try static image
+      const staticUrl = getStaticImageUrl(exerciseName, genderToUse);
+      
+      if (staticUrl) {
+        console.log(`[WorkoutImages] Using static: ${exerciseName} -> ${staticUrl}`);
+        verifiedImageCache[cacheKey] = staticUrl;
+        setCache(prev => ({
+          ...prev,
+          [cacheKey]: { image_url: staticUrl }
+        }));
+        return;
+      }
+      
+      // Fall back to Supabase Storage cache
+      const supabaseUrl = await fetchSupabaseImage(exerciseName);
+      
+      if (supabaseUrl) {
+        verifiedImageCache[cacheKey] = supabaseUrl;
+        setCache(prev => ({
+          ...prev,
+          [cacheKey]: { image_url: supabaseUrl }
+        }));
+      }
+    } finally {
+      setIsGenerating(false);
     }
   }, [userGender]);
 
