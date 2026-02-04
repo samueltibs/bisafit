@@ -222,28 +222,27 @@ export function EnhancedExerciseDisplay({
         )}
       </div>
 
-      {/* Bottom Controls - Fixed */}
-      <div className="border-t border-border bg-card/95 backdrop-blur-sm p-4 safe-area-pb">
-        <div className="flex items-center justify-center gap-6">
+      {/* Bottom Controls - Compact */}
+      <div className="border-t border-border bg-card/95 backdrop-blur-sm p-3 safe-area-pb">
+        <div className="flex items-center justify-center gap-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={onSkipBack}
-            className="h-14 w-14 rounded-full hover:bg-muted"
+            className="h-12 w-12 rounded-full hover:bg-muted"
           >
-            <SkipBack className="h-7 w-7" />
+            <SkipBack className="h-6 w-6" />
           </Button>
 
           <Button
             size="icon"
             onClick={onPlayPause}
-            className="h-18 w-18 rounded-full shadow-lg"
-            style={{ width: '72px', height: '72px' }}
+            className="h-16 w-16 rounded-full shadow-lg"
           >
             {isPaused ? (
-              <Play className="h-9 w-9 ml-1" />
+              <Play className="h-8 w-8 ml-1" />
             ) : (
-              <Pause className="h-9 w-9" />
+              <Pause className="h-8 w-8" />
             )}
           </Button>
 
@@ -251,9 +250,9 @@ export function EnhancedExerciseDisplay({
             variant="ghost"
             size="icon"
             onClick={onSkipForward}
-            className="h-14 w-14 rounded-full hover:bg-muted"
+            className="h-12 w-12 rounded-full hover:bg-muted"
           >
-            <SkipForward className="h-7 w-7" />
+            <SkipForward className="h-6 w-6" />
           </Button>
         </div>
       </div>
