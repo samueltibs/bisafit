@@ -46,7 +46,8 @@ interface ExerciseDisplayProps {
 /**
  * Capitalize each word in a string for proper title case
  */
-function toTitleCase(str: string): string {
+function toTitleCase(str: string | undefined | null): string {
+  if (!str) return '';
   return str
     .split(' ')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
