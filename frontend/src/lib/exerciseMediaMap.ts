@@ -22,7 +22,7 @@ export interface ExerciseMediaInfo {
  * - handle common variations (db = dumbbell, bb = barbell, etc.)
  */
 export function normalizeExerciseName(name: string): string {
-  return name
+  let normalized = name
     .toLowerCase()
     .trim()
     .replace(/\s+/g, ' ')
@@ -31,6 +31,27 @@ export function normalizeExerciseName(name: string): string {
     .replace(/^kb\s+/i, 'kettlebell ')
     .replace(/-/g, ' ') // Normalize hyphens to spaces for matching
     .replace(/\s+/g, ' '); // Clean up any double spaces
+  
+  // Handle common plurals - convert to singular for matching
+  // e.g., "bodyweight squats" -> "bodyweight squat"
+  // e.g., "jumping jacks" stays as is (it's the proper name)
+  const keepPlural = ['jumping jacks', 'high knees', 'butt kicks', 'mountain climbers', 'flutter kicks', 'bicycle crunches'];
+  if (!keepPlural.includes(normalized)) {
+    if (normalized.endsWith('es') && !normalized.endsWith('ches') && !normalized.endsWith('sses')) {
+      // lunges -> lunge, crunches stays
+      const singular = normalized.slice(0, -1); // lunges -> lunge (keep the 'e')
+      if (singular.endsWith('ch') || singular.endsWith('ss')) {
+        // Don't change crunches, presses
+      } else {
+        normalized = normalized.slice(0, -2); // raises -> rais... hmm
+      }
+    } else if (normalized.endsWith('s') && !normalized.endsWith('ss')) {
+      // squats -> squat, curls -> curl
+      normalized = normalized.slice(0, -1);
+    }
+  }
+  
+  return normalized;
 }
 
 /**
