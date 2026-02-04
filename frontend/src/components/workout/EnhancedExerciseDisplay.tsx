@@ -115,7 +115,7 @@ export function EnhancedExerciseDisplay({
         {/* EXERCISE NAME - Large, Bold, All Caps for Quick Recognition */}
         <div className="text-center mb-4">
           <h1 className="text-2xl sm:text-3xl font-black tracking-wide uppercase text-foreground">
-            {exerciseName.toUpperCase()}
+            {(exerciseName || '').toUpperCase()}
           </h1>
           <p className="text-lg font-semibold text-muted-foreground mt-1">
             Set {currentSet} of {totalSets} · {repsTarget} Reps
