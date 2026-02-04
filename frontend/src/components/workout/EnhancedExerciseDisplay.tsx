@@ -150,32 +150,25 @@ export function EnhancedExerciseDisplay({
           ))}
         </div>
 
-        {/* Form Guide Image - Compact to fit all elements on screen */}
+        {/* Form Guide Image - Clean, Premium Look */}
         {showImage && (
-          <Card className="mb-3 overflow-hidden border-0 shadow-lg">
-            <div className="relative h-40 sm:h-48 bg-gradient-to-b from-muted/50 to-muted">
-              {formImage ? (
-                <img
-                  src={formImage}
-                  alt={`${exerciseName} form guide`}
-                  className="w-full h-full object-contain p-1"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
-              ) : isLoading ? (
-                <div className="flex flex-col items-center justify-center h-full gap-2">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <p className="text-xs text-muted-foreground">Loading...</p>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full gap-2">
-                  <Dumbbell className="h-8 w-8 text-muted-foreground/50" />
-                  <p className="text-xs text-muted-foreground">No image available</p>
-                </div>
-              )}
-            </div>
-          </Card>
+          <div className="flex justify-center mb-3">
+            {formImage ? (
+              <img
+                src={formImage}
+                alt={`${exerciseName} form guide`}
+                className="h-36 sm:h-44 w-auto object-contain rounded-xl shadow-xl"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            ) : isLoading ? (
+              <div className="flex flex-col items-center justify-center h-36 sm:h-44 gap-2">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <p className="text-xs text-muted-foreground">Loading...</p>
+              </div>
+            ) : null}
+          </div>
         )}
 
         {/* Toggle Image Button */}
