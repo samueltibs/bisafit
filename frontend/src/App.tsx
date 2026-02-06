@@ -28,6 +28,8 @@ import NotificationCenter from "./pages/NotificationCenter";
 import ManageSubscription from "./pages/ManageSubscription";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import NotFound from "./pages/NotFound";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
