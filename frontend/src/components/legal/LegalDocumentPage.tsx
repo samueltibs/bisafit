@@ -28,6 +28,27 @@ export function LegalDocumentPage({
 }: LegalDocumentPageProps) {
   const navigate = useNavigate();
 
+  // Enable scrolling on mount, restore on unmount
+  // This overrides the global overflow:hidden on html/body
+  React.useEffect(() => {
+    const html = document?.ownerDocument?.documentElement || window.document.documentElement;
+    const body = window.document.body;
+    
+    // Store original values
+    const originalHtmlOverflow = html.style.overflow;
+    const originalBodyOverflow = body.style.overflow;
+    
+    // Enable scrolling
+    html.style.overflow = 'auto';
+    body.style.overflow = 'auto';
+    
+    return () => {
+      // Restore original values
+      html.style.overflow = originalHtmlOverflow;
+      body.style.overflow = originalBodyOverflow;
+    };
+  }, []);
+
   const handlePrint = () => {
     window.print();
   };
