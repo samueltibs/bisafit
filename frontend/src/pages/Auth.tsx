@@ -67,6 +67,14 @@ export default function Auth() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Check legal acceptance
+    if (!legalAccepted) {
+      setLegalError(true);
+      toast.error('Please accept the Terms of Service and Privacy Policy');
+      return;
+    }
+    setLegalError(false);
+    
     if (signUpData.password !== signUpData.confirmPassword) {
       toast.error('Passwords do not match');
       return;
