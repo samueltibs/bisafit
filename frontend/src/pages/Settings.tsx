@@ -881,6 +881,39 @@ export default function Settings() {
                   <ChevronRight className="h-5 w-5 text-muted-foreground" />
                 </button>
               )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Section 4: Legal */}
+        <div className="space-y-4 animate-slide-up">
+          <h3 className="text-sm font-medium text-muted-foreground">Legal</h3>
+          
+          <Card className="border-border">
+            <CardContent className="divide-y divide-border p-0">
+              {/* Terms of Service */}
+              <button 
+                onClick={() => navigate('/terms')}
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
+              >
+                <div className="flex items-center gap-3">
+                  <FileText className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">Terms of Service</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+
+              {/* Privacy Policy */}
+              <button 
+                onClick={() => navigate('/privacy')}
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
+              >
+                <div className="flex items-center gap-3">
+                  <Shield className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">Privacy Policy</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
 
               {/* App Version */}
               <div className="flex items-center justify-between p-4">
