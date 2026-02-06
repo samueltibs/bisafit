@@ -65,7 +65,7 @@ export function LegalDocumentPage({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="fixed inset-0 overflow-y-auto bg-background">
         <div className="max-w-3xl mx-auto px-4 py-8">
           <Skeleton className="h-8 w-48 mb-4" />
           <Skeleton className="h-4 w-32 mb-8" />
@@ -83,7 +83,7 @@ export function LegalDocumentPage({
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="fixed inset-0 overflow-y-auto bg-background">
         <div className="max-w-3xl mx-auto px-4 py-8">
           <Card>
             <CardContent className="pt-6">
@@ -105,7 +105,7 @@ export function LegalDocumentPage({
 
   if (!legalDoc) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="fixed inset-0 overflow-y-auto bg-background">
         <div className="max-w-3xl mx-auto px-4 py-8">
           <Card>
             <CardContent className="pt-6">
