@@ -128,7 +128,7 @@ export function LegalDocumentPage({
   }
 
   return (
-    <div className="min-h-screen bg-background print:bg-white">
+    <div className="fixed inset-0 overflow-y-auto bg-background print:bg-white print:relative print:overflow-visible">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b print:hidden">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
