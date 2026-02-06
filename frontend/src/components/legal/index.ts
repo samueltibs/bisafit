@@ -7,3 +7,4 @@ export { LegalAcceptanceModal } from './LegalAcceptanceModal';
 export { LegalFooter } from './LegalFooter';
 export { LegalCheckbox } from './LegalCheckbox';
 export { LegalConsentText } from './LegalConsentText';
+export { LegalGate } from './LegalGate';
