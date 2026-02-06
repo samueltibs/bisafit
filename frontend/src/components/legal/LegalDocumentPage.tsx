@@ -22,7 +22,7 @@ interface LegalDocumentPageProps {
 }
 
 export function LegalDocumentPage({
-  document,
+  document: legalDoc,
   loading,
   error,
   fallbackTitle,
@@ -32,21 +32,21 @@ export function LegalDocumentPage({
   // Enable scrolling on mount, restore on unmount
   // This overrides the global overflow:hidden on html/body
   React.useEffect(() => {
-    const html = document?.ownerDocument?.documentElement || window.document.documentElement;
-    const body = window.document.body;
+    const htmlElement = window.document.documentElement;
+    const bodyElement = window.document.body;
     
     // Store original values
-    const originalHtmlOverflow = html.style.overflow;
-    const originalBodyOverflow = body.style.overflow;
+    const originalHtmlOverflow = htmlElement.style.overflow;
+    const originalBodyOverflow = bodyElement.style.overflow;
     
     // Enable scrolling
-    html.style.overflow = 'auto';
-    body.style.overflow = 'auto';
+    htmlElement.style.overflow = 'auto';
+    bodyElement.style.overflow = 'auto';
     
     return () => {
       // Restore original values
-      html.style.overflow = originalHtmlOverflow;
-      body.style.overflow = originalBodyOverflow;
+      htmlElement.style.overflow = originalHtmlOverflow;
+      bodyElement.style.overflow = originalBodyOverflow;
     };
   }, []);
 
