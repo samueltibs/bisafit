@@ -179,6 +179,8 @@ const App = () => (
               } />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
+                {/* Legal Acceptance Gate - shows modal when user needs to accept updated docs */}
+                <LegalGate />
               </BrowserRouter>
             </TooltipProvider>
           </AppLanguageProvider>
