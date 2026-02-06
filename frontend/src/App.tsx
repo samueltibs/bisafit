@@ -80,6 +80,10 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             
+            {/* Public Legal Routes - No authentication required */}
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            
             {/* Email Verification - requires auth but not email verification */}
             <Route path="/verify-email" element={
               <ProtectedRoute requireVerifiedEmail={false}>
