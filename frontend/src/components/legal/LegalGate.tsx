@@ -1,6 +1,7 @@
 /**
  * Legal Gate Component
- * Wraps the app and shows acceptance modal when user needs to accept updated legal docs
+ * Shows acceptance modal when user needs to accept updated legal docs
+ * Renders as a sibling to the main app content
  */
 
 import { useEffect, useState } from 'react';
@@ -8,11 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useLegalDocuments } from '@/hooks/useLegalDocuments';
 import { LegalAcceptanceModal } from './LegalAcceptanceModal';
 
-interface LegalGateProps {
-  children: React.ReactNode;
-}
-
-export function LegalGate({ children }: LegalGateProps) {
+export function LegalGate() {
   const { user, signOut } = useAuth();
   const { 
     documents, 
@@ -49,16 +46,13 @@ export function LegalGate({ children }: LegalGateProps) {
   };
 
   return (
-    <>
-      {children}
-      <LegalAcceptanceModal
-        open={showModal}
-        documents={documents}
-        acceptanceStatus={acceptanceStatus}
-        accepting={accepting}
-        onAccept={handleAccept}
-        onSignOut={handleSignOut}
-      />
-    </>
+    <LegalAcceptanceModal
+      open={showModal}
+      documents={documents}
+      acceptanceStatus={acceptanceStatus}
+      accepting={accepting}
+      onAccept={handleAccept}
+      onSignOut={handleSignOut}
+    />
   );
 }
