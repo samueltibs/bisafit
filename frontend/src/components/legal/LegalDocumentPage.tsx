@@ -103,7 +103,7 @@ export function LegalDocumentPage({
     );
   }
 
-  if (!document) {
+  if (!legalDoc) {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-3xl mx-auto px-4 py-8">
@@ -152,12 +152,12 @@ export function LegalDocumentPage({
             <span>•</span>
             <span>Legal</span>
           </div>
-          <h1 className="text-3xl font-bold mb-2 print:text-2xl">{document.title}</h1>
+          <h1 className="text-3xl font-bold mb-2 print:text-2xl">{legalDoc.title}</h1>
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-            <span>Version {document.version}</span>
-            {document.published_at && (
+            <span>Version {legalDoc.version}</span>
+            {legalDoc.published_at && (
               <span>
-                Last updated: {format(new Date(document.published_at), 'MMMM d, yyyy')}
+                Last updated: {format(new Date(legalDoc.published_at), 'MMMM d, yyyy')}
               </span>
             )}
           </div>
@@ -188,7 +188,7 @@ export function LegalDocumentPage({
                 strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
               }}
             >
-              {document.content_markdown}
+              {legalDoc.content_markdown}
             </ReactMarkdown>
           </CardContent>
         </Card>
