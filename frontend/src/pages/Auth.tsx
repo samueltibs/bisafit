@@ -286,6 +286,18 @@ export default function Auth() {
                     />
                   </div>
                 </div>
+                
+                {/* Legal Acceptance Checkbox */}
+                <LegalCheckbox
+                  checked={legalAccepted}
+                  onCheckedChange={(checked) => {
+                    setLegalAccepted(checked);
+                    if (checked) setLegalError(false);
+                  }}
+                  disabled={isLoading}
+                  error={legalError}
+                />
+                
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create Account'}
                 </Button>
@@ -293,6 +305,9 @@ export default function Auth() {
             </TabsContent>
           </CardContent>
         </Tabs>
+        
+        {/* Legal Footer */}
+        <LegalFooter className="mt-6" />
       </Card>
       )}
     </div>
