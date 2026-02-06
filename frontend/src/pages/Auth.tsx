@@ -12,6 +12,7 @@ import { trackEvent } from '@/lib/analytics';
 import { sendWelcomeEmail } from '@/lib/emailService';
 import { APP_NAME, SUPPORT_MESSAGE_SHORT } from '@/lib/branding';
 import { supabase } from '@/integrations/supabase/client';
+import { LegalCheckbox, LegalConsentText, LegalFooter } from '@/components/legal';
 
 export default function Auth() {
   const { user, loading: authLoading } = useAuth();
@@ -19,6 +20,8 @@ export default function Auth() {
   const { signIn, signUp } = useAuth();
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
+  const [legalAccepted, setLegalAccepted] = useState(false);
+  const [legalError, setLegalError] = useState(false);
 
   const [signInData, setSignInData] = useState({ email: '', password: '' });
   const [signUpData, setSignUpData] = useState({ email: '', password: '', confirmPassword: '' });
