@@ -8,6 +8,7 @@ import { PlatformProvider } from "@/hooks/usePlatform";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SubscriptionGate } from "@/components/subscription/SubscriptionGate";
 import { AppLanguageProvider } from "@/components/AppLanguageProvider";
+import { LegalGate } from "@/components/legal";
 
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
