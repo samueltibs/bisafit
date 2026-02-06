@@ -384,3 +384,149 @@ async def send_store_interest_admin_notification(
         subject=f"🛍️ Store Waitlist: {user_email}",
         html_content=html_content
     )
+
+
+async def send_legal_document_update_notification(
+    to_email: str,
+    doc_type: str,
+    doc_title: str,
+    doc_version: str,
+    app_url: str = "https://bisafit.com"
+) -> Dict[str, Any]:
+    """
+    Send notification when legal documents are updated.
+    
+    Args:
+        to_email: User's email address
+        doc_type: 'terms' or 'privacy'
+        doc_title: Title of the document (e.g., "Terms of Service")
+        doc_version: Version number (e.g., "1.1")
+        app_url: Base URL of the app
+    """
+    
+    doc_url = f"{app_url}/{doc_type}"
+    icon = "📋" if doc_type == "terms" else "🔒"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #121212, #2d2d2d); color: white; padding: 30px; border-radius: 12px 12px 0 0; text-align: center; }}
+            .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 12px 12px; }}
+            .highlight {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3b82f6; }}
+            .button {{ display: inline-block; padding: 14px 28px; background: #121212; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; margin-top: 10px; }}
+            .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1 style="margin: 0; font-size: 24px;">{icon} Legal Document Update</h1>
+                <p style="margin: 10px 0 0 0; opacity: 0.9;">BisaFit</p>
+            </div>
+            <div class="content">
+                <p>Hello,</p>
+                
+                <p>We've updated our <strong>{doc_title}</strong> to version {doc_version}. These updates help us serve you better and ensure transparency in how we operate.</p>
+                
+                <div class="highlight">
+                    <strong>What's Updated:</strong>
+                    <p>{doc_title} (Version {doc_version})</p>
+                    <a href="{doc_url}" class="button">Review {doc_title}</a>
+                </div>
+                
+                <p>By continuing to use BisaFit, you agree to the updated terms. If you have any questions about these changes, please don't hesitate to reach out to us.</p>
+                
+                <p>Thank you for being part of BisaFit!</p>
+                
+                <div class="footer">
+                    <p>Bisa Group, LLC • Delaware, USA</p>
+                    <p style="opacity: 0.6;">You're receiving this because you have a BisaFit account.</p>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return await send_email(
+        to_email=to_email,
+        subject=f"{icon} BisaFit {doc_title} Updated (v{doc_version})",
+        html_content=html_content
+    )
+
+
+async def send_legal_update_batch(
+    user_emails: List[str],
+    doc_type: str,
+    doc_title: str,
+    doc_version: str,
+    app_url: str = "https://bisafit.com",
+    batch_size: int = 500
+) -> Dict[str, Any]:
+    """
+    Send legal update notifications to users in batches.
+    
+    Args:
+        user_emails: List of user email addresses
+        doc_type: 'terms' or 'privacy'
+        doc_title: Title of the document
+        doc_version: Version number
+        app_url: Base URL of the app
+        batch_size: Number of emails to send per batch (default 500)
+    
+    Returns:
+        Summary of batch operation
+    """
+    
+    total = len(user_emails)
+    sent = 0
+    failed = 0
+    errors = []
+    
+    logger.info(f"Starting legal update email batch: {total} users, doc_type={doc_type}, version={doc_version}")
+    
+    # Process in batches
+    for i in range(0, total, batch_size):
+        batch = user_emails[i:i + batch_size]
+        batch_num = (i // batch_size) + 1
+        total_batches = (total + batch_size - 1) // batch_size
+        
+        logger.info(f"Processing batch {batch_num}/{total_batches} ({len(batch)} emails)")
+        
+        for email in batch:
+            try:
+                result = await send_legal_document_update_notification(
+                    to_email=email,
+                    doc_type=doc_type,
+                    doc_title=doc_title,
+                    doc_version=doc_version,
+                    app_url=app_url
+                )
+                
+                if result.get("status") == "success":
+                    sent += 1
+                else:
+                    failed += 1
+                    errors.append({"email": email, "error": result.get("message")})
+                    
+            except Exception as e:
+                failed += 1
+                errors.append({"email": email, "error": str(e)})
+        
+        # Small delay between batches to avoid rate limiting
+        if i + batch_size < total:
+            await asyncio.sleep(1)
+    
+    logger.info(f"Legal update email batch complete: {sent} sent, {failed} failed")
+    
+    return {
+        "status": "complete",
+        "total": total,
+        "sent": sent,
+        "failed": failed,
+        "errors": errors[:10] if errors else []  # Return first 10 errors only
+    }
