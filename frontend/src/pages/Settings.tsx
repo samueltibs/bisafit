@@ -48,6 +48,7 @@ import {
   Activity,
   BarChart3,
   ChefHat,
+  FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
