@@ -386,6 +386,123 @@ async def send_store_interest_admin_notification(
     )
 
 
+async def send_welcome_email(
+    to_email: str,
+    first_name: str = ""
+) -> Dict[str, Any]:
+    """
+    Send a warm welcome email to new users after signup.
+    """
+    
+    greeting = f"Hi {first_name}!" if first_name else "Hey there!"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .card {{ background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }}
+            .header {{ background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: white; padding: 40px 30px; text-align: center; }}
+            .header h1 {{ margin: 0; font-size: 28px; font-weight: 700; }}
+            .header p {{ margin: 10px 0 0 0; opacity: 0.9; font-size: 16px; }}
+            .content {{ padding: 35px 30px; }}
+            .greeting {{ font-size: 22px; font-weight: 600; color: #1a1a1a; margin-bottom: 15px; }}
+            .highlight-box {{ background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 25px; border-radius: 12px; margin: 25px 0; }}
+            .feature {{ display: flex; align-items: flex-start; margin: 15px 0; }}
+            .feature-icon {{ font-size: 24px; margin-right: 15px; }}
+            .feature-text {{ flex: 1; }}
+            .feature-title {{ font-weight: 600; color: #1a1a1a; margin: 0 0 4px 0; }}
+            .feature-desc {{ color: #666; margin: 0; font-size: 14px; }}
+            .cta-button {{ display: inline-block; padding: 16px 32px; background: #1a1a1a; color: white !important; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 16px; margin: 20px 0; }}
+            .cta-button:hover {{ background: #333; }}
+            .footer {{ text-align: center; padding: 25px 30px; background: #fafafa; border-top: 1px solid #eee; }}
+            .footer p {{ margin: 5px 0; color: #888; font-size: 13px; }}
+            .social-text {{ color: #666; font-size: 14px; margin-bottom: 10px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="card">
+                <div class="header">
+                    <h1>🏋️ Welcome to BisaFit!</h1>
+                    <p>Your fitness journey starts now</p>
+                </div>
+                
+                <div class="content">
+                    <p class="greeting">{greeting}</p>
+                    
+                    <p style="font-size: 16px; color: #444;">
+                        We're so excited to have you join the BisaFit family! 🎉 You've just taken the first step toward a healthier, stronger you — and we're here to support you every step of the way.
+                    </p>
+                    
+                    <div class="highlight-box">
+                        <p style="margin: 0 0 15px 0; font-weight: 600; color: #1a1a1a;">Here's what's waiting for you:</p>
+                        
+                        <div class="feature">
+                            <span class="feature-icon">🤖</span>
+                            <div class="feature-text">
+                                <p class="feature-title">AI-Powered Workouts</p>
+                                <p class="feature-desc">Personalized plans that adapt to your goals, schedule, and fitness level</p>
+                            </div>
+                        </div>
+                        
+                        <div class="feature">
+                            <span class="feature-icon">🥗</span>
+                            <div class="feature-text">
+                                <p class="feature-title">Smart Nutrition Guidance</p>
+                                <p class="feature-desc">Meal suggestions and macro tracking to fuel your progress</p>
+                            </div>
+                        </div>
+                        
+                        <div class="feature">
+                            <span class="feature-icon">📊</span>
+                            <div class="feature-text">
+                                <p class="feature-title">Progress Tracking</p>
+                                <p class="feature-desc">Watch your transformation with detailed stats and insights</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p style="font-size: 16px; color: #444;">
+                        Ready to get started? Let's build your personalized fitness plan!
+                    </p>
+                    
+                    <div style="text-align: center;">
+                        <a href="https://bisafit-legal.preview.emergentagent.com/home" class="cta-button">
+                            Start Your Journey →
+                        </a>
+                    </div>
+                    
+                    <p style="font-size: 15px; color: #666; margin-top: 25px;">
+                        Remember, every champion was once a beginner. You've got this! 💪
+                    </p>
+                    
+                    <p style="font-size: 15px; color: #444;">
+                        Cheering you on,<br>
+                        <strong>The BisaFit Team</strong>
+                    </p>
+                </div>
+                
+                <div class="footer">
+                    <p class="social-text">Questions? Just reply to this email — we're here to help!</p>
+                    <p>Bisa Group, LLC • Delaware, USA</p>
+                    <p style="opacity: 0.7;">© 2026 BisaFit. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return await send_email(
+        to_email=to_email,
+        subject="🏋️ Welcome to BisaFit — Let's Get Started!",
+        html_content=html_content
+    )
+
+
 async def send_legal_document_update_notification(
     to_email: str,
     doc_type: str,
