@@ -377,6 +377,33 @@ async def send_weekly_report(request: AnalyticsReportRequest):
 
 
 # ============================================
+# WELCOME EMAIL
+# ============================================
+
+class WelcomeEmailRequest(BaseModel):
+    """Request body for sending welcome email"""
+    email: str
+    first_name: str = ""
+
+
+@api_router.post("/send-welcome-email")
+async def send_welcome_email_endpoint(request: WelcomeEmailRequest):
+    """
+    Send welcome email to new user.
+    Called after user completes signup and verification.
+    """
+    try:
+        result = await send_welcome_email(
+            to_email=request.email,
+            first_name=request.first_name
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Error sending welcome email: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
 # STORE INTEREST / WAITLIST
 # ============================================
 
