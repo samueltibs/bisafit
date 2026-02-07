@@ -380,6 +380,18 @@ frontend:
         agent: "main"
         comment: "IMPLEMENTED: Complete redesign matching TV screen reference. Features: large timer (00:45 style), AI form guide images, progress indicators, next exercise preview, playback controls (play/pause/skip). Mobile-optimized full-screen interface. Images auto-generate and cache."
 
+  - task: "Legal compliance flow (Terms, Privacy, Auth)"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/Terms.tsx, frontend/src/pages/Privacy.tsx, frontend/src/pages/Auth.tsx, frontend/src/components/legal/"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ COMPREHENSIVE LEGAL FLOW TESTING COMPLETE - All requirements met for App Store compliance. PUBLIC LEGAL PAGES: /terms and /privacy accessible without auth, proper version info (2026-02-06-v1), last updated dates, Print buttons, scrolling works, markdown renders correctly. AUTH SIGNUP: Legal checkbox 'I agree to the Terms of Service and Privacy Policy' with links opening in new tabs, form validation prevents submission without acceptance, shows error message. AUTH SIGNIN: Consent text 'By continuing, you agree to the Terms of Service and Privacy Policy' with working links. FOOTER: 'Terms of Service | Privacy Policy' links present. SETTINGS: Properly protected (redirects to auth). All legal links have correct targets, validation works, scrolling containers properly configured. Ready for production."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
