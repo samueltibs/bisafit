@@ -9,6 +9,8 @@
  */
 
 import type { ExternalWorkoutData } from '@/types/workoutLog';
+import { AppleHealthService } from './appleHealthService';
+import { GoogleFitService } from './googleFitService';
 
 // Platform detection
 export function isNativePlatform(): boolean {
@@ -71,13 +73,13 @@ export async function requestAppleHealthPermissions(): Promise<AppleHealthAuthSt
     return { authorized: false, workoutsRead: false };
   }
 
-  // In a real implementation, this would use a Capacitor plugin like:
-  // @nickmanning/capacitor-healthkit or a similar plugin
-  // For now, we return a mock response for the UI to work
-  console.log('[HealthPlatforms] Apple Health permissions requested');
-  
-  // This is a placeholder - actual implementation needs native plugin
-  return { authorized: false, workoutsRead: false };
+  try {
+    const granted = await AppleHealthService.requestPermissions();
+    return { authorized: granted, workoutsRead: granted };
+  } catch (error) {
+    console.error('[HealthPlatforms] Apple Health permission error:', error);
+    return { authorized: false, workoutsRead: false };
+  }
 }
 
 export async function fetchAppleHealthWorkouts(
@@ -89,11 +91,24 @@ export async function fetchAppleHealthWorkouts(
     return [];
   }
 
-  // Placeholder for actual HealthKit integration
-  // Would use a Capacitor plugin to query HKWorkout samples
-  console.log('[HealthPlatforms] Fetching Apple Health workouts:', { startDate, endDate });
-  
-  return [];
+  try {
+    const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const workouts = await AppleHealthService.getRecentWorkouts(days);
+    
+    return workouts.map(w => ({
+      id: w.id,
+      source: 'apple_health' as const,
+      type: w.type,
+      startTime: w.startDate,
+      endTime: w.endDate,
+      duration: w.duration,
+      caloriesBurned: w.calories,
+      distance: w.distance,
+    }));
+  } catch (error) {
+    console.error('[HealthPlatforms] Error fetching Apple Health workouts:', error);
+    return [];
+  }
 }
 
 // Google Fit / Health Connect integration
@@ -108,12 +123,13 @@ export async function requestGoogleFitPermissions(): Promise<GoogleFitAuthStatus
     return { authorized: false, sessionsRead: false };
   }
 
-  // In a real implementation, this would use a Capacitor plugin like:
-  // @nickmanning/capacitor-health or Health Connect API
-  console.log('[HealthPlatforms] Google Fit permissions requested');
-  
-  // This is a placeholder - actual implementation needs native plugin
-  return { authorized: false, sessionsRead: false };
+  try {
+    const granted = await GoogleFitService.requestPermissions();
+    return { authorized: granted, sessionsRead: granted };
+  } catch (error) {
+    console.error('[HealthPlatforms] Google Fit permission error:', error);
+    return { authorized: false, sessionsRead: false };
+  }
 }
 
 export async function fetchGoogleFitWorkouts(
@@ -125,10 +141,24 @@ export async function fetchGoogleFitWorkouts(
     return [];
   }
 
-  // Placeholder for actual Google Fit / Health Connect integration
-  console.log('[HealthPlatforms] Fetching Google Fit workouts:', { startDate, endDate });
-  
-  return [];
+  try {
+    const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const workouts = await GoogleFitService.getRecentWorkouts(days);
+    
+    return workouts.map(w => ({
+      id: w.id,
+      source: 'google_fit' as const,
+      type: w.type,
+      startTime: w.startDate,
+      endTime: w.endDate,
+      duration: w.duration,
+      caloriesBurned: w.calories,
+      distance: w.distance,
+    }));
+  } catch (error) {
+    console.error('[HealthPlatforms] Error fetching Google Fit workouts:', error);
+    return [];
+  }
 }
 
 // Combined sync function
@@ -158,10 +188,84 @@ export async function getHealthPlatformStatus(): Promise<{
   googleFitAvailable: boolean;
   googleFitConnected: boolean;
 }> {
+  let appleHealthConnected = false;
+  let googleFitConnected = false;
+  
+  if (isIOSPlatform()) {
+    appleHealthConnected = await AppleHealthService.isAvailable();
+  }
+  
+  if (isAndroidPlatform()) {
+    googleFitConnected = await GoogleFitService.isAvailable();
+  }
+  
   return {
     appleHealthAvailable: isIOSPlatform(),
-    appleHealthConnected: false, // Would be populated from saved state or permission check
+    appleHealthConnected,
     googleFitAvailable: isAndroidPlatform(),
-    googleFitConnected: false,
+    googleFitConnected,
   };
+}
+
+// Get today's health summary from connected platforms
+export async function getTodayHealthSummary(): Promise<{
+  steps: number;
+  calories: number;
+  distance: number | null;
+  source: 'apple_health' | 'google_fit' | null;
+}> {
+  if (isIOSPlatform()) {
+    try {
+      const data = await AppleHealthService.getTodayData();
+      return {
+        steps: data.steps,
+        calories: data.activeCalories,
+        distance: null,
+        source: 'apple_health',
+      };
+    } catch (error) {
+      console.error('[HealthPlatforms] Error getting Apple Health data:', error);
+    }
+  }
+  
+  if (isAndroidPlatform()) {
+    try {
+      const data = await GoogleFitService.getTodayData();
+      return {
+        steps: data.steps,
+        calories: data.activeCalories,
+        distance: data.distance,
+        source: 'google_fit',
+      };
+    } catch (error) {
+      console.error('[HealthPlatforms] Error getting Google Fit data:', error);
+    }
+  }
+  
+  return {
+    steps: 0,
+    calories: 0,
+    distance: null,
+    source: null,
+  };
+}
+
+// Write workout to connected platform
+export async function writeWorkoutToPlatform(workout: {
+  name: string;
+  type: string;
+  startDate: Date;
+  endDate: Date;
+  calories?: number;
+  distance?: number;
+}): Promise<boolean> {
+  if (isIOSPlatform()) {
+    return await AppleHealthService.saveWorkout(workout);
+  }
+  
+  if (isAndroidPlatform()) {
+    return await GoogleFitService.saveWorkout(workout);
+  }
+  
+  return false;
 }
