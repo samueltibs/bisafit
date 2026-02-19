@@ -27,6 +27,7 @@ import Store from "./pages/Store";
 import Settings from "./pages/Settings";
 import NotificationCenter from "./pages/NotificationCenter";
 import ManageSubscription from "./pages/ManageSubscription";
+import BillingPage from "./pages/BillingPage";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import NotFound from "./pages/NotFound";
 import Terms from "./pages/Terms";
