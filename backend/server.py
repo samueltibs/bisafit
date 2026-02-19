@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, BackgroundTasks
+from fastapi import FastAPI, APIRouter, HTTPException, BackgroundTasks, Request, Header
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -17,6 +17,13 @@ from plan_generator import generate_4_week_plan, generate_weekly_plan
 from ai_plan_generator import generate_ai_plan_with_fallback
 from ai_plan_generator_fast import generate_ai_plan_with_fallback_fast
 from single_week_generator import generate_single_week_with_fallback
+from stripe_service import (
+    create_checkout_session,
+    create_portal_session,
+    handle_webhook_event,
+    get_subscription_status,
+    PRICE_LOOKUP_KEYS
+)
 
 
 ROOT_DIR = Path(__file__).parent
