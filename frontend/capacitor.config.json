@@ -1,9 +1,15 @@
 {
-  "appId": "app.lovable.39fd7487dde54303a60a0333cc0641e1",
+  "appId": "com.bisafit.app",
   "appName": "BisaFit",
   "webDir": "dist",
-  "server": {
-    "url": "https://39fd7487-dde5-4303-a60a-0333cc0641e1.lovableproject.com?forceHideBadge=true",
-    "cleartext": true
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#121212",
+      "showSpinner": false
+    }
+  },
+  "android": {
+    "allowMixedContent": true
   }
 }
