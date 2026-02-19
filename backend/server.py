@@ -450,6 +450,200 @@ async def store_interest_notification(request: StoreInterestRequest):
 
 
 # ============================================
+# STRIPE SUBSCRIPTION ENDPOINTS
+# ============================================
+
+class CreateCheckoutSessionRequest(BaseModel):
+    """Request body for creating a Stripe Checkout Session"""
+    price_lookup_key: str = Field(..., description="Price lookup key: 'bisafit_monthly' or 'bisafit_annual'")
+    user_id: str = Field(..., description="The BisaFit user ID")
+    email: str = Field(..., description="User's email address")
+    customer_id: Optional[str] = Field(None, description="Existing Stripe customer ID")
+    origin_url: str = Field(..., description="Frontend origin URL for success/cancel redirects")
+
+
+class CreatePortalSessionRequest(BaseModel):
+    """Request body for creating a Stripe Billing Portal Session"""
+    customer_id: str = Field(..., description="Stripe customer ID")
+    return_url: str = Field(..., description="URL to redirect after portal session")
+
+
+@api_router.post("/stripe/create-checkout-session")
+async def create_stripe_checkout_session(request: CreateCheckoutSessionRequest):
+    """
+    Create a Stripe Checkout Session for subscription.
+    
+    Returns the checkout URL to redirect the user to.
+    """
+    try:
+        # Validate price lookup key
+        if request.price_lookup_key not in PRICE_LOOKUP_KEYS:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid price_lookup_key. Must be one of: {list(PRICE_LOOKUP_KEYS.keys())}"
+            )
+        
+        # Build success and cancel URLs
+        success_url = f"{request.origin_url}/billing?success=1&session_id={{CHECKOUT_SESSION_ID}}"
+        cancel_url = f"{request.origin_url}/billing?canceled=1"
+        
+        # Create checkout session
+        result = await create_checkout_session(
+            user_id=request.user_id,
+            email=request.email,
+            price_lookup_key=request.price_lookup_key,
+            success_url=success_url,
+            cancel_url=cancel_url,
+            customer_id=request.customer_id
+        )
+        
+        # Store checkout session in MongoDB for tracking
+        checkout_record = {
+            "id": str(uuid.uuid4()),
+            "session_id": result["session_id"],
+            "user_id": request.user_id,
+            "email": request.email,
+            "price_lookup_key": request.price_lookup_key,
+            "stripe_customer_id": result["customer_id"],
+            "status": "pending",
+            "created_at": datetime.utcnow().isoformat()
+        }
+        await db.stripe_checkout_sessions.insert_one(checkout_record)
+        
+        logger.info(f"Created checkout session {result['session_id']} for user {request.user_id}")
+        
+        return {
+            "url": result["url"],
+            "session_id": result["session_id"]
+        }
+        
+    except ValueError as e:
+        logger.error(f"Validation error creating checkout session: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating checkout session: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/stripe/create-portal-session")
+async def create_stripe_portal_session(request: CreatePortalSessionRequest):
+    """
+    Create a Stripe Billing Portal Session for subscription management.
+    
+    Returns the portal URL to redirect the user to.
+    """
+    try:
+        result = await create_portal_session(
+            customer_id=request.customer_id,
+            return_url=request.return_url
+        )
+        
+        logger.info(f"Created portal session for customer {request.customer_id}")
+        
+        return result
+        
+    except ValueError as e:
+        logger.error(f"Validation error creating portal session: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating portal session: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/stripe/webhook")
+async def stripe_webhook(request: Request, stripe_signature: str = Header(None, alias="Stripe-Signature")):
+    """
+    Handle Stripe webhook events.
+    
+    Updates user subscription status based on Stripe events.
+    """
+    try:
+        # Get raw body for signature verification
+        payload = await request.body()
+        
+        if not stripe_signature:
+            logger.warning("Missing Stripe-Signature header")
+            raise HTTPException(status_code=400, detail="Missing Stripe-Signature header")
+        
+        # Process webhook event
+        result = await handle_webhook_event(payload, stripe_signature)
+        
+        # If we have update data, store it for the user
+        if result.get("update_data"):
+            update_data = result["update_data"]
+            user_id = update_data.get("user_id")
+            
+            if user_id:
+                # Store/update subscription record
+                subscription_record = {
+                    **update_data,
+                    "updated_at": datetime.utcnow().isoformat(),
+                    "last_webhook_event": result["event_type"],
+                    "last_webhook_event_id": result["event_id"]
+                }
+                
+                await db.user_subscriptions.update_one(
+                    {"user_id": user_id},
+                    {"$set": subscription_record},
+                    upsert=True
+                )
+                
+                logger.info(f"Updated subscription for user {user_id}: {result['event_type']}")
+        
+        return {"status": "success", "event_type": result["event_type"]}
+        
+    except ValueError as e:
+        logger.error(f"Webhook validation error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Webhook processing error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/stripe/subscription-status/{user_id}")
+async def get_user_subscription_status(user_id: str):
+    """
+    Get subscription status for a user.
+    
+    Returns subscription details from the database.
+    """
+    try:
+        # Get from database
+        subscription = await db.user_subscriptions.find_one({"user_id": user_id})
+        
+        if not subscription:
+            return {
+                "has_subscription": False,
+                "subscription_status": None,
+                "current_period_end": None
+            }
+        
+        # Remove MongoDB _id field
+        subscription.pop("_id", None)
+        
+        return {
+            "has_subscription": True,
+            **subscription
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching subscription status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/stripe/prices")
+async def get_stripe_prices():
+    """
+    Get available subscription prices.
+    
+    Returns the configured price lookup keys and their details.
+    """
+    return {
+        "prices": PRICE_LOOKUP_KEYS
+    }
+
+
+# ============================================
 # WORKOUT PLAN GENERATION
 # ============================================
 
