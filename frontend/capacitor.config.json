@@ -1,7 +1,7 @@
 {
   "appId": "com.bisafit.app",
   "appName": "BisaFit",
-  "webDir": "dist",
+  "webDir": "build",
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 2000,
