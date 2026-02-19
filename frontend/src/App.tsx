@@ -172,6 +172,11 @@ const App = () => (
                 <ManageSubscription />
               </ProtectedRoute>
             } />
+            <Route path="/billing" element={
+              <ProtectedRoute>
+                <BillingPage />
+              </ProtectedRoute>
+            } />
             {/* Admin Analytics Dashboard */}
             <Route path="/admin/analytics" element={
               <ProtectedRoute>
