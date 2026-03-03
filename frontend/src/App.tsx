@@ -32,6 +32,8 @@ import AdminAnalytics from "./pages/AdminAnalytics";
 import NotFound from "./pages/NotFound";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
+import FitbitCallback from "./pages/FitbitCallback";
+import StravaCallback from "./pages/StravaCallback";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
