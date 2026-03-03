@@ -185,7 +185,7 @@ export default function BillingPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-3xl font-bold">
-                    $9.99<span className="text-sm font-normal text-muted-foreground">/mo</span>
+                    $14.99<span className="text-sm font-normal text-muted-foreground">/mo</span>
                   </div>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-center gap-2">
@@ -221,17 +221,17 @@ export default function BillingPage() {
               {/* Annual Plan */}
               <Card className="relative border-primary">
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-primary">Save 40%</Badge>
+                  <Badge className="bg-primary">3 Months Free</Badge>
                 </div>
                 <CardHeader>
                   <CardTitle>Annual</CardTitle>
-                  <CardDescription>Best value for committed users</CardDescription>
+                  <CardDescription>Best value — pay for 9, get 12!</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-3xl font-bold">
-                    $5.99<span className="text-sm font-normal text-muted-foreground">/mo</span>
+                    $11.24<span className="text-sm font-normal text-muted-foreground">/mo</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">Billed annually at $71.88</p>
+                  <p className="text-sm text-muted-foreground">Billed annually at $134.91</p>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-primary" />
@@ -247,7 +247,7 @@ export default function BillingPage() {
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-primary" />
-                      40% savings
+                      3 months FREE
                     </li>
                   </ul>
                   <Button 
