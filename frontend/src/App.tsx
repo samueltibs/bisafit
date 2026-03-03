@@ -11,6 +11,7 @@ import { AppLanguageProvider } from "@/components/AppLanguageProvider";
 import { LegalGate } from "@/components/legal";
 
 import Index from "./pages/Index";
+import LandingPage from "./pages/LandingPage";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import EmailVerification from "./pages/EmailVerification";
