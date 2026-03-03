@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import uuid
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from workout_image_service import generate_workout_image, generate_workout_images_batch
 from exercise_image_cache import get_or_generate_exercise_image, batch_get_or_generate_images, get_cached_image, migrate_base64_to_storage, ensure_storage_bucket_exists
 from email_service import send_feedback_notification, send_weekly_analytics_report, send_store_interest_confirmation, send_store_interest_admin_notification, send_welcome_email
@@ -23,6 +23,12 @@ from stripe_service import (
     handle_webhook_event,
     get_subscription_status,
     PRICE_LOOKUP_KEYS
+)
+from fitness_oauth_service import (
+    FitbitService,
+    StravaService,
+    normalize_fitbit_activity,
+    normalize_strava_activity
 )
 
 
