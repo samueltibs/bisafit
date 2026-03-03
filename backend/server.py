@@ -650,6 +650,329 @@ async def get_stripe_prices():
 
 
 # ============================================
+# FITNESS PLATFORM OAUTH ENDPOINTS
+# ============================================
+
+class FitbitCallbackRequest(BaseModel):
+    """Request body for Fitbit OAuth callback"""
+    code: str
+    state: str
+    code_verifier: str
+    user_id: str
+
+
+class StravaCallbackRequest(BaseModel):
+    """Request body for Strava OAuth callback"""
+    code: str
+    state: str
+    user_id: str
+
+
+class FitbitAuthUrlRequest(BaseModel):
+    """Request for generating Fitbit auth URL"""
+    state: str
+    code_challenge: str
+
+
+class StravaAuthUrlRequest(BaseModel):
+    """Request for generating Strava auth URL"""
+    state: str
+
+
+@api_router.post("/fitness/fitbit/auth-url")
+async def get_fitbit_auth_url(request: FitbitAuthUrlRequest):
+    """Generate Fitbit OAuth authorization URL"""
+    try:
+        url = FitbitService.get_authorization_url(request.state, request.code_challenge)
+        return {"url": url}
+    except Exception as e:
+        logger.error(f"Error generating Fitbit auth URL: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/fitness/strava/auth-url")
+async def get_strava_auth_url(request: StravaAuthUrlRequest):
+    """Generate Strava OAuth authorization URL"""
+    try:
+        url = StravaService.get_authorization_url(request.state)
+        return {"url": url}
+    except Exception as e:
+        logger.error(f"Error generating Strava auth URL: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/fitness/fitbit/callback")
+async def fitbit_oauth_callback(request: FitbitCallbackRequest):
+    """Handle Fitbit OAuth callback and store tokens"""
+    try:
+        # Exchange code for tokens
+        tokens = await FitbitService.exchange_code(request.code, request.code_verifier)
+        
+        # Calculate expiration time
+        expires_in = tokens.get("expires_in", 3600)
+        expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
+        
+        # Store tokens in MongoDB
+        token_record = {
+            "user_id": request.user_id,
+            "platform": "fitbit",
+            "access_token": tokens["access_token"],
+            "refresh_token": tokens.get("refresh_token"),
+            "token_type": tokens.get("token_type", "Bearer"),
+            "expires_at": expires_at.isoformat(),
+            "scopes": tokens.get("scope", "").split(),
+            "created_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        
+        await db.fitness_tokens.update_one(
+            {"user_id": request.user_id, "platform": "fitbit"},
+            {"$set": token_record},
+            upsert=True
+        )
+        
+        # Get user profile
+        profile = await FitbitService.get_profile(tokens["access_token"])
+        
+        logger.info(f"Fitbit connected for user {request.user_id}")
+        
+        return {
+            "success": True,
+            "platform": "fitbit",
+            "profile": profile.get("user", {}).get("displayName", "Fitbit User")
+        }
+        
+    except Exception as e:
+        logger.error(f"Fitbit OAuth callback error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.post("/fitness/strava/callback")
+async def strava_oauth_callback(request: StravaCallbackRequest):
+    """Handle Strava OAuth callback and store tokens"""
+    try:
+        # Exchange code for tokens
+        tokens = await StravaService.exchange_code(request.code)
+        
+        # Calculate expiration time
+        expires_in = tokens.get("expires_in", 21600)
+        expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
+        
+        # Extract athlete info
+        athlete = tokens.get("athlete", {})
+        
+        # Store tokens in MongoDB
+        token_record = {
+            "user_id": request.user_id,
+            "platform": "strava",
+            "access_token": tokens["access_token"],
+            "refresh_token": tokens.get("refresh_token"),
+            "token_type": tokens.get("token_type", "Bearer"),
+            "expires_at": expires_at.isoformat(),
+            "athlete_id": athlete.get("id"),
+            "created_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        
+        await db.fitness_tokens.update_one(
+            {"user_id": request.user_id, "platform": "strava"},
+            {"$set": token_record},
+            upsert=True
+        )
+        
+        logger.info(f"Strava connected for user {request.user_id}")
+        
+        return {
+            "success": True,
+            "platform": "strava",
+            "athlete_id": athlete.get("id"),
+            "profile": f"{athlete.get('firstname', '')} {athlete.get('lastname', '')}".strip() or "Strava User"
+        }
+        
+    except Exception as e:
+        logger.error(f"Strava OAuth callback error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.post("/fitness/fitbit/refresh")
+async def refresh_fitbit_token(user_id: str):
+    """Refresh Fitbit access token"""
+    try:
+        # Get stored refresh token
+        token_doc = await db.fitness_tokens.find_one({"user_id": user_id, "platform": "fitbit"})
+        
+        if not token_doc or not token_doc.get("refresh_token"):
+            raise HTTPException(status_code=401, detail="No Fitbit refresh token found")
+        
+        # Refresh tokens
+        tokens = await FitbitService.refresh_token(token_doc["refresh_token"])
+        
+        # Update stored tokens
+        expires_in = tokens.get("expires_in", 3600)
+        expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
+        
+        await db.fitness_tokens.update_one(
+            {"user_id": user_id, "platform": "fitbit"},
+            {"$set": {
+                "access_token": tokens["access_token"],
+                "refresh_token": tokens.get("refresh_token", token_doc["refresh_token"]),
+                "expires_at": expires_at.isoformat(),
+                "updated_at": datetime.utcnow().isoformat()
+            }}
+        )
+        
+        return {"access_token": tokens["access_token"], "expires_in": expires_in}
+        
+    except Exception as e:
+        logger.error(f"Fitbit token refresh error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.post("/fitness/strava/refresh")
+async def refresh_strava_token(user_id: str):
+    """Refresh Strava access token"""
+    try:
+        # Get stored refresh token
+        token_doc = await db.fitness_tokens.find_one({"user_id": user_id, "platform": "strava"})
+        
+        if not token_doc or not token_doc.get("refresh_token"):
+            raise HTTPException(status_code=401, detail="No Strava refresh token found")
+        
+        # Refresh tokens
+        tokens = await StravaService.refresh_token(token_doc["refresh_token"])
+        
+        # Update stored tokens
+        expires_in = tokens.get("expires_in", 21600)
+        expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
+        
+        await db.fitness_tokens.update_one(
+            {"user_id": user_id, "platform": "strava"},
+            {"$set": {
+                "access_token": tokens["access_token"],
+                "refresh_token": tokens.get("refresh_token", token_doc["refresh_token"]),
+                "expires_at": expires_at.isoformat(),
+                "updated_at": datetime.utcnow().isoformat()
+            }}
+        )
+        
+        return {"access_token": tokens["access_token"], "expires_in": expires_in}
+        
+    except Exception as e:
+        logger.error(f"Strava token refresh error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.get("/fitness/fitbit/activities/{user_id}")
+async def get_fitbit_activities(user_id: str, date: str = "today"):
+    """Get Fitbit activities for a user"""
+    try:
+        token_doc = await db.fitness_tokens.find_one({"user_id": user_id, "platform": "fitbit"})
+        
+        if not token_doc:
+            raise HTTPException(status_code=401, detail="Fitbit not connected")
+        
+        # Check if token is expired
+        expires_at = datetime.fromisoformat(token_doc["expires_at"])
+        if datetime.utcnow() >= expires_at - timedelta(minutes=5):
+            # Refresh token
+            refresh_result = await refresh_fitbit_token(user_id)
+            access_token = refresh_result["access_token"]
+        else:
+            access_token = token_doc["access_token"]
+        
+        # Get activities
+        activities = await FitbitService.get_daily_activity(access_token, date)
+        
+        return activities
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting Fitbit activities: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/fitness/strava/activities/{user_id}")
+async def get_strava_activities(user_id: str, page: int = 1, per_page: int = 30):
+    """Get Strava activities for a user"""
+    try:
+        token_doc = await db.fitness_tokens.find_one({"user_id": user_id, "platform": "strava"})
+        
+        if not token_doc:
+            raise HTTPException(status_code=401, detail="Strava not connected")
+        
+        # Check if token is expired
+        expires_at = datetime.fromisoformat(token_doc["expires_at"])
+        if datetime.utcnow() >= expires_at - timedelta(minutes=5):
+            # Refresh token
+            refresh_result = await refresh_strava_token(user_id)
+            access_token = refresh_result["access_token"]
+        else:
+            access_token = token_doc["access_token"]
+        
+        # Get activities
+        activities = await StravaService.get_activities(access_token, page, per_page)
+        
+        # Normalize activities
+        normalized = [normalize_strava_activity(a) for a in activities]
+        
+        return {"activities": normalized}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting Strava activities: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/fitness/connections/{user_id}")
+async def get_fitness_connections(user_id: str):
+    """Get connected fitness platforms for a user"""
+    try:
+        fitbit = await db.fitness_tokens.find_one({"user_id": user_id, "platform": "fitbit"})
+        strava = await db.fitness_tokens.find_one({"user_id": user_id, "platform": "strava"})
+        
+        return {
+            "fitbit": {
+                "connected": fitbit is not None,
+                "expires_at": fitbit.get("expires_at") if fitbit else None
+            },
+            "strava": {
+                "connected": strava is not None,
+                "athlete_id": strava.get("athlete_id") if strava else None,
+                "expires_at": strava.get("expires_at") if strava else None
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting fitness connections: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.delete("/fitness/disconnect/{user_id}/{platform}")
+async def disconnect_fitness_platform(user_id: str, platform: str):
+    """Disconnect a fitness platform"""
+    try:
+        if platform not in ["fitbit", "strava"]:
+            raise HTTPException(status_code=400, detail="Invalid platform")
+        
+        result = await db.fitness_tokens.delete_one({"user_id": user_id, "platform": platform})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Connection not found")
+        
+        logger.info(f"Disconnected {platform} for user {user_id}")
+        
+        return {"success": True, "platform": platform}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error disconnecting {platform}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
 # WORKOUT PLAN GENERATION
 # ============================================
 
