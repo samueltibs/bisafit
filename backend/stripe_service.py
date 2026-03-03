@@ -23,13 +23,15 @@ STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 PRICE_LOOKUP_KEYS = {
     "bisafit_monthly": {
         "name": "BisaFit Monthly",
+        "price": "$14.99/month",
         "interval": "month",
         "description": "Monthly subscription to BisaFit Premium"
     },
     "bisafit_annual": {
         "name": "BisaFit Annual", 
+        "price": "$134.91/year",
         "interval": "year",
-        "description": "Annual subscription to BisaFit Premium (save 40%)"
+        "description": "Annual subscription to BisaFit Premium (3 months FREE!)"
     }
 }
 
