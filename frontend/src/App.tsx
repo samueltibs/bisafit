@@ -88,6 +88,10 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
             
+            {/* OAuth Callback Routes - Handle fitness platform OAuth callbacks */}
+            <Route path="/auth/fitbit/callback" element={<FitbitCallback />} />
+            <Route path="/auth/strava/callback" element={<StravaCallback />} />
+            
             {/* Email Verification - requires auth but not email verification */}
             <Route path="/verify-email" element={
               <ProtectedRoute requireVerifiedEmail={false}>
