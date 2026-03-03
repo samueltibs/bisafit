@@ -81,9 +81,12 @@ const App = () => (
               <Sonner />
               <BrowserRouter>
                 <Routes>
-                  <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
+                  {/* Landing Page - Public marketing page */}
+                  <Route path="/" element={<LandingPage />} />
+                  
+                  {/* Auth Routes */}
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
             
             {/* Public Legal Routes - No authentication required */}
             <Route path="/terms" element={<Terms />} />
