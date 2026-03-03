@@ -28,3 +28,4 @@ resend>=2.0.0
 openai
 supabase
 stripe
+httpx
