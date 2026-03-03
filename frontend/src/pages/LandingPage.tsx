@@ -174,11 +174,33 @@ const TESTIMONIALS = [
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  // Redirect logged-in users to the app
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/home', { replace: true });
+    }
+  }, [user, loading, navigate]);
 
   const handleGetStarted = () => {
     navigate('/auth');
   };
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // If user is logged in, they'll be redirected - show nothing
+  if (user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background">
