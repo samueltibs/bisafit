@@ -3,8 +3,9 @@
  * Marketing landing page with overview, features, pricing, and CTAs
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   Dumbbell, 
   Utensils, 
@@ -24,7 +25,8 @@ import {
   Shield,
   Clock,
   Users,
-  Award
+  Award,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
