@@ -22,8 +22,9 @@ import type { SubscriptionStatus, SubscriptionPlan, SubscriptionState } from '@/
 // BETA MODE TOGGLE
 // Set to true during beta testing - all users get free access
 // Set to false for soft launch - normal subscription rules apply
+// Note: Admin emails in adminConfig.ts always get free premium access
 // ============================================
-export const BETA_MODE_ENABLED = true;
+export const BETA_MODE_ENABLED = false;
 
 export function useSubscription() {
   const { user } = useAuth();
