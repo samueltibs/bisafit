@@ -20,8 +20,8 @@ BisaFit is a full-stack AI-powered fitness application built with React/Vite (fr
 - Legal document acceptance gating
 
 ### 2. Legal Documents System
-- Public Terms of Service (/terms)
-- Public Privacy Policy (/privacy)
+- Public Terms of Service (/terms) - **Updated to v1.1 with Bisa Group LLC info**
+- Public Privacy Policy (/privacy) - **Updated to v1.1 with Bisa Group LLC info**
 - Versioned document management in Supabase
 - User acceptance tracking
 
@@ -47,7 +47,7 @@ BisaFit is a full-stack AI-powered fitness application built with React/Vite (fr
 - Features, Pricing, Testimonials, FAQ sections
 - Updated footer with Bisa Group LLC branding
 
-### 7. Contact Page (NEW)
+### 7. Contact Page (NEW - March 9, 2026)
 - Created /contact page with full company information
 - Contact methods for support, business, partnerships, billing
 
@@ -86,6 +86,19 @@ BisaFit is a full-stack AI-powered fitness application built with React/Vite (fr
 - Data synchronization for Fitbit/Strava post-authentication
 - Enable App Store/Google Play download buttons after publishing
 - iOS build guide creation
+
+## Changelog
+
+### March 9, 2026
+- Updated all company contact information to Bisa Group LLC
+- Created Contact Page (/contact)
+- Updated branding.ts with all company details
+- Updated email_service.py with new sender (bisafit@bisagroup.org) and reply-to
+- Added 6 new transactional email templates
+- Updated Terms of Service in Supabase to v1.1
+- Updated Privacy Policy in Supabase to v1.1
+- Updated Landing Page footer
+- Updated Legal Document Page footer
 
 ---
 Last Updated: March 9, 2026
