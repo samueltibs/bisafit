@@ -33,6 +33,7 @@ import AdminAnalytics from "./pages/AdminAnalytics";
 import NotFound from "./pages/NotFound";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
+import ContactPage from "./pages/ContactPage";
 import FitbitCallback from "./pages/FitbitCallback";
 import StravaCallback from "./pages/StravaCallback";
 import { useEffect } from "react";
@@ -91,6 +92,7 @@ const App = () => (
             {/* Public Legal Routes - No authentication required */}
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/contact" element={<ContactPage />} />
             
             {/* OAuth Callback Routes - Handle fitness platform OAuth callbacks */}
             <Route path="/auth/fitbit/callback" element={<FitbitCallback />} />

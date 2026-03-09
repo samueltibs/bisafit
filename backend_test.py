@@ -11,7 +11,7 @@ from datetime import datetime
 import uuid
 
 # Get backend URL from frontend .env
-BACKEND_URL = "https://bisafit-legal.preview.emergentagent.com"
+BACKEND_URL = "https://bisafit-rebrand.preview.emergentagent.com"
 API_BASE = f"{BACKEND_URL}/api"
 
 def test_api_health_check():
@@ -43,7 +43,7 @@ def test_cors_headers():
     print("\n=== Testing CORS Configuration ===")
     try:
         # Test with Origin header (simulates cross-origin request)
-        headers = {'Origin': 'https://bisafit-legal.preview.emergentagent.com'}
+        headers = {'Origin': 'https://bisafit-rebrand.preview.emergentagent.com'}
         response = requests.get(f"{API_BASE}/", headers=headers)
         cors_headers = {
             'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),

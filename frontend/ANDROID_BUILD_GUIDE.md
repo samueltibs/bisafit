@@ -189,7 +189,7 @@ For initial testing:
 - [ ] At least 2 phone screenshots
 - [ ] Short description (80 chars)
 - [ ] Full description (4000 chars)
-- [ ] Privacy policy URL: https://bisafit-legal.preview.emergentagent.com/privacy
+- [ ] Privacy policy URL: https://bisafit-rebrand.preview.emergentagent.com/privacy
 - [ ] Content rating questionnaire completed
 
 ### Recommended:

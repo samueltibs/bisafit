@@ -10,7 +10,7 @@ import { ArrowLeft, Printer, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import type { LegalDocument } from '@/types/legal';
-import { APP_NAME } from '@/lib/branding';
+import { APP_NAME, COMPANY_NAME, COMPANY_ADDRESS, EMAIL_SUPPORT, COMPANY_PHONE } from '@/lib/branding';
 import ReactMarkdown from 'react-markdown';
 
 interface LegalDocumentPageProps {
@@ -173,8 +173,13 @@ export function LegalDocumentPage({
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-muted-foreground print:hidden">
-          <p>© {new Date().getFullYear()} Bisa Group, LLC. All rights reserved.</p>
-          <p className="mt-1">Operated from Delaware, USA</p>
+          <p>© {new Date().getFullYear()} {COMPANY_NAME}. All rights reserved.</p>
+          <p className="mt-1">
+            {COMPANY_ADDRESS.street}, {COMPANY_ADDRESS.suite}, {COMPANY_ADDRESS.city}, {COMPANY_ADDRESS.state} {COMPANY_ADDRESS.zip}
+          </p>
+          <p className="mt-1">
+            Support: {EMAIL_SUPPORT} • {COMPANY_PHONE}
+          </p>
         </div>
       </div>
     </div>

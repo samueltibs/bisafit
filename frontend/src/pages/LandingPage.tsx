@@ -657,8 +657,11 @@ export default function LandingPage() {
                 </div>
                 <span className="text-2xl font-bold text-white">BisaFit</span>
               </div>
-              <p className="text-white/60 mb-6 max-w-md">
+              <p className="text-white/60 mb-4 max-w-md">
                 Your personal AI fitness coach. Transform your body and mind with personalized workouts, smart nutrition, and real-time progress tracking.
+              </p>
+              <p className="text-white/50 text-sm mb-6">
+                A product of Bisa Group LLC
               </p>
               <div className="flex gap-3">
                 <Button variant="outline" size="sm" className="border-white/20 text-white/70 hover:text-white hover:bg-white/10" disabled>
@@ -688,21 +691,23 @@ export default function LandingPage() {
               <ul className="space-y-3">
                 <li><Link to="/terms" className="text-white/60 hover:text-white transition-colors">Terms of Service</Link></li>
                 <li><Link to="/privacy" className="text-white/60 hover:text-white transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/contact" className="text-white/60 hover:text-white transition-colors">Contact Us</Link></li>
               </ul>
 
-              <h4 className="font-semibold text-white mb-4 mt-8">Contact</h4>
+              <h4 className="font-semibold text-white mb-4 mt-8">Support</h4>
               <ul className="space-y-3">
-                <li><a href="mailto:support@bisafit.com" className="text-white/60 hover:text-white transition-colors">support@bisafit.com</a></li>
+                <li><a href="mailto:support@bisagroup.org" className="text-white/60 hover:text-white transition-colors">support@bisagroup.org</a></li>
+                <li><span className="text-white/60">+1 (918) 248-6269</span></li>
               </ul>
             </div>
           </div>
 
           <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-white/50">
-              © 2026 Bisa Group, LLC. All rights reserved.
+              © 2026 Bisa Group LLC. All rights reserved.
             </p>
             <p className="text-sm text-white/50">
-              Made with 💜 for fitness enthusiasts everywhere
+              Support: support@bisagroup.org • +1 (918) 248-6269
             </p>
           </div>
         </div>
