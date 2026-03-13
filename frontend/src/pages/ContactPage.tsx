@@ -72,7 +72,7 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="public-page min-h-screen bg-slate-950 text-white">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-slate-950/95 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
