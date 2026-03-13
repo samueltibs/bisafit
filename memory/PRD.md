@@ -99,6 +99,7 @@ BisaFit is a full-stack AI-powered fitness application built with React/Vite (fr
 - Updated Privacy Policy in Supabase to v1.1
 - Updated Landing Page footer
 - Updated Legal Document Page footer
+- **DEPLOYMENT FIX:** Replaced all hardcoded URLs in email_service.py with APP_BASE_URL environment variable
 
 ---
 Last Updated: March 9, 2026
