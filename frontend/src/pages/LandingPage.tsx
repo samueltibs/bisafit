@@ -215,7 +215,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white overflow-hidden">
+    <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden">
       {/* Animated Background Blobs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-violet-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
