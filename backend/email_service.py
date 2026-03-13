@@ -23,6 +23,9 @@ ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'samuel.m.tibs@gmail.com')
 SENDER_EMAIL = "BisaFit <bisafit@bisagroup.org>"
 REPLY_TO_EMAIL = "support@bisagroup.org"
 
+# App Base URL - for email links
+APP_BASE_URL = os.environ.get('APP_BASE_URL', 'https://bisafit.com')
+
 # Company Information
 COMPANY_NAME = "Bisa Group LLC"
 COMPANY_ADDRESS = """Bisa Group LLC
@@ -153,7 +156,7 @@ async def send_feedback_notification(feedback_data: Dict[str, Any]) -> Dict[str,
                 
                 {"<div class='section'><div class='section-title'>Additional Comments</div><p>" + feedback_data.get('additionalComments', '') + "</p></div>" if feedback_data.get('additionalComments') else ""}
                 
-                {"<div class='section'><div class='section-title'>Attachments</div><p>" + str(len(feedback_data.get('bugAttachments', []))) + " file(s) attached - <a href='https://bisafit-rebrand.preview.emergentagent.com/admin/analytics'>View in Dashboard</a></p></div>" if feedback_data.get('bugAttachments') else ""}
+                {"<div class='section'><div class='section-title'>Attachments</div><p>" + str(len(feedback_data.get('bugAttachments', []))) + f" file(s) attached - <a href='{APP_BASE_URL}/admin/analytics'>View in Dashboard</a></p></div>" if feedback_data.get('bugAttachments') else ""}
                 
                 <div class="section" style="font-size: 12px; color: #666;">
                     <div class="section-title">Device Info</div>
@@ -162,7 +165,7 @@ async def send_feedback_notification(feedback_data: Dict[str, Any]) -> Dict[str,
                 </div>
                 
                 <p style="text-align: center; margin-top: 20px;">
-                    <a href="https://bisafit-rebrand.preview.emergentagent.com/admin/analytics" 
+                    <a href="{APP_BASE_URL}/admin/analytics" 
                        style="display: inline-block; padding: 12px 24px; background: #121212; color: white; text-decoration: none; border-radius: 8px;">
                         View Full Analytics Dashboard
                     </a>
@@ -276,7 +279,7 @@ async def send_weekly_analytics_report(analytics_data: Dict[str, Any]) -> Dict[s
                 </div>
                 
                 <p style="text-align: center; margin-top: 30px;">
-                    <a href="https://bisafit-rebrand.preview.emergentagent.com/admin/analytics" 
+                    <a href="{APP_BASE_URL}/admin/analytics" 
                        style="display: inline-block; padding: 14px 28px; background: #121212; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
                         View Full Dashboard →
                     </a>
@@ -495,7 +498,7 @@ async def send_welcome_email(
                     </p>
                     
                     <div style="text-align: center;">
-                        <a href="https://bisafit-rebrand.preview.emergentagent.com/home" class="cta-button">
+                        <a href="{APP_BASE_URL}/home" class="cta-button">
                             Start Your Journey →
                         </a>
                     </div>
@@ -533,7 +536,7 @@ async def send_legal_document_update_notification(
     doc_type: str,
     doc_title: str,
     doc_version: str,
-    app_url: str = "https://bisafit.com"
+    app_url: str = None
 ) -> Dict[str, Any]:
     """
     Send notification when legal documents are updated.
@@ -543,8 +546,10 @@ async def send_legal_document_update_notification(
         doc_type: 'terms' or 'privacy'
         doc_title: Title of the document (e.g., "Terms of Service")
         doc_version: Version number (e.g., "1.1")
-        app_url: Base URL of the app
+        app_url: Base URL of the app (defaults to APP_BASE_URL env var)
     """
+    if app_url is None:
+        app_url = APP_BASE_URL
     
     doc_url = f"{app_url}/{doc_type}"
     icon = "📋" if doc_type == "terms" else "🔒"
@@ -987,7 +992,7 @@ async def send_trial_expiration_reminder(
                 </ul>
                 
                 <div style="text-align: center; margin: 30px 0;">
-                    <a href="https://bisafit.com/billing" class="cta-button">Subscribe Now</a>
+                    <a href="{APP_BASE_URL}/billing" class="cta-button">Subscribe Now</a>
                 </div>
                 
                 <p style="color: #666; font-size: 14px;">Questions? We're here to help at <a href="mailto:{SUPPORT_EMAIL}">{SUPPORT_EMAIL}</a></p>
@@ -1045,7 +1050,7 @@ async def send_billing_failure_notice(
                 <p>To avoid interruption to your subscription, please update your payment method:</p>
                 
                 <div style="text-align: center; margin: 30px 0;">
-                    <a href="https://bisafit.com/billing" class="cta-button">Update Payment Method</a>
+                    <a href="{APP_BASE_URL}/billing" class="cta-button">Update Payment Method</a>
                 </div>
                 
                 <p>If you've already updated your payment information, you can ignore this email.</p>
