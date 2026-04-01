@@ -89,6 +89,11 @@ BisaFit is a full-stack AI-powered fitness application built with React/Vite (fr
 
 ## Changelog
 
+### March 13, 2026 - Code Review Fixes
+- **Fixed deployment blocker:** Replaced 7 hardcoded URLs in email_service.py with APP_BASE_URL environment variable
+- **Fixed scroll issue:** Landing page now scrolls properly (removed overflow-hidden, added public-page class)
+- **Fixed React array keys:** Replaced array index keys with stable unique IDs in LandingPage.tsx (STATS, FEATURES, TESTIMONIALS, PRICING_PLANS, FAQS)
+
 ### March 9, 2026
 - Updated all company contact information to Bisa Group LLC
 - Created Contact Page (/contact)
@@ -102,4 +107,4 @@ BisaFit is a full-stack AI-powered fitness application built with React/Vite (fr
 - **DEPLOYMENT FIX:** Replaced all hardcoded URLs in email_service.py with APP_BASE_URL environment variable
 
 ---
-Last Updated: March 9, 2026
+Last Updated: March 13, 2026

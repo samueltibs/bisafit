@@ -48,6 +48,7 @@ const IMAGES = {
 // Feature data with gradient colors
 const FEATURES = [
   {
+    id: 'ai-workouts',
     icon: Sparkles,
     title: 'AI-Powered Workouts',
     description: 'Personalized plans that evolve with you, powered by cutting-edge AI technology.',
@@ -55,6 +56,7 @@ const FEATURES = [
     bgGradient: 'from-violet-500/20 to-purple-600/20',
   },
   {
+    id: 'smart-nutrition',
     icon: Utensils,
     title: 'Smart Nutrition',
     description: 'Custom meal plans and macro tracking to fuel your transformation journey.',
@@ -62,6 +64,7 @@ const FEATURES = [
     bgGradient: 'from-emerald-500/20 to-teal-600/20',
   },
   {
+    id: 'progress-analytics',
     icon: TrendingUp,
     title: 'Progress Analytics',
     description: 'Beautiful charts and insights that keep you motivated every step of the way.',
@@ -69,6 +72,7 @@ const FEATURES = [
     bgGradient: 'from-blue-500/20 to-cyan-600/20',
   },
   {
+    id: 'smart-scheduling',
     icon: Calendar,
     title: 'Smart Scheduling',
     description: 'Flexible workout plans that adapt to your busy lifestyle automatically.',
@@ -76,6 +80,7 @@ const FEATURES = [
     bgGradient: 'from-orange-500/20 to-amber-600/20',
   },
   {
+    id: 'health-sync',
     icon: Heart,
     title: 'Health Sync',
     description: 'Connect Apple Health, Google Fit, Fitbit, and Strava seamlessly.',
@@ -83,6 +88,7 @@ const FEATURES = [
     bgGradient: 'from-rose-500/20 to-pink-600/20',
   },
   {
+    id: 'goal-tracking',
     icon: Trophy,
     title: 'Goal Tracking',
     description: 'Set ambitious goals and crush them with our intelligent milestone system.',
@@ -93,15 +99,16 @@ const FEATURES = [
 
 // Stats
 const STATS = [
-  { value: '10K+', label: 'Active Users', icon: Users },
-  { value: '500K+', label: 'Workouts Completed', icon: Flame },
-  { value: '98%', label: 'Satisfaction Rate', icon: Star },
-  { value: '24/7', label: 'AI Support', icon: Zap },
+  { id: 'users', value: '10K+', label: 'Active Users', icon: Users },
+  { id: 'workouts', value: '500K+', label: 'Workouts Completed', icon: Flame },
+  { id: 'satisfaction', value: '98%', label: 'Satisfaction Rate', icon: Star },
+  { id: 'support', value: '24/7', label: 'AI Support', icon: Zap },
 ];
 
 // Pricing plans
 const PRICING_PLANS = [
   {
+    id: 'monthly',
     name: 'Monthly',
     price: '$14.99',
     period: '/month',
@@ -119,6 +126,7 @@ const PRICING_PLANS = [
     buttonVariant: 'outline' as const,
   },
   {
+    id: 'annual',
     name: 'Annual',
     price: '$11.24',
     period: '/month',
@@ -141,6 +149,7 @@ const PRICING_PLANS = [
 // Testimonials
 const TESTIMONIALS = [
   {
+    id: 'sarah',
     name: 'Sarah Mitchell',
     role: 'Lost 30 lbs in 4 months',
     content: 'BisaFit transformed my relationship with fitness. The AI workouts are incredibly smart and the progress tracking keeps me motivated!',
@@ -148,6 +157,7 @@ const TESTIMONIALS = [
     avatar: '👩‍💼',
   },
   {
+    id: 'james',
     name: 'James Rodriguez',
     role: 'Gained 15 lbs of muscle',
     content: 'Finally an app that understands my goals. The personalized plans are exactly what I needed to break through my plateau.',
@@ -155,6 +165,7 @@ const TESTIMONIALS = [
     avatar: '👨‍💻',
   },
   {
+    id: 'emily',
     name: 'Emily Chen',
     role: 'Marathon finisher',
     content: 'The Strava integration is seamless. BisaFit helped me balance strength training with my running schedule perfectly.',
@@ -166,22 +177,27 @@ const TESTIMONIALS = [
 // FAQ data
 const FAQS = [
   {
+    id: 'ai-workout',
     question: 'How does the AI workout generation work?',
     answer: 'Our AI analyzes your fitness goals, current level, available equipment, and schedule to create perfectly tailored workout plans. It learns from your feedback and progress to continuously optimize your training.',
   },
   {
+    id: 'no-equipment',
     question: 'Can I use BisaFit without any equipment?',
     answer: 'Absolutely! BisaFit generates effective bodyweight workouts that require zero equipment. Just tell us during onboarding and we\'ll create a plan that works for you.',
   },
   {
+    id: 'trackers',
     question: 'Which fitness trackers can I connect?',
     answer: 'BisaFit integrates with Apple Health, Google Fit, Fitbit, and Strava. Sync your data seamlessly and see all your fitness metrics in one beautiful dashboard.',
   },
   {
+    id: 'cancel',
     question: 'Can I cancel my subscription anytime?',
     answer: 'Yes! Cancel anytime with no questions asked. You\'ll keep access until the end of your billing period.',
   },
   {
+    id: 'beginners',
     question: 'Is BisaFit suitable for beginners?',
     answer: 'Definitely! Our AI creates appropriate workouts for all fitness levels, from complete beginners to advanced athletes. The app grows with you.',
   },
@@ -190,7 +206,7 @@ const FAQS = [
 export default function LandingPage() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [openFaq, setOpenFaq] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && user) {
@@ -305,8 +321,8 @@ export default function LandingPage() {
 
               {/* Quick Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                {STATS.map((stat, index) => (
-                  <div key={index} className="text-center lg:text-left">
+                {STATS.map((stat) => (
+                  <div key={stat.id} className="text-center lg:text-left">
                     <div className="flex items-center justify-center lg:justify-start gap-2 mb-1">
                       <stat.icon className="h-5 w-5 text-violet-400" />
                       <span className="text-2xl font-bold text-white">{stat.value}</span>
@@ -373,9 +389,9 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {FEATURES.map((feature, index) => (
+            {FEATURES.map((feature) => (
               <Card 
-                key={index} 
+                key={feature.id} 
                 className={cn(
                   "group bg-slate-900/50 border-white/10 hover:border-white/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl overflow-hidden",
                 )}
@@ -421,16 +437,16 @@ export default function LandingPage() {
               </p>
               <ul className="space-y-4">
                 {[
-                  'Workouts adapt to your progress in real-time',
-                  'Smart recovery recommendations',
-                  'Nutrition plans that complement your training',
-                  'Weekly progress reports with insights'
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3">
+                  { id: 'adapt', text: 'Workouts adapt to your progress in real-time' },
+                  { id: 'recovery', text: 'Smart recovery recommendations' },
+                  { id: 'nutrition', text: 'Nutrition plans that complement your training' },
+                  { id: 'reports', text: 'Weekly progress reports with insights' }
+                ].map((item) => (
+                  <li key={item.id} className="flex items-center gap-3">
                     <div className="h-6 w-6 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0">
                       <Check className="h-4 w-4 text-white" />
                     </div>
-                    <span className="text-white/80">{item}</span>
+                    <span className="text-white/80">{item.text}</span>
                   </li>
                 ))}
               </ul>
@@ -461,12 +477,12 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {TESTIMONIALS.map((testimonial, index) => (
-              <Card key={index} className="bg-slate-900/50 border-white/10 hover:border-white/20 transition-all">
+            {TESTIMONIALS.map((testimonial) => (
+              <Card key={testimonial.id} className="bg-slate-900/50 border-white/10 hover:border-white/20 transition-all">
                 <CardContent className="p-8">
                   <div className="flex gap-1 mb-4">
                     {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                      <Star key={`star-${testimonial.id}-${i}`} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
                     ))}
                   </div>
                   <p className="text-white/70 mb-6 italic text-lg">"{testimonial.content}"</p>
@@ -502,9 +518,9 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {PRICING_PLANS.map((plan, index) => (
+            {PRICING_PLANS.map((plan) => (
               <Card 
-                key={index} 
+                key={plan.id} 
                 className={cn(
                   "relative border-2 transition-all duration-300 overflow-hidden",
                   plan.popular 
@@ -541,7 +557,7 @@ export default function LandingPage() {
 
                   <ul className="space-y-4 mb-8">
                     {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-center gap-3">
+                      <li key={`${plan.id}-feature-${i}`} className="flex items-center gap-3">
                         <div className={cn(
                           "h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0",
                           plan.popular ? "bg-gradient-to-br from-violet-500 to-purple-600" : "bg-white/20"
@@ -589,20 +605,20 @@ export default function LandingPage() {
           </div>
 
           <div className="space-y-4">
-            {FAQS.map((faq, index) => (
-              <Card key={index} className="bg-slate-900/50 border-white/10 overflow-hidden">
+            {FAQS.map((faq) => (
+              <Card key={faq.id} className="bg-slate-900/50 border-white/10 overflow-hidden">
                 <button
                   className="w-full p-6 text-left flex justify-between items-center hover:bg-white/5 transition-colors"
-                  onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                  onClick={() => setOpenFaq(openFaq === faq.id ? null : faq.id)}
                 >
                   <span className="font-semibold text-white pr-4">{faq.question}</span>
-                  {openFaq === index ? (
+                  {openFaq === faq.id ? (
                     <ChevronUp className="h-5 w-5 flex-shrink-0 text-violet-400" />
                   ) : (
                     <ChevronDown className="h-5 w-5 flex-shrink-0 text-white/50" />
                   )}
                 </button>
-                {openFaq === index && (
+                {openFaq === faq.id && (
                   <div className="px-6 pb-6">
                     <p className="text-white/60">{faq.answer}</p>
                   </div>
