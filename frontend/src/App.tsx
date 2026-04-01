@@ -87,6 +87,7 @@ const App = () => (
                   
                   {/* Auth Routes */}
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/login" element={<Auth />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
             
             {/* Public Legal Routes - No authentication required */}
