@@ -116,20 +116,33 @@ async function generatePlanCore(): Promise<GeneratePlanResult> {
   }
 
   console.log('[PlanGeneration] Generating single week plan...');
+  console.log('[PlanGeneration] Profile workout_days:', (profile as any).workout_days);
+  console.log('[PlanGeneration] Full profile:', JSON.stringify(profile, null, 2));
+
+  // Ensure workout_days is properly formatted as an array
+  let workoutDays = (profile as any).workout_days;
+  if (!workoutDays || !Array.isArray(workoutDays) || workoutDays.length === 0) {
+    console.warn('[PlanGeneration] workout_days not set or invalid, using default');
+    workoutDays = ['Monday', 'Wednesday', 'Thursday', 'Friday'];
+  }
+
+  const requestBody = {
+    user_id: session.user.id,
+    goal_primary: profile.goal_primary || 'maintenance',
+    experience_level: profile.experience_level || 'intermediate',
+    workout_days: workoutDays,
+    equipment: profile.equipment_json || ['bodyweight'],
+    session_minutes: profile.session_minutes || 45,
+    week_number: 1,
+  };
+
+  console.log('[PlanGeneration] Request body:', JSON.stringify(requestBody, null, 2));
 
   // Call the single week endpoint
   const response = await fetch(`${BACKEND_URL}/api/generate-week`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      user_id: session.user.id,
-      goal_primary: profile.goal_primary || 'maintenance',
-      experience_level: profile.experience_level || 'intermediate',
-      workout_days: (profile as any).workout_days || ['Monday', 'Wednesday', 'Thursday', 'Friday'],
-      equipment: profile.equipment_json || ['bodyweight'],
-      session_minutes: profile.session_minutes || 45,
-      week_number: 1,
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   const data = await response.json();
