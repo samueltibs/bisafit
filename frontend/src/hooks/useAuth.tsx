@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/onboarding`,
+        emailRedirectTo: `${window.location.origin}/verify-email`,
         data: {
           email_confirm: true, // Request email confirmation
         },
