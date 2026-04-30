@@ -18,38 +18,7 @@ logger = logging.getLogger(__name__)
 # Initialize Resend
 resend.api_key = os.environ.get('RESEND_API_KEY')
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'samuel.m.tibs@gmail.com')
-
-# Email Configuration - Bisa Group LLC
-SENDER_EMAIL = "BisaFit <bisafit@bisagroup.org>"
-REPLY_TO_EMAIL = "support@bisagroup.org"
-
-# App Base URL - for email links
-APP_BASE_URL = os.environ.get('APP_BASE_URL', 'https://bisafit.com')
-
-# Company Information
-COMPANY_NAME = "Bisa Group LLC"
-COMPANY_ADDRESS = """Bisa Group LLC
-3171 S 129th E Ave
-Ste A #5254
-Tulsa, OK 74134
-United States"""
-COMPANY_PHONE = "+1 (918) 248-6269"
-SUPPORT_EMAIL = "support@bisagroup.org"
-
-# Standard Email Footer (Required on all transactional emails)
-EMAIL_FOOTER_HTML = f"""
-<div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e5e5; text-align: center; font-size: 12px; color: #666;">
-  <p style="margin: 0; font-weight: 600; color: #333;">BisaFit is a product of {COMPANY_NAME}</p>
-  <p style="margin: 12px 0 0 0;">{COMPANY_NAME}</p>
-  <p style="margin: 4px 0 0 0;">3171 S 129th E Ave</p>
-  <p style="margin: 4px 0 0 0;">Ste A #5254</p>
-  <p style="margin: 4px 0 0 0;">Tulsa, OK 74134</p>
-  <p style="margin: 4px 0 0 0;">United States</p>
-  <p style="margin: 12px 0 0 0;">Support: <a href="mailto:{SUPPORT_EMAIL}" style="color: #666;">{SUPPORT_EMAIL}</a></p>
-  <p style="margin: 4px 0 0 0;">Phone: {COMPANY_PHONE}</p>
-  <p style="margin: 16px 0 0 0; font-size: 11px; color: #999;">This email was sent regarding your BisaFit account.</p>
-</div>
-"""
+SENDER_EMAIL = "BisaFit <onboarding@resend.dev>"  # Use Resend's test domain
 
 async def send_email(
     to_email: str,
@@ -65,7 +34,6 @@ async def send_email(
     params = {
         "from": SENDER_EMAIL,
         "to": [to_email],
-        "reply_to": REPLY_TO_EMAIL,
         "subject": subject,
         "html": html_content
     }
@@ -156,7 +124,7 @@ async def send_feedback_notification(feedback_data: Dict[str, Any]) -> Dict[str,
                 
                 {"<div class='section'><div class='section-title'>Additional Comments</div><p>" + feedback_data.get('additionalComments', '') + "</p></div>" if feedback_data.get('additionalComments') else ""}
                 
-                {"<div class='section'><div class='section-title'>Attachments</div><p>" + str(len(feedback_data.get('bugAttachments', []))) + f" file(s) attached - <a href='{APP_BASE_URL}/admin/analytics'>View in Dashboard</a></p></div>" if feedback_data.get('bugAttachments') else ""}
+                {"<div class='section'><div class='section-title'>Attachments</div><p>" + str(len(feedback_data.get('bugAttachments', []))) + " file(s) attached - <a href='https://bisafit-enhance-1.preview.emergentagent.com/admin/analytics'>View in Dashboard</a></p></div>" if feedback_data.get('bugAttachments') else ""}
                 
                 <div class="section" style="font-size: 12px; color: #666;">
                     <div class="section-title">Device Info</div>
@@ -165,7 +133,7 @@ async def send_feedback_notification(feedback_data: Dict[str, Any]) -> Dict[str,
                 </div>
                 
                 <p style="text-align: center; margin-top: 20px;">
-                    <a href="{APP_BASE_URL}/admin/analytics" 
+                    <a href="https://bisafit-enhance-1.preview.emergentagent.com/admin/analytics" 
                        style="display: inline-block; padding: 12px 24px; background: #121212; color: white; text-decoration: none; border-radius: 8px;">
                         View Full Analytics Dashboard
                     </a>
@@ -279,7 +247,7 @@ async def send_weekly_analytics_report(analytics_data: Dict[str, Any]) -> Dict[s
                 </div>
                 
                 <p style="text-align: center; margin-top: 30px;">
-                    <a href="{APP_BASE_URL}/admin/analytics" 
+                    <a href="https://bisafit-enhance-1.preview.emergentagent.com/admin/analytics" 
                        style="display: inline-block; padding: 14px 28px; background: #121212; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
                         View Full Dashboard →
                     </a>
@@ -335,6 +303,7 @@ async def send_store_interest_confirmation(
             .header {{ background: linear-gradient(135deg, #121212, #2d2d2d); color: white; padding: 30px; border-radius: 12px 12px 0 0; text-align: center; }}
             .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 12px 12px; }}
             .highlight {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981; }}
+            .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
         </style>
     </head>
     <body>
@@ -362,7 +331,10 @@ async def send_store_interest_confirmation(
                 
                 <p>We'll email you the moment the store goes live. Until then, keep crushing those workouts! 💪</p>
                 
-                {EMAIL_FOOTER_HTML}
+                <div class="footer">
+                    <p>Questions? Reply to this email or reach out at support@bisafit.com</p>
+                    <p style="opacity: 0.6;">BisaFit • Your Fitness Journey Partner</p>
+                </div>
             </div>
         </div>
     </body>
@@ -414,129 +386,12 @@ async def send_store_interest_admin_notification(
     )
 
 
-async def send_welcome_email(
-    to_email: str,
-    first_name: str = ""
-) -> Dict[str, Any]:
-    """
-    Send a warm welcome email to new users after signup.
-    """
-    
-    greeting = f"Hi {first_name}!" if first_name else "Hey there!"
-    
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <style>
-            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; }}
-            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-            .card {{ background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }}
-            .header {{ background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: white; padding: 40px 30px; text-align: center; }}
-            .header h1 {{ margin: 0; font-size: 28px; font-weight: 700; }}
-            .header p {{ margin: 10px 0 0 0; opacity: 0.9; font-size: 16px; }}
-            .content {{ padding: 35px 30px; }}
-            .greeting {{ font-size: 22px; font-weight: 600; color: #1a1a1a; margin-bottom: 15px; }}
-            .highlight-box {{ background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 25px; border-radius: 12px; margin: 25px 0; }}
-            .feature {{ display: flex; align-items: flex-start; margin: 15px 0; }}
-            .feature-icon {{ font-size: 24px; margin-right: 15px; }}
-            .feature-text {{ flex: 1; }}
-            .feature-title {{ font-weight: 600; color: #1a1a1a; margin: 0 0 4px 0; }}
-            .feature-desc {{ color: #666; margin: 0; font-size: 14px; }}
-            .cta-button {{ display: inline-block; padding: 16px 32px; background: #1a1a1a; color: white !important; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 16px; margin: 20px 0; }}
-            .cta-button:hover {{ background: #333; }}
-            .footer {{ text-align: center; padding: 25px 30px; background: #fafafa; border-top: 1px solid #eee; }}
-            .footer p {{ margin: 5px 0; color: #888; font-size: 13px; }}
-            .social-text {{ color: #666; font-size: 14px; margin-bottom: 10px; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="card">
-                <div class="header">
-                    <h1>🏋️ Welcome to BisaFit!</h1>
-                    <p>Your fitness journey starts now</p>
-                </div>
-                
-                <div class="content">
-                    <p class="greeting">{greeting}</p>
-                    
-                    <p style="font-size: 16px; color: #444;">
-                        We're so excited to have you join the BisaFit family! 🎉 You've just taken the first step toward a healthier, stronger you — and we're here to support you every step of the way.
-                    </p>
-                    
-                    <div class="highlight-box">
-                        <p style="margin: 0 0 15px 0; font-weight: 600; color: #1a1a1a;">Here's what's waiting for you:</p>
-                        
-                        <div class="feature">
-                            <span class="feature-icon">🤖</span>
-                            <div class="feature-text">
-                                <p class="feature-title">AI-Powered Workouts</p>
-                                <p class="feature-desc">Personalized plans that adapt to your goals, schedule, and fitness level</p>
-                            </div>
-                        </div>
-                        
-                        <div class="feature">
-                            <span class="feature-icon">🥗</span>
-                            <div class="feature-text">
-                                <p class="feature-title">Smart Nutrition Guidance</p>
-                                <p class="feature-desc">Meal suggestions and macro tracking to fuel your progress</p>
-                            </div>
-                        </div>
-                        
-                        <div class="feature">
-                            <span class="feature-icon">📊</span>
-                            <div class="feature-text">
-                                <p class="feature-title">Progress Tracking</p>
-                                <p class="feature-desc">Watch your transformation with detailed stats and insights</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <p style="font-size: 16px; color: #444;">
-                        Ready to get started? Let's build your personalized fitness plan!
-                    </p>
-                    
-                    <div style="text-align: center;">
-                        <a href="{APP_BASE_URL}/home" class="cta-button">
-                            Start Your Journey →
-                        </a>
-                    </div>
-                    
-                    <p style="font-size: 15px; color: #666; margin-top: 25px;">
-                        Remember, every champion was once a beginner. You've got this! 💪
-                    </p>
-                    
-                    <p style="font-size: 15px; color: #444;">
-                        Cheering you on,<br>
-                        <strong>The BisaFit Team</strong>
-                    </p>
-                </div>
-                
-                <div class="footer">
-                    <p class="social-text">Questions? Just reply to this email — we're here to help!</p>
-                </div>
-                
-                {EMAIL_FOOTER_HTML}
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
-    return await send_email(
-        to_email=to_email,
-        subject="🏋️ Welcome to BisaFit — Let's Get Started!",
-        html_content=html_content
-    )
-
-
 async def send_legal_document_update_notification(
     to_email: str,
     doc_type: str,
     doc_title: str,
     doc_version: str,
-    app_url: str = None
+    app_url: str = "https://bisafit.com"
 ) -> Dict[str, Any]:
     """
     Send notification when legal documents are updated.
@@ -546,10 +401,8 @@ async def send_legal_document_update_notification(
         doc_type: 'terms' or 'privacy'
         doc_title: Title of the document (e.g., "Terms of Service")
         doc_version: Version number (e.g., "1.1")
-        app_url: Base URL of the app (defaults to APP_BASE_URL env var)
+        app_url: Base URL of the app
     """
-    if app_url is None:
-        app_url = APP_BASE_URL
     
     doc_url = f"{app_url}/{doc_type}"
     icon = "📋" if doc_type == "terms" else "🔒"
@@ -565,6 +418,7 @@ async def send_legal_document_update_notification(
             .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 12px 12px; }}
             .highlight {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3b82f6; }}
             .button {{ display: inline-block; padding: 14px 28px; background: #121212; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; margin-top: 10px; }}
+            .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
         </style>
     </head>
     <body>
@@ -588,7 +442,10 @@ async def send_legal_document_update_notification(
                 
                 <p>Thank you for being part of BisaFit!</p>
                 
-                {EMAIL_FOOTER_HTML}
+                <div class="footer">
+                    <p>Bisa Group, LLC • Delaware, USA</p>
+                    <p style="opacity: 0.6;">You're receiving this because you have a BisaFit account.</p>
+                </div>
             </div>
         </div>
     </body>
@@ -673,452 +530,3 @@ async def send_legal_update_batch(
         "failed": failed,
         "errors": errors[:10] if errors else []  # Return first 10 errors only
     }
-
-
-
-# ============================================
-# SUBSCRIPTION & BILLING EMAIL TEMPLATES
-# ============================================
-
-async def send_subscription_confirmation_email(
-    to_email: str,
-    plan_name: str,
-    amount: str,
-    billing_period: str,
-    next_billing_date: str
-) -> Dict[str, Any]:
-    """Send confirmation email when user subscribes successfully."""
-    
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <style>
-            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
-            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-            .header {{ background: linear-gradient(135deg, #121212, #2d2d2d); color: white; padding: 30px; border-radius: 12px 12px 0 0; text-align: center; }}
-            .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 12px 12px; }}
-            .highlight {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981; }}
-            .detail-row {{ display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1 style="margin: 0; font-size: 24px;">🎉 Subscription Confirmed!</h1>
-                <p style="margin: 10px 0 0 0; opacity: 0.9;">Welcome to BisaFit Premium</p>
-            </div>
-            <div class="content">
-                <p>Congratulations! Your BisaFit subscription is now active.</p>
-                
-                <div class="highlight">
-                    <h3 style="margin: 0 0 15px 0;">Subscription Details</h3>
-                    <div class="detail-row">
-                        <span>Plan:</span>
-                        <strong>{plan_name}</strong>
-                    </div>
-                    <div class="detail-row">
-                        <span>Amount:</span>
-                        <strong>{amount}</strong>
-                    </div>
-                    <div class="detail-row">
-                        <span>Billing Period:</span>
-                        <strong>{billing_period}</strong>
-                    </div>
-                    <div class="detail-row" style="border-bottom: none;">
-                        <span>Next Billing Date:</span>
-                        <strong>{next_billing_date}</strong>
-                    </div>
-                </div>
-                
-                <p>You now have full access to:</p>
-                <ul>
-                    <li>AI-powered personalized workouts</li>
-                    <li>Smart nutrition guidance</li>
-                    <li>Advanced progress tracking</li>
-                    <li>Health platform integrations</li>
-                </ul>
-                
-                <p>Time to crush your fitness goals! 💪</p>
-                
-                {EMAIL_FOOTER_HTML}
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
-    return await send_email(
-        to_email=to_email,
-        subject="🎉 Your BisaFit Subscription is Active!",
-        html_content=html_content
-    )
-
-
-async def send_payment_receipt_email(
-    to_email: str,
-    amount: str,
-    payment_date: str,
-    invoice_number: str,
-    plan_name: str
-) -> Dict[str, Any]:
-    """Send payment receipt email after successful payment."""
-    
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <style>
-            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
-            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-            .header {{ background: linear-gradient(135deg, #121212, #2d2d2d); color: white; padding: 30px; border-radius: 12px 12px 0 0; text-align: center; }}
-            .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 12px 12px; }}
-            .receipt {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }}
-            .detail-row {{ display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }}
-            .total-row {{ display: flex; justify-content: space-between; padding: 15px 0; font-size: 18px; font-weight: bold; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1 style="margin: 0; font-size: 24px;">🧾 Payment Receipt</h1>
-                <p style="margin: 10px 0 0 0; opacity: 0.9;">BisaFit Subscription</p>
-            </div>
-            <div class="content">
-                <p>Thank you for your payment! Here's your receipt:</p>
-                
-                <div class="receipt">
-                    <div class="detail-row">
-                        <span>Invoice Number:</span>
-                        <strong>{invoice_number}</strong>
-                    </div>
-                    <div class="detail-row">
-                        <span>Payment Date:</span>
-                        <strong>{payment_date}</strong>
-                    </div>
-                    <div class="detail-row">
-                        <span>Plan:</span>
-                        <strong>{plan_name}</strong>
-                    </div>
-                    <div class="total-row">
-                        <span>Total Paid:</span>
-                        <span style="color: #10b981;">{amount}</span>
-                    </div>
-                </div>
-                
-                <p style="font-size: 14px; color: #666;">
-                    This receipt was sent to {to_email}. Keep it for your records.
-                </p>
-                
-                <p>Questions about your billing? Contact us at <a href="mailto:{SUPPORT_EMAIL}">{SUPPORT_EMAIL}</a></p>
-                
-                {EMAIL_FOOTER_HTML}
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
-    return await send_email(
-        to_email=to_email,
-        subject=f"🧾 BisaFit Payment Receipt - {amount}",
-        html_content=html_content
-    )
-
-
-async def send_subscription_renewal_notice(
-    to_email: str,
-    plan_name: str,
-    amount: str,
-    renewal_date: str
-) -> Dict[str, Any]:
-    """Send renewal notice before subscription renews."""
-    
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <style>
-            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
-            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-            .header {{ background: linear-gradient(135deg, #121212, #2d2d2d); color: white; padding: 30px; border-radius: 12px 12px 0 0; text-align: center; }}
-            .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 12px 12px; }}
-            .notice {{ background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1 style="margin: 0; font-size: 24px;">📅 Subscription Renewal Notice</h1>
-                <p style="margin: 10px 0 0 0; opacity: 0.9;">BisaFit</p>
-            </div>
-            <div class="content">
-                <p>Hello!</p>
-                
-                <p>This is a friendly reminder that your BisaFit subscription will automatically renew soon.</p>
-                
-                <div class="notice">
-                    <strong>Upcoming Renewal:</strong>
-                    <p style="margin: 10px 0 0 0;">Plan: {plan_name}</p>
-                    <p style="margin: 5px 0 0 0;">Amount: {amount}</p>
-                    <p style="margin: 5px 0 0 0;">Renewal Date: {renewal_date}</p>
-                </div>
-                
-                <p>No action is required if you want to continue your subscription. Your payment method will be charged automatically.</p>
-                
-                <p>If you'd like to make changes or cancel, you can manage your subscription in the app settings.</p>
-                
-                <p>Thank you for being part of BisaFit!</p>
-                
-                {EMAIL_FOOTER_HTML}
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
-    return await send_email(
-        to_email=to_email,
-        subject="📅 BisaFit Subscription Renewal Notice",
-        html_content=html_content
-    )
-
-
-async def send_subscription_cancellation_confirmation(
-    to_email: str,
-    plan_name: str,
-    access_end_date: str
-) -> Dict[str, Any]:
-    """Send confirmation when user cancels their subscription."""
-    
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <style>
-            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
-            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-            .header {{ background: linear-gradient(135deg, #121212, #2d2d2d); color: white; padding: 30px; border-radius: 12px 12px 0 0; text-align: center; }}
-            .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 12px 12px; }}
-            .info-box {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6b7280; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1 style="margin: 0; font-size: 24px;">Subscription Cancelled</h1>
-                <p style="margin: 10px 0 0 0; opacity: 0.9;">BisaFit</p>
-            </div>
-            <div class="content">
-                <p>We're sorry to see you go!</p>
-                
-                <p>Your {plan_name} subscription has been cancelled. Here's what you need to know:</p>
-                
-                <div class="info-box">
-                    <p style="margin: 0;"><strong>Your access continues until:</strong> {access_end_date}</p>
-                    <p style="margin: 10px 0 0 0;">You can continue using all premium features until this date.</p>
-                </div>
-                
-                <p>Changed your mind? You can resubscribe anytime to regain access to:</p>
-                <ul>
-                    <li>AI-powered personalized workouts</li>
-                    <li>Smart nutrition guidance</li>
-                    <li>Advanced progress tracking</li>
-                    <li>Health platform integrations</li>
-                </ul>
-                
-                <p>We'd love to hear your feedback on how we can improve. Reply to this email to share your thoughts.</p>
-                
-                <p>Thank you for being part of BisaFit. We hope to see you again!</p>
-                
-                {EMAIL_FOOTER_HTML}
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
-    return await send_email(
-        to_email=to_email,
-        subject="BisaFit Subscription Cancelled",
-        html_content=html_content
-    )
-
-
-async def send_trial_expiration_reminder(
-    to_email: str,
-    days_remaining: int,
-    trial_end_date: str
-) -> Dict[str, Any]:
-    """Send reminder when trial is about to expire."""
-    
-    urgency_text = "today" if days_remaining == 0 else f"in {days_remaining} day{'s' if days_remaining > 1 else ''}"
-    
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <style>
-            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
-            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-            .header {{ background: linear-gradient(135deg, #7c3aed, #a855f7); color: white; padding: 30px; border-radius: 12px 12px 0 0; text-align: center; }}
-            .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 12px 12px; }}
-            .urgency {{ background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b; text-align: center; }}
-            .cta-button {{ display: inline-block; padding: 14px 28px; background: #7c3aed; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1 style="margin: 0; font-size: 24px;">⏰ Trial Ending Soon!</h1>
-                <p style="margin: 10px 0 0 0; opacity: 0.9;">Don't lose your progress</p>
-            </div>
-            <div class="content">
-                <p>Hey there!</p>
-                
-                <div class="urgency">
-                    <p style="margin: 0; font-size: 18px; font-weight: bold;">Your free trial expires {urgency_text}</p>
-                    <p style="margin: 5px 0 0 0; color: #666;">Trial End Date: {trial_end_date}</p>
-                </div>
-                
-                <p>Subscribe now to keep access to all your workouts and progress data!</p>
-                
-                <p>As a premium member, you'll continue to enjoy:</p>
-                <ul>
-                    <li>🤖 AI-powered personalized workouts</li>
-                    <li>🥗 Smart nutrition guidance</li>
-                    <li>📊 Advanced progress tracking</li>
-                    <li>⌚ Health platform integrations</li>
-                </ul>
-                
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{APP_BASE_URL}/billing" class="cta-button">Subscribe Now</a>
-                </div>
-                
-                <p style="color: #666; font-size: 14px;">Questions? We're here to help at <a href="mailto:{SUPPORT_EMAIL}">{SUPPORT_EMAIL}</a></p>
-                
-                {EMAIL_FOOTER_HTML}
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
-    return await send_email(
-        to_email=to_email,
-        subject=f"⏰ Your BisaFit trial expires {urgency_text}!",
-        html_content=html_content
-    )
-
-
-async def send_billing_failure_notice(
-    to_email: str,
-    amount: str,
-    retry_date: str,
-    failure_reason: str = "Payment method declined"
-) -> Dict[str, Any]:
-    """Send notice when a billing attempt fails."""
-    
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <style>
-            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
-            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-            .header {{ background: linear-gradient(135deg, #dc2626, #ef4444); color: white; padding: 30px; border-radius: 12px 12px 0 0; text-align: center; }}
-            .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 12px 12px; }}
-            .alert {{ background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626; }}
-            .cta-button {{ display: inline-block; padding: 14px 28px; background: #121212; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1 style="margin: 0; font-size: 24px;">⚠️ Payment Failed</h1>
-                <p style="margin: 10px 0 0 0; opacity: 0.9;">Action Required</p>
-            </div>
-            <div class="content">
-                <p>We were unable to process your payment for BisaFit.</p>
-                
-                <div class="alert">
-                    <p style="margin: 0;"><strong>Amount:</strong> {amount}</p>
-                    <p style="margin: 10px 0 0 0;"><strong>Reason:</strong> {failure_reason}</p>
-                    <p style="margin: 10px 0 0 0;"><strong>Next Retry:</strong> {retry_date}</p>
-                </div>
-                
-                <p>To avoid interruption to your subscription, please update your payment method:</p>
-                
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{APP_BASE_URL}/billing" class="cta-button">Update Payment Method</a>
-                </div>
-                
-                <p>If you've already updated your payment information, you can ignore this email.</p>
-                
-                <p>Need help? Contact us at <a href="mailto:{SUPPORT_EMAIL}">{SUPPORT_EMAIL}</a></p>
-                
-                {EMAIL_FOOTER_HTML}
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
-    return await send_email(
-        to_email=to_email,
-        subject="⚠️ BisaFit Payment Failed - Action Required",
-        html_content=html_content
-    )
-
-
-async def send_product_notification(
-    to_email: str,
-    title: str,
-    message: str,
-    cta_text: str = None,
-    cta_url: str = None
-) -> Dict[str, Any]:
-    """Send general product notification or announcement."""
-    
-    cta_html = ""
-    if cta_text and cta_url:
-        cta_html = f"""
-        <div style="text-align: center; margin: 30px 0;">
-            <a href="{cta_url}" style="display: inline-block; padding: 14px 28px; background: #7c3aed; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">{cta_text}</a>
-        </div>
-        """
-    
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <style>
-            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
-            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-            .header {{ background: linear-gradient(135deg, #121212, #2d2d2d); color: white; padding: 30px; border-radius: 12px 12px 0 0; text-align: center; }}
-            .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 12px 12px; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1 style="margin: 0; font-size: 24px;">📣 {title}</h1>
-                <p style="margin: 10px 0 0 0; opacity: 0.9;">BisaFit Update</p>
-            </div>
-            <div class="content">
-                {message}
-                
-                {cta_html}
-                
-                {EMAIL_FOOTER_HTML}
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
-    return await send_email(
-        to_email=to_email,
-        subject=f"📣 {title}",
-        html_content=html_content
-    )

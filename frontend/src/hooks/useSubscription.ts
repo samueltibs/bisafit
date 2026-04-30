@@ -1,7 +1,8 @@
 /**
  * Subscription Hook
  * 
- * Manages subscription state with Stripe integration.
+ * Manages subscription state and trial logic.
+ * NOTE: Stripe Checkout + webhooks will replace mock provider once LLC and Stripe account are live.
  * 
  * BETA MODE: Set BETA_MODE_ENABLED to true to give all users free access
  * ADMIN: Admin emails always have full premium access
@@ -10,26 +11,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { sendTrialStartedEmail } from '@/lib/emailService';
 import { isAdminEmail } from '@/lib/adminConfig';
-import { 
-  createCheckoutSession, 
-  createPortalSession, 
-  getSubscriptionStatus 
-} from '@/api/stripe';
 import type { SubscriptionStatus, SubscriptionPlan, SubscriptionState } from '@/types/subscription';
 
 // ============================================
 // BETA MODE TOGGLE
 // Set to true during beta testing - all users get free access
 // Set to false for soft launch - normal subscription rules apply
-// Note: Admin emails in adminConfig.ts always get free premium access
 // ============================================
-export const BETA_MODE_ENABLED = false;
+export const BETA_MODE_ENABLED = true;
 
 export function useSubscription() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [subscription, setSubscription] = useState<SubscriptionState>({
     status: 'preview',
     provider: 'mock',
@@ -40,11 +35,6 @@ export function useSubscription() {
     hasPremiumAccess: false,
     daysLeftInTrial: null,
   });
-
-  // Stripe-specific state
-  const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(null);
-  const [stripeSubscriptionId, setStripeSubscriptionId] = useState<string | null>(null);
-  const [currentPeriodEnd, setCurrentPeriodEnd] = useState<Date | null>(null);
 
   // Check if user is admin (always has premium access)
   const isAdmin = isAdminEmail(user?.email);
@@ -84,7 +74,7 @@ export function useSubscription() {
     if (hasFreeAccess) {
       setSubscription({
         status: 'active',
-        provider: 'stripe',
+        provider: 'mock',
         plan: 'yearly',
         trialStartDate: null,
         trialEndDate: null,
@@ -97,55 +87,23 @@ export function useSubscription() {
     }
 
     try {
-      // First check Stripe subscription status from backend
-      const stripeStatus = await getSubscriptionStatus(user.id);
-      
-      if (stripeStatus.has_subscription && stripeStatus.subscription_status) {
-        // User has Stripe subscription
-        setStripeCustomerId(stripeStatus.stripe_customer_id || null);
-        setStripeSubscriptionId(stripeStatus.stripe_subscription_id || null);
-        
-        if (stripeStatus.current_period_end) {
-          setCurrentPeriodEnd(new Date(stripeStatus.current_period_end));
-        }
-
-        const isActive = ['active', 'trialing'].includes(stripeStatus.subscription_status);
-        
-        setSubscription({
-          status: isActive ? 'active' : (stripeStatus.subscription_status as SubscriptionStatus),
-          provider: 'stripe',
-          plan: 'monthly', // Default, could be determined from price
-          trialStartDate: null,
-          trialEndDate: null,
-          isTrialExpired: false,
-          hasPremiumAccess: isActive,
-          daysLeftInTrial: null,
-        });
-        
-        setLoading(false);
-        return;
-      }
-
-      // Fallback to Supabase profile data
       const { data, error } = await supabase
         .from('users_profile')
-        .select('subscription_status, subscription_provider, subscription_plan, trial_start_date, trial_end_date, stripe_customer_id, stripe_subscription_id')
+        .select('subscription_status, subscription_provider, subscription_plan, trial_start_date, trial_end_date')
         .eq('id', user.id)
         .single();
 
       if (error) throw error;
 
-      // Update Stripe IDs from profile if available
-      if (data?.stripe_customer_id) {
-        setStripeCustomerId(data.stripe_customer_id);
-      }
-      if (data?.stripe_subscription_id) {
-        setStripeSubscriptionId(data.stripe_subscription_id);
-      }
-
       const status = (data?.subscription_status as SubscriptionStatus) || 'preview';
       const trialEndDate = data?.trial_end_date ? new Date(data.trial_end_date) : null;
       const { isExpired, daysLeft } = checkTrialExpiry(status, trialEndDate);
+
+      // Auto-expire trial if needed
+      if (isExpired && status === 'trialing') {
+        await expireTrial();
+        return;
+      }
 
       const hasPremiumAccess = status === 'trialing' || status === 'active';
 
@@ -166,91 +124,68 @@ export function useSubscription() {
     }
   }, [user, checkTrialExpiry, hasFreeAccess]);
 
-  /**
-   * Redirect to Stripe Checkout for subscription
-   */
-  const redirectToStripeCheckout = async (plan: SubscriptionPlan): Promise<void> => {
-    if (!user || !user.email) {
-      console.error('User not authenticated');
-      return;
-    }
-
-    setCheckoutLoading(true);
-
-    try {
-      // Map plan to price lookup key
-      const priceLookupKey = plan === 'yearly' ? 'bisafit_annual' : 'bisafit_monthly';
-      
-      const result = await createCheckoutSession({
-        price_lookup_key: priceLookupKey,
-        user_id: user.id,
-        email: user.email,
-        customer_id: stripeCustomerId || undefined,
-        origin_url: window.location.origin,
-      });
-
-      // Redirect to Stripe Checkout
-      window.location.href = result.url;
-    } catch (error) {
-      console.error('Error creating checkout session:', error);
-      setCheckoutLoading(false);
-      throw error;
-    }
-  };
-
-  /**
-   * Redirect to Stripe Billing Portal for subscription management
-   */
-  const redirectToStripePortal = async (): Promise<void> => {
-    if (!stripeCustomerId) {
-      console.error('No Stripe customer ID found');
-      return;
-    }
-
-    setCheckoutLoading(true);
-
-    try {
-      const result = await createPortalSession({
-        customer_id: stripeCustomerId,
-        return_url: `${window.location.origin}/billing`,
-      });
-
-      // Redirect to Stripe Portal
-      window.location.href = result.url;
-    } catch (error) {
-      console.error('Error creating portal session:', error);
-      setCheckoutLoading(false);
-      throw error;
-    }
-  };
-
-  /**
-   * Start a trial (mock implementation for beta)
-   */
   const startTrial = async (plan: SubscriptionPlan): Promise<boolean> => {
     if (!user) return false;
 
-    // In production with Stripe, redirect to checkout instead
-    if (!BETA_MODE_ENABLED) {
-      await redirectToStripeCheckout(plan);
+    // Admin or beta mode - just grant access without actually starting trial
+    if (hasFreeAccess) {
+      setSubscription(prev => ({
+        ...prev,
+        status: 'active',
+        plan,
+        hasPremiumAccess: true,
+      }));
       return true;
     }
 
-    // Beta mode - just grant access
-    setSubscription(prev => ({
-      ...prev,
-      status: 'active',
-      plan,
-      hasPremiumAccess: true,
-    }));
-    return true;
+    try {
+      const now = new Date();
+      const trialEnd = new Date(now);
+      trialEnd.setDate(trialEnd.getDate() + 7); // 7-day trial
+
+      const { error } = await supabase
+        .from('users_profile')
+        .update({
+          subscription_status: 'trialing',
+          subscription_provider: 'mock', // Will be 'stripe' when integrated
+          subscription_plan: plan,
+          trial_start_date: now.toISOString(),
+          trial_end_date: trialEnd.toISOString(),
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setSubscription(prev => ({
+        ...prev,
+        status: 'trialing',
+        plan,
+        trialStartDate: now,
+        trialEndDate: trialEnd,
+        hasPremiumAccess: true,
+        daysLeftInTrial: 7,
+      }));
+
+      // Send trial started email (fire and forget)
+      sendTrialStartedEmail(
+        user.id,
+        user.email || '',
+        trialEnd,
+        plan
+      ).catch(err => console.error('Failed to send trial started email:', err));
+
+      return true;
+    } catch (error) {
+      console.error('Error starting trial:', error);
+      return false;
+    }
   };
 
-  /**
-   * Expire trial (for mock implementation)
-   */
   const expireTrial = async (): Promise<void> => {
-    if (!user || hasFreeAccess) return;
+    if (!user) return;
+
+    // Admin or beta mode - never expire
+    if (hasFreeAccess) return;
 
     try {
       const { error } = await supabase
@@ -274,51 +209,37 @@ export function useSubscription() {
     }
   };
 
+  // Stripe integration stub - to be implemented when Stripe is ready
+  const redirectToStripeCheckout = async (_plan: SubscriptionPlan): Promise<void> => {
+    // TODO: Implement Stripe Checkout redirect
+    // This will create a Stripe Checkout session and redirect the user
+    console.log('Stripe checkout not yet implemented');
+  };
+
   useEffect(() => {
     fetchSubscription();
   }, [fetchSubscription]);
 
-  // Check subscription status on app focus
+  // Check trial expiry on app focus
   useEffect(() => {
     const handleFocus = () => {
-      if (!hasFreeAccess) {
+      if (subscription.status === 'trialing' && !hasFreeAccess) {
         fetchSubscription();
       }
     };
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [fetchSubscription, hasFreeAccess]);
-
-  // Check for successful checkout return
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const success = urlParams.get('success');
-    const sessionId = urlParams.get('session_id');
-
-    if (success === '1' && sessionId) {
-      // Checkout was successful, refresh subscription status
-      fetchSubscription();
-      
-      // Clean up URL
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, '', newUrl);
-    }
-  }, [fetchSubscription]);
+  }, [subscription.status, fetchSubscription, hasFreeAccess]);
 
   return {
     ...subscription,
     loading,
-    checkoutLoading,
     startTrial,
     expireTrial,
     redirectToStripeCheckout,
-    redirectToStripePortal,
     refetch: fetchSubscription,
     isAdmin,
     isBetaMode: BETA_MODE_ENABLED,
-    stripeCustomerId,
-    stripeSubscriptionId,
-    currentPeriodEnd,
   };
 }

@@ -1,160 +1,153 @@
 <analysis>**original_problem_statement:**
-The user initially requested a full-stack legal documents system for the BisaFit application, including database schema, public pages for terms and privacy, and user acceptance gating on signup and login.
+The user wants to enhance an existing MVP-level fitness application named BisaFit with the ultimate goal of launching it as a mobile app. Key goals include fixing bugs, improving UI/UX, adding features like optional nutrition and active rest days, and reducing operational costs.
 
-This has since expanded to include:
-1.  **Stripe Subscription Integration**: Implement a full subscription system using Stripe Checkout Sessions and webhooks for monthly and annual plans, operating in LIVE mode.
-2.  **Mobile App Deployment Preparation**: Wrap the web app using Capacitor to prepare for deployment on the Google Play Store and Apple App Store.
-3.  **Smartwatch/Health Platform Integration**: Build out integrations for Apple Health, Google Fit, Fitbit, and Strava.
-4.  **Landing Page Creation**: Design and build a professional, multi-section landing page for .
-5.  **Company Re-branding/Contact Update**: Update all application contact information, legal documents, and email templates to reflect the official Bisa Group LLC details.
+During this session, the user's primary requests were:
+1.  Implement an Optional Nutrition feature.
+2.  Implement a Store waitlist with email notifications.
+3.  Drastically improve the slow (~3 minute) workout plan generation time.
+4.  Fix a bug where generated plans showed Rest Day for all days.
+5.  Fix a bug where the workout screen was blank after starting a workout.
+6.  Fix missing exercise images and implement a cost-saving image caching system.
+7.  Refactor the UI to remove confusing block terminology and simplify to a weekly view.
+8.  Make plan generation a background process so the user isn't stuck on a loading screen.
+9.  Remove a floating debug button from the UI.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack React/Vite (frontend) and FastAPI (backend) app using Supabase for the database and auth. The following major features have been implemented:
-- A complete legal documents system with versioning and acceptance tracking.
-- A full-featured Stripe subscription system configured for LIVE payments, with webhooks and a customer portal.
-- Capacitor has been set up for Android deployment, and a build guide was created.
-- The code structure for Apple Health, Google Fit, Fitbit, and Strava integrations is in place, including backend OAuth endpoints and frontend components.
-- A professional, multi-section landing page is now the root of the application.
-- Beta mode is turned off for regular users but remains active for the admin account ().
+A full-stack application with a React/Vite frontend and a FastAPI backend using Supabase for the database, auth, and storage. The application's core logic has been significantly refactored in this session. Plan generation is now based on a fast, single-week model. A smart image caching system has been implemented on the backend to generate exercise images once and store them for future use, saving API credits. The frontend has been updated to be simpler, weekly-focused, and fetches data like exercise images on-demand.
 
 **Last working item**:
-- Last item agent was working: The user provided a comprehensive list of official company information for Bisa Group LLC and requested that the entire application (legal docs, email templates, footers, contact pages) be updated to reflect this new information. The agent acknowledged the request and was about to begin implementation.
-- Status: NOT STARTED
-- Agent Testing Done: N
-- Which testing method agent to use? manual testing by curl. The agent should verify the changes by viewing the updated files and pages.
-- User Testing Done: N
+-   **Last item agent was working:** Diagnosing and fixing a cascade of critical errors reported by the user. The root cause was identified as multiple database tables (, ) having missing columns, which caused workout sessions to fail to start. The previous attempt to fix images by embedding large base64 data in the JSON payload was also causing database inserts to fail.
+-   **The fix involved:** A complete strategy shift for images. The agent removed image data from the plan generation payload and instead implemented an on-demand fetching system using a new hook () and a dedicated backend endpoint (). This makes the plan data small and efficient, while images are loaded as needed.
+-   **Status:** IN PROGRESS
+-   **Agent Testing Done:** N
+-   **Which testing method agent to use?** Frontend testing agent. The next agent must verify the entire user flow after the user applies the database fixes.
+-   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-There are no known bugs or technical issues. The work is focused on implementing user requests.
+-   **Issue 1: Fix Critical Database Schema Errors (P0)**
+    -   **Description:** The application is throwing numerous console errors because the  and  tables are missing required columns (, , etc.). This is preventing workout sessions from being created and analytics from being logged.
+    -   **Attempted fixes:** The agent has implemented frontend code that relies on these columns and has identified the exact missing columns from the user's error logs.
+    -   **Next debug checklist:**
+        1.  Provide the user with a single, comprehensive SQL script to create/alter the , , and  tables to add all missing columns.
+        2.  Instruct the user to run this script in their Supabase SQL Editor.
+        3.  After the user confirms, test the full user flow (regenerate plan, start workout).
+    -   **Why fix this issue and what will be achieved with the fix?** This is a critical blocker. Fixing the schema will allow workout sessions to start correctly and will resolve all related console errors.
+    -   **Status:** BLOCKED
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Frontend
+
+-   **Issue 2: Verify On-Demand Image Loading (P1)**
+    -   **Description:** The user has consistently reported that exercise images are not displaying. The latest implementation uses an on-demand caching system, but it cannot be fully tested until the database schema is fixed, as plan generation is currently failing.
+    -   **Attempted fixes:** A robust backend image cache is in place, populated with 86 exercises. The frontend  component now uses the  hook to fetch these images.
+    -   **Next debug checklist:**
+        1.  This issue is blocked by Fix Critical Database Schema Errors.
+        2.  Once the database is fixed, guide the user to regenerate their plan.
+        3.  Start a workout and verify that images load correctly in the workout player.
+    -   **Why fix this issue and what will be achieved with the fix?** This will complete a major user experience requirement and validate the new, efficient image caching architecture.
+    -   **Status:** BLOCKED
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Frontend
+    -   **Blocked on other issue:** Issue 1: Fix Critical Database Schema Errors
 
 **In progress Task List**:
-- **Task 1: Update All Company Contact Information (P0)**
-    - **Where to resume**: The user has provided detailed company information (Bisa Group LLC, address, emails, phone). The agent needs to systematically update all relevant parts of the application.
-    - **What will be achieved with this?** The application will reflect the official legal entity and contact details, making it ready for public launch and ensuring compliance.
-    - **Status:** NOT STARTED
-    - **Should Test frontend/backend/both after fix?** Both
-    - **Blocked on something**: No.
-
-- **Task 2: Finalize Health Platform Integrations (P1)**
-    - **Where to resume**: The backend OAuth endpoints and frontend components for Fitbit and Strava are built but require API keys. The next step is to prompt the user for these keys and add them to the  file.
-    - **What will be achieved with this?** Users will be able to connect their Fitbit and Strava accounts to sync their fitness data.
-    - **Status:** BLOCKED (waiting for user API keys)
-    - **Should Test frontend/backend/both after fix?** Frontend
-    - **Blocked on something**: User needs to provide Fitbit and Strava Client ID and Secret.
+*   None. All current work is classified as fixing issues.
 
 **Upcoming and Future Tasks**
--   **Upcoming Tasks:**
-    *   **P2: Finalize Mobile Deployment**: Guide the user to follow  to build the Android App Bundle () on their local machine. Prepare a similar guide for iOS/Xcode.
-    *   **P3: User Testing of Full Flow**: After the contact information update, prompt the user to test the entire application flow: Landing Page -> Signup -> Email Verification -> Subscription Purchase -> App Usage -> Health Connections -> Settings -> Customer Portal.
-
--   **Future Tasks:**
-    *   Implement data synchronization logic for Fitbit and Strava post-authentication.
-    *   Enable the App Store/Google Play download buttons on the landing page once the apps are published.
+*   **Upcoming Tasks:**
+    *   **P1: Automatic Next-Week Generation:** Implement a backend mechanism (e.g., a scheduled function or trigger) to automatically generate the next week's plan on the last day of the current week.
+    *   **P2: Integrate Active Rest Days into Plan UI:** Display scheduled Active Rest Day activities on the main weekly plan view.
+    *   **P2: Activate Shopify Store Link:** The URL () is saved. Implement the logic to make the Store button a direct link when the user gives the go-ahead.
+*   **Future Tasks:**
+    *   Scheduled PDF Analytics Reports
+    *   RevenueCat Integration
+    *   Native Music Integration
+    *   App Store Launch Preparation
 
 **Completed work in this session**
-- **Legal Documents System**: Implemented public pages (, ), database tables (, ), and gating logic (, signup checkbox). Fixed scrolling issues.
-- **Stripe Subscription Integration**:
-    - Installed Stripe SDK and created backend endpoints (, , ).
-    - Configured system for **LIVE** payments with user-provided keys.
-    - Updated frontend paywall and created a new  page.
-- **Beta Mode Implementation**: Turned off global beta mode but provided permanent free access for the admin email .
-- **Mobile App Preparation**: Installed and configured Capacitor for Android. Created  for local building.
-- **Health Platform Integrations**:
-    - Created backend OAuth services and endpoints for Fitbit and Strava.
-    - Created frontend services and callback pages for Fitbit and Strava.
-    - Updated the Settings UI to include connect buttons for all health platforms.
-- **Professional Landing Page**: Designed and built a new, multi-section, visually rich landing page which is now the application's root (). It includes sections for features, pricing, FAQ, and a footer.
+-   **Plan Generation Overhaul:** Replaced the slow, 4-week plan generator with a fast (~30s) single-week generator (), fixing the critical bug where plans started in the next week.
+-   **Smart Image Caching System:** Implemented a backend service () and database table () to generate exercise images once and cache them. Pre-populated the cache with 86 common exercises.
+-   **On-Demand Image Loading:** Refactored the frontend to fetch images on-demand via a new  hook, resolving the payload too large database error.
+-   **Background Plan Generation:** Updated the plan generation flow to run in the background with toast notifications, so the user isn't blocked on a loading screen.
+-   **UI Simplification:** Completely refactored the Plan page UI to remove the confusing Block concept, creating a clean, weekly-focused view as requested by the user.
+-   **Workout Player Bug Fix:** Fixed the blank workout screen bug by correcting the  data structure created during plan generation to match the player's expected format.
+-   **Store Waitlist Feature:** Implemented the  table and a backend endpoint () to handle waitlist signups with email notifications.
+-   **Debug UI Removal:** Removed the floating bug report button from the app.
 
 **Earlier issues found/mentioned but not fixed**
-- None.
+-   **Issue 1: Active Rest Days UI on Home/Plan page**
+    -   **Debug checklist:** Edit  to properly display workouts that are marked as .
+    -   **Why to solve this issue and what will be achieved with this?** To complete the Active Rest Days feature, ensuring users see their scheduled light activities in their weekly plan.
+    -   **Should Test frontend/backend/both after fix:** Frontend
+    -   **Is recurring issue?** N
 
 **Known issue recurrence from previous fork**
-- **Issue recurrence in previous fork:** Supabase URL Whitelisting.
-- **Recurrence count:** 1
-- **Status:** RESOLVED. The agent correctly identified that the forked environment's new preview URL needed to be added to the Supabase Auth URL Configuration to fix failing email verification links. This is a critical check for any new fork.
+-   **Issue recurrence in previous fork:** Database Schema Drift.
+-   **Recurrence count:** High. Issues with missing tables or columns have occurred multiple times.
+-   **Status:** IN PROGRESS. The latest recurrence (missing columns in  and ) is the current top-priority blocker.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Frontend:** React, Vite, TypeScript, Tailwind CSS, shadcn/ui
-- **Backend:** FastAPI (Python)
-- **Database:** Supabase (PostgreSQL)
-- **Payments:** Stripe (Checkout Sessions, Webhooks, Billing Portal) - **LIVE MODE**
-- **Mobile:** Capacitor
-- **Authentication:** Supabase Auth, OAuth2 (for Fitbit/Strava)
+*   **Frontend:** React, Vite, TypeScript, Tailwind CSS, shadcn/ui, TanStack Query
+*   **Backend:** FastAPI (Python)
+*   **Database:** Supabase (PostgreSQL)
+*   **AI:**  for plan generation, DALL-E for image generation (via Emergent LLM Key).
+*   **Architecture:** On-demand image fetching, background frontend tasks with toast notifications, weekly plan generation model.
 
 **key DB schema**
--   **:** 
--   **:** 
--   ** (implicit):** User profile table is updated by Stripe webhooks with fields like , , .
+-   **:** (NEW)  - Stores base64 exercise images.
+-   **:** (NEEDS FIX) Missing  column.
+-   **:** (NEEDS FIX) Missing  column.
+-   **:** (NEEDS FIX) Table is missing entirely.
 
 **All files of reference**
--   : **(NEW)** Contains all backend logic for Stripe integration.
--   : **(NEW)** Contains backend logic for Fitbit/Strava OAuth.
--   : **(NEW)** The main marketing and entry point for the application.
--   : **(MODIFIED)** Central hook for managing subscription state, including the admin access override.
--   : **(NEW)** Instructions for the user to build the Android app locally.
--   : **(MODIFIED)** The UI for connecting all health services.
+-   : **(NEW)** Crucial hook for fetching images on-demand.
+-   : **(NEW)** Backend logic for the image caching system.
+-   : **(HEAVILY MODIFIED)** Contains the simplified weekly UI.
+-   : **(NEW)** Contains the current, fast plan generation logic.
 
 **key api endpoints**
--   : Creates a Stripe Checkout session.
--   : Handles events from Stripe (e.g., payment success).
--   : Creates a Stripe Billing Portal session for users.
--   : Initiates OAuth flow for Fitbit/Strava.
--   : Handles the OAuth callback from Fitbit/Strava.
+-   : Generates a single week of workouts.
+-   : Fetches a cached exercise image as base64 data.
 
 **Critical Info for New Agent**
-1.  **Your immediate P0 task is to update all company contact information** as per the user's last request. This is a large, app-wide change affecting legal documents, email templates, and UI components.
-2.  **Stripe is in LIVE mode.** The keys in the  files are production keys. Be careful with any payment-related logic.
-3.  **Fitbit and Strava integrations are blocked** waiting for the user to provide API credentials. The placeholder environment variables are in .
-4.  **Mobile builds (APK/AAB) cannot be done in this environment.** The user must follow the  on their local machine which has Android Studio installed. Do not attempt to run  commands.
-5.  The admin user  has permanent free premium access, bypassing the paywall. This logic is in .
-
-**documents and test reports created in this job**
-- /app/frontend/ANDROID_BUILD_GUIDE.md
+1.  **Your first action MUST be to provide the user with a consolidated SQL script.** This script needs to fix the missing columns in  and , and create the  table. The app is critically broken until this is done.
+2.  **The image loading strategy is now on-demand.** Do NOT try to embed image data in the . The correct pattern is using the  hook in the frontend to call the  endpoint.
+3.  **All block and 4-week logic is deprecated.** The application now operates on a simple, weekly-generation model.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Requested an update of all company contact information across the entire app to Bisa Group LLC details. (PENDING)
-2.  **User**: Requested a redesign of the landing page to be more exciting and premium. (COMPLETED)
-3.  **User**: what is the bisafit website ie the landing page on bisagrow? (Clarified - user wanted the preview URL)
-4.  **User**: Requested the creation of a full landing page for . (COMPLETED)
-5.  **User**: Confirmed they have active Google Play and Apple Developer accounts and are ready to start mobile deployment. (IN PROGRESS)
-6.  **User**: before we deploy, do we have everything in place for apple watch and google fit, fitbit, whoop and other smart watches? (IN PROGRESS)
-7.  **User**: Switched Stripe to LIVE mode by providing live keys. (COMPLETED)
-8.  **User**: Confirmed they have updated the price lookup_keys in their Stripe dashboard. (COMPLETED)
-9.  **User**: Provided their final pricing structure for monthly and annual plans. (COMPLETED)
-10. **User**: complete google fit integration then do step 2 and 3 (referring to integrating Fitbit/Strava and then preparing for deployment). (IN PROGRESS)
+1.  **User:** Provided console logs showing errors about missing columns in  and . (IN PROGRESS)
+2.  **User:** Regenerated the plan but images are still not seen. (ADDRESSED - The new on-demand architecture is implemented but blocked by DB errors).
+3.  **User:** Asked to generate and save images in the database. (COMPLETED - A cache of 86 images was created).
+4.  **User:** Stated they would wait for images to generate before testing again. (PENDING)
+5.  **User:** Asked for background plan generation and major UI cleanup on the Plan page. (COMPLETED)
+6.  **User:** Noticed the UI text still said 4 week plan. (COMPLETED)
+7.  **User:** Confirmed background generation works but the Start Workout button does nothing. (COMPLETED - Workout player is fixed but blocked by DB error).
+8.  **User:** Reported the Start Workout button leads to a blank page and asked to remove the bug button. (COMPLETED)
+9.  **User:** Confirmed that single-week plan generation worked. (COMPLETED)
+10. **User:** Suggested switching to single-week generation to fix bugs. (COMPLETED)
 
 **Project Health Check:**
 *   **Broken:**
-    *   None.
+    *   **Workout Sessions:** Cannot start due to missing DB columns.
+    *   **Analytics:** Failing due to missing DB columns.
 *   **Mocked:**
-    *   The Download on the App Store and Get it on Google Play buttons on the landing page are placeholders and do not link to anything.
-    *   Fitbit/Strava integrations will not work until the user provides API keys.
+    *   Store page link.
 
 **3rd Party Integrations**
-*   **OpenAI GPT-4o-mini**: (User LLM Key) For workout generation.
-*   **DALL-E**: (Emergent LLM Key) For exercise image generation.
-*   **Supabase**: (User API Key) Auth, Database, Storage.
-*   **Resend**: (User API Key) Transactional emails.
-*   **Stripe**: (User API Key) **LIVE MODE** for subscriptions.
-*   **Capacitor**: For mobile app wrapping.
-*   **Fitbit API**: (Requires User API Key) OAuth integration is coded but needs keys.
-*   **Strava API**: (Requires User API Key) OAuth integration is coded but needs keys.
-*   **Apple Health (HealthKit)**: Code is ready, requires Capacitor plugin during iOS build.
-*   **Google Fit (Health Connect)**: Code is ready, requires Capacitor plugin during Android build.
+*   **OpenAI GPT-4o-mini:** Generates workout plans. Uses User's API Key.
+*   **DALL-E (via Emergent LLM Key):** Generates exercise images for the cache.
+*   **Supabase:** Auth, Database, Storage. Uses User's API Keys.
+*   **Resend:** Sends emails. Uses User's API Key.
 
 **Testing status**
-- **Testing agent used after significant changes:** YES,  was used to validate the Auth + Legal flow.
-- **Troubleshoot agent used after agent stuck in loop:** NO
-- **Test files created:** []
-- **Known regressions:** None.
-
-**Credentials to test flow:**
-User must provide their own credentials for BisaFit. The admin account  can be used to bypass the paywall for testing premium features.
+-   **Testing agent used after significant changes:** NO
+-   **Test files created:** []
+-   **Known regressions:** Workout sessions are currently broken due to database schema errors.
 
 **What agent forgot to execute**
-The agent has not yet started the P0 task of updating all company contact information as requested by the user in their final message.</analysis>
+*   The agent has not yet provided the final, consolidated SQL script to the user to fix all the database errors identified in the last user message.
+*   The agent has not yet implemented the UI for the Active Rest Days feature on the main plan page.</analysis>

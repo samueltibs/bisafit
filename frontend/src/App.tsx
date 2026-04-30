@@ -11,7 +11,6 @@ import { AppLanguageProvider } from "@/components/AppLanguageProvider";
 import { LegalGate } from "@/components/legal";
 
 import Index from "./pages/Index";
-import LandingPage from "./pages/LandingPage";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import EmailVerification from "./pages/EmailVerification";
@@ -28,14 +27,10 @@ import Store from "./pages/Store";
 import Settings from "./pages/Settings";
 import NotificationCenter from "./pages/NotificationCenter";
 import ManageSubscription from "./pages/ManageSubscription";
-import BillingPage from "./pages/BillingPage";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import NotFound from "./pages/NotFound";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
-import ContactPage from "./pages/ContactPage";
-import FitbitCallback from "./pages/FitbitCallback";
-import StravaCallback from "./pages/StravaCallback";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -82,22 +77,13 @@ const App = () => (
               <Sonner />
               <BrowserRouter>
                 <Routes>
-                  {/* Landing Page - Public marketing page */}
-                  <Route path="/" element={<LandingPage />} />
-                  
-                  {/* Auth Routes */}
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/login" element={<Auth />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             
             {/* Public Legal Routes - No authentication required */}
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
-            <Route path="/contact" element={<ContactPage />} />
-            
-            {/* OAuth Callback Routes - Handle fitness platform OAuth callbacks */}
-            <Route path="/auth/fitbit/callback" element={<FitbitCallback />} />
-            <Route path="/auth/strava/callback" element={<StravaCallback />} />
             
             {/* Email Verification - requires auth but not email verification */}
             <Route path="/verify-email" element={
@@ -183,11 +169,6 @@ const App = () => (
             <Route path="/manage-subscription" element={
               <ProtectedRoute>
                 <ManageSubscription />
-              </ProtectedRoute>
-            } />
-            <Route path="/billing" element={
-              <ProtectedRoute>
-                <BillingPage />
               </ProtectedRoute>
             } />
             {/* Admin Analytics Dashboard */}

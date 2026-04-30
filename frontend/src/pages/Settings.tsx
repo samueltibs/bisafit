@@ -84,6 +84,7 @@ import { ActiveRestSelector } from '@/components/settings/ActiveRestSelector';
 import { isAdminEmail } from '@/lib/adminConfig';
 import { ActiveRestConfig, getDefaultActiveRestConfig } from '@/types/activeRest';
 import { useNutritionSettings } from '@/hooks/useNutritionSettings';
+import { DeleteAccountDialog } from '@/components/DeleteAccountDialog';
 
 // Toggle this to switch between beta feedback form and simple feedback
 const BETA_MODE = true;
@@ -791,6 +792,11 @@ export default function Settings() {
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
+
+              {/* Delete Account */}
+              <div className="p-4">
+                <DeleteAccountDialog />
+              </div>
 
               {/* Sign Out */}
               <button 

@@ -31,7 +31,7 @@ export interface SubscriptionPlanOption {
   popular?: boolean;
 }
 
-// CURRENT PRICING - BisaFit Premium
+// CURRENT PRICING - Promotional Offer
 export const SUBSCRIPTION_PLANS: SubscriptionPlanOption[] = [
   {
     id: 'monthly',
@@ -43,11 +43,11 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlanOption[] = [
   {
     id: 'annual',
     name: 'Annual',
-    price: '$134.91',
-    pricePerMonth: '$11.24/month',
+    price: '$134.99',
+    pricePerMonth: '$11.25/month',
     interval: 'year',
     badge: '🎁 3 MONTHS FREE',
-    savings: 'Pay for 9 months, get 12!',
+    savings: 'Limited Time Offer',
     popular: true,
   },
 ];

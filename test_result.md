@@ -126,7 +126,7 @@ backend:
         comment: "Backend has minimal implementation - only basic status check endpoints. Need to verify if working."
       - working: true
         agent: "testing"
-        comment: "✅ PASSED - GET /api/ endpoint returns correct 'Hello World' response. Status code 200. CORS headers working correctly (verified via OPTIONS preflight request). Backend server running properly on https://bisafit-rebrand.preview.emergentagent.com/api"
+        comment: "✅ PASSED - GET /api/ endpoint returns correct 'Hello World' response. Status code 200. CORS headers working correctly (verified via OPTIONS preflight request). Backend server running properly on https://bisafit-enhance-1.preview.emergentagent.com/api"
 
   - task: "MongoDB connection and data persistence"
     implemented: true
@@ -380,18 +380,6 @@ frontend:
         agent: "main"
         comment: "IMPLEMENTED: Complete redesign matching TV screen reference. Features: large timer (00:45 style), AI form guide images, progress indicators, next exercise preview, playback controls (play/pause/skip). Mobile-optimized full-screen interface. Images auto-generate and cache."
 
-  - task: "Legal compliance flow (Terms, Privacy, Auth)"
-    implemented: true
-    working: true
-    file: "frontend/src/pages/Terms.tsx, frontend/src/pages/Privacy.tsx, frontend/src/pages/Auth.tsx, frontend/src/components/legal/"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "✅ COMPREHENSIVE LEGAL FLOW TESTING COMPLETE - All requirements met for App Store compliance. PUBLIC LEGAL PAGES: /terms and /privacy accessible without auth, proper version info (2026-02-06-v1), last updated dates, Print buttons, scrolling works, markdown renders correctly. AUTH SIGNUP: Legal checkbox 'I agree to the Terms of Service and Privacy Policy' with links opening in new tabs, form validation prevents submission without acceptance, shows error message. AUTH SIGNIN: Consent text 'By continuing, you agree to the Terms of Service and Privacy Policy' with working links. FOOTER: 'Terms of Service | Privacy Policy' links present. SETTINGS: Properly protected (redirects to auth). All legal links have correct targets, validation works, scrolling containers properly configured. Ready for production."
-
 metadata:
   created_by: "main_agent"
   version: "1.0"
@@ -436,5 +424,3 @@ agent_communication:
     message: "✅ REVIEW REQUEST BACKEND TESTING COMPLETE - All 4 requested endpoints tested successfully. COMPREHENSIVE RESULTS: 1) GET /api/ health check - ✅ PASSED: Returns correct {'message': 'Hello World'} with 200 status on both localhost:8001 and production URL. 2) POST /api/generate-plan-template (FAST mode) - ✅ PASSED: Successfully generates 4-week personalized AI plans in 20-30 seconds with proper structure (plan ID, name, weeks array, AI-powered flag, cost info). Tested with exact request body from review. 3) POST /api/store-interest-notification - ✅ PASSED: Processes waitlist emails correctly, sends admin notifications successfully (user emails restricted to verified domain per Resend policy - expected behavior). 4) POST /api/send-feedback-notification - ✅ PASSED: Accepts feedback data and processes email notifications (rate limiting active as expected). Backend is fully functional and ready for App Store launch. Email system configured with RESEND_API_KEY. All core functionality working correctly."
   - agent: "testing"
     message: "❌ REVIEW REQUEST UI TESTING BLOCKED - Cannot test Plan page workout titles, Workout screen UI, or exercise display features due to authentication barrier. FINDINGS: 1) App properly redirects all routes (/plan, /workout/today) to /auth page - authentication is working correctly 2) Auth page has professional appearance with BisaFit branding, Sign In/Sign Up tabs, email/password fields, and 'Forgot password' link 3) Attempted authentication with test credentials (testuser@bisafit.com) but unable to bypass auth system 4) All navigation attempts redirect to /auth, preventing access to Plan page and Workout screens 5) Cannot verify: workout title capitalization (Title Case), exercise names in ALL CAPS, timer visibility/size, Supabase exercise images, next exercise preview formatting. RECOMMENDATION: Main agent needs to provide valid authentication credentials or temporarily disable auth protection to allow UI testing of the requested features. The authentication system is functioning correctly but blocks the specific UI testing requested in the review."
-  - agent: "testing"
-    message: "✅ BISAFIT LEGAL + AUTH + SETTINGS FLOW TESTING COMPLETE - Comprehensive testing of the complete legal compliance flow at https://bisafit-rebrand.preview.emergentagent.com. ALL TESTS PASSED: 1) PUBLIC LEGAL PAGES: /terms and /privacy pages load without authentication, display proper version info (2026-02-06-v1), last updated dates (February 6, 2026), Print buttons visible, scrolling works correctly, markdown renders properly (headers, lists, bold text). 2) AUTH PAGE SIGN UP FLOW: Legal checkbox appears with text 'I agree to the Terms of Service and Privacy Policy', Terms/Privacy links open in new tabs (_blank target), form validation prevents submission without legal acceptance (shows error: 'Please accept the Terms of Service and Privacy Policy'), footer shows 'Terms of Service | Privacy Policy' links. 3) AUTH PAGE SIGN IN FLOW: Consent text 'By continuing, you agree to the Terms of Service and Privacy Policy' appears below Sign In button with working legal links, footer legal links present. 4) SETTINGS PAGE: Properly redirects to /auth (authentication required), confirming security is working. 5) ADDITIONAL VERIFICATION: Fixed inset-0 overflow-y-auto container for proper scrolling, all legal links have correct targets, validation styling works correctly. The complete legal compliance system is production-ready and meets all requirements for App Store launch."

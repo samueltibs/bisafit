@@ -130,13 +130,13 @@
    * - html, body: height 100%, overflow hidden
    * - Scroll happens in AppLayout's <main> element only
    * - This prevents iOS Safari rubber-banding and scroll conflicts
-   * - Landing page has its own scroll container override
    */
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     height: 100%;
+    overflow: hidden;
   }
 
   body {
@@ -146,19 +146,7 @@
     letter-spacing: -0.011em;
     line-height: 1.5;
     height: 100%;
-  }
-  
-  /* Allow scrolling on public pages (landing, terms, privacy, contact) */
-  html:has(.landing-page),
-  html:has(.public-page) {
-    overflow: auto;
-    height: auto;
-  }
-  
-  body:has(.landing-page),
-  body:has(.public-page) {
-    overflow: auto;
-    height: auto;
+    overflow: hidden;
   }
 
   /* Ensure closed overlays don't block interactions */

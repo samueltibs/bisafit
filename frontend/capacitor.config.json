@@ -1,15 +1,5 @@
 {
-  "appId": "com.bisafit.app",
-  "appName": "BisaFit",
-  "webDir": "build",
-  "plugins": {
-    "SplashScreen": {
-      "launchShowDuration": 2000,
-      "backgroundColor": "#121212",
-      "showSpinner": false
-    }
-  },
-  "android": {
-    "allowMixedContent": true
-  }
+    "appId": "com.bisagroup.bisafit",
+    "appName": "BisaFit",
+    "webDir": "dist"
 }

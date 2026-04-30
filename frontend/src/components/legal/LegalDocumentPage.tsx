@@ -10,7 +10,7 @@ import { ArrowLeft, Printer, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import type { LegalDocument } from '@/types/legal';
-import { APP_NAME, COMPANY_NAME, COMPANY_ADDRESS, EMAIL_SUPPORT, COMPANY_PHONE } from '@/lib/branding';
+import { APP_NAME } from '@/lib/branding';
 import ReactMarkdown from 'react-markdown';
 
 interface LegalDocumentPageProps {
@@ -21,7 +21,7 @@ interface LegalDocumentPageProps {
 }
 
 export function LegalDocumentPage({
-  document: legalDoc,
+  document,
   loading,
   error,
   fallbackTitle,
@@ -43,7 +43,7 @@ export function LegalDocumentPage({
 
   if (loading) {
     return (
-      <div className="fixed inset-0 overflow-y-auto bg-background">
+      <div className="min-h-screen bg-background">
         <div className="max-w-3xl mx-auto px-4 py-8">
           <Skeleton className="h-8 w-48 mb-4" />
           <Skeleton className="h-4 w-32 mb-8" />
@@ -61,7 +61,7 @@ export function LegalDocumentPage({
 
   if (error) {
     return (
-      <div className="fixed inset-0 overflow-y-auto bg-background">
+      <div className="min-h-screen bg-background">
         <div className="max-w-3xl mx-auto px-4 py-8">
           <Card>
             <CardContent className="pt-6">
@@ -81,9 +81,9 @@ export function LegalDocumentPage({
     );
   }
 
-  if (!legalDoc) {
+  if (!document) {
     return (
-      <div className="fixed inset-0 overflow-y-auto bg-background">
+      <div className="min-h-screen bg-background">
         <div className="max-w-3xl mx-auto px-4 py-8">
           <Card>
             <CardContent className="pt-6">
@@ -106,7 +106,7 @@ export function LegalDocumentPage({
   }
 
   return (
-    <div className="public-page fixed inset-0 overflow-y-auto bg-background print:bg-white print:relative print:overflow-visible">
+    <div className="min-h-screen bg-background print:bg-white">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b print:hidden">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -130,12 +130,12 @@ export function LegalDocumentPage({
             <span>•</span>
             <span>Legal</span>
           </div>
-          <h1 className="text-3xl font-bold mb-2 print:text-2xl">{legalDoc.title}</h1>
+          <h1 className="text-3xl font-bold mb-2 print:text-2xl">{document.title}</h1>
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-            <span>Version {legalDoc.version}</span>
-            {legalDoc.published_at && (
+            <span>Version {document.version}</span>
+            {document.published_at && (
               <span>
-                Last updated: {format(new Date(legalDoc.published_at), 'MMMM d, yyyy')}
+                Last updated: {format(new Date(document.published_at), 'MMMM d, yyyy')}
               </span>
             )}
           </div>
@@ -166,20 +166,15 @@ export function LegalDocumentPage({
                 strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
               }}
             >
-              {legalDoc.content_markdown}
+              {document.content_markdown}
             </ReactMarkdown>
           </CardContent>
         </Card>
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-muted-foreground print:hidden">
-          <p>© {new Date().getFullYear()} {COMPANY_NAME}. All rights reserved.</p>
-          <p className="mt-1">
-            {COMPANY_ADDRESS.street}, {COMPANY_ADDRESS.suite}, {COMPANY_ADDRESS.city}, {COMPANY_ADDRESS.state} {COMPANY_ADDRESS.zip}
-          </p>
-          <p className="mt-1">
-            Support: {EMAIL_SUPPORT} • {COMPANY_PHONE}
-          </p>
+          <p>© {new Date().getFullYear()} Bisa Group, LLC. All rights reserved.</p>
+          <p className="mt-1">Operated from Delaware, USA</p>
         </div>
       </div>
     </div>
