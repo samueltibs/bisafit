@@ -147,6 +147,8 @@ async function generatePlanCore(): Promise<GeneratePlanResult> {
 
   const data = await response.json();
 
+  console.log('[PlanGeneration] Full response from backend:', JSON.stringify(data, null, 2));
+
   if (!response.ok) {
     throw new Error(data.detail || data.error || 'Failed to generate plan');
   }
@@ -156,7 +158,9 @@ async function generatePlanCore(): Promise<GeneratePlanResult> {
   console.log('[PlanGeneration] Received week:', {
     id: generatedWeek.id,
     theme: generatedWeek.theme,
-    workouts: generatedWeek.total_workouts,
+    totalWorkouts: generatedWeek.total_workouts,
+    workoutsArray: generatedWeek.workouts?.length || 0,
+    workoutNames: generatedWeek.workouts?.map((w: any) => w.day_name + ': ' + w.name) || [],
   });
 
   if (!generatedWeek.workouts || generatedWeek.workouts.length === 0) {
@@ -268,16 +272,26 @@ async function generatePlanCore(): Promise<GeneratePlanResult> {
   });
 
   console.log(`[PlanGeneration] Inserting ${workoutsToInsert.length} workouts...`);
+  console.log(`[PlanGeneration] Workouts to insert:`, JSON.stringify(workoutsToInsert.map(w => ({ 
+    title: w.title, 
+    scheduled_date: w.scheduled_date,
+    blocks: (w.workout_json as any).blocks?.length || 0 
+  })), null, 2));
 
   if (workoutsToInsert.length > 0) {
-    const { error: workoutsError } = await supabase
+    const { data: insertedWorkouts, error: workoutsError } = await supabase
       .from('workouts')
       .insert(workoutsToInsert)
       .select();
 
     if (workoutsError) {
       console.error('[PlanGeneration] Error inserting workouts:', workoutsError);
+      throw new Error('Failed to insert workouts: ' + workoutsError.message);
+    } else {
+      console.log(`[PlanGeneration] Successfully inserted ${insertedWorkouts?.length || 0} workouts`);
     }
+  } else {
+    console.error('[PlanGeneration] NO WORKOUTS TO INSERT - this is the bug!');
   }
 
   // Update user profile
