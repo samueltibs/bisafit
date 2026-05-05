@@ -552,7 +552,6 @@ async def generate_single_week_endpoint(request: SingleWeekRequest):
     """
     try:
         logger.info(f"Generating single week for user: {request.user_id}, week {request.week_number}")
-        logger.info(f"Workout days requested: {request.workout_days}")
         
         profile_data = {
             "user_id": request.user_id,
@@ -562,8 +561,6 @@ async def generate_single_week_endpoint(request: SingleWeekRequest):
             "equipment": request.equipment,
             "session_minutes": request.session_minutes,
         }
-        
-        logger.info(f"Profile data being used: {profile_data}")
         
         # Parse start_date if provided
         start_date = None

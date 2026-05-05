@@ -6,7 +6,14 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   build: {
-    outDir: 'build'
+    outDir: 'build',
+    rollupOptions: {
+      external: [
+        '@capacitor-community/app-tracking-transparency',
+        '@capacitor-community/secure-storage-plugin',
+        '@perfood/capacitor-healthkit',
+      ],
+    },
   },
   
   // Server configuration

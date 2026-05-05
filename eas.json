@@ -1,48 +1,48 @@
 {
-    "cli": {
-          "version": ">= 5.0.0"
+  "cli": {
+    "version": ">= 5.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://fwyujgszmxqifppyzonx.supabase.co",
+        "EXPO_PUBLIC_ENV": "development"
+      }
     },
-    "build": {
-          "development": {
-                  "developmentClient": true,
-                  "distribution": "internal",
-                  "env": {
-                            "EXPO_PUBLIC_SUPABASE_URL": "https://fwyujgszmxqifppyzonx.supabase.co",
-                            "EXPO_PUBLIC_ENV": "development"
-                  }
-          },
-          "preview": {
-                  "distribution": "internal",
-                  "android": {
-                            "buildType": "apk"
-                  },
-                  "env": {
-                            "EXPO_PUBLIC_SUPABASE_URL": "https://fwyujgszmxqifppyzonx.supabase.co",
-                            "EXPO_PUBLIC_ENV": "preview"
-                  }
-          },
-          "production": {
-                  "autoIncrement": true,
-                  "ios": {
-                            "bundleIdentifier": "com.bisagroup.bisafit"
-                  },
-                  "env": {
-                            "EXPO_PUBLIC_SUPABASE_URL": "https://fwyujgszmxqifppyzonx.supabase.co",
-                            "EXPO_PUBLIC_ENV": "production"
-                  }
-          }
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://fwyujgszmxqifppyzonx.supabase.co",
+        "EXPO_PUBLIC_ENV": "preview"
+      }
     },
-    "submit": {
-          "production": {
-                  "ios": {
-                            "appleId": "samuel@bisagroup.org",
-                            "ascAppId": "6763073801",
-                            "appleTeamId": "HN5DB7S9DB"
-                  },
-                  "android": {
-                            "serviceAccountKeyPath": "./google-play-key.json",
-                            "track": "internal"
-                  }
-          }
+    "production": {
+      "autoIncrement": true,
+      "ios": {
+        "bundleIdentifier": "com.bisagroup.bisafit"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://fwyujgszmxqifppyzonx.supabase.co",
+        "EXPO_PUBLIC_ENV": "production"
+      }
     }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "samuel@bisagroup.org",
+        "ascAppId": "6763073801",
+        "appleTeamId": "HN5DB7S9DB"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-play-key.json",
+        "track": "internal"
+      }
+    }
+  }
 }

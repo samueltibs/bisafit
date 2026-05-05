@@ -38,6 +38,7 @@ import FitbitCallback from "./pages/FitbitCallback";
 import StravaCallback from "./pages/StravaCallback";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { requestATTIfNeeded } from '@/lib/att';
 
 const queryClient = new QueryClient();
 
@@ -71,7 +72,12 @@ function AuthRedirectHandler({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-const App = () => (
+const App = () => {
+  useEffect(() => {
+    requestATTIfNeeded();
+  }, []);
+
+  return (
   <QueryClientProvider client={queryClient}>
     <PlatformProvider>
       <AuthProvider>
@@ -202,6 +208,7 @@ const App = () => (
       </AuthProvider>
     </PlatformProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;

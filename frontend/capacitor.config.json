@@ -1,5 +1,22 @@
 {
-    "appId": "com.bisagroup.bisafit",
-    "appName": "BisaFit",
-    "webDir": "dist"
+        "appId": "com.bisagroup.bisafit",
+        "appName": "BisaFit",
+        "webDir": "dist",
+        "plugins": {
+                    "HealthKit": {
+                                    "readPermissions": [
+                                                        "steps",
+                                                        "heartRate",
+                                                        "activeEnergyBurned",
+                                                        "workout",
+                                                        "weight",
+                                                        "height"
+                                    ],
+                                    "writePermissions": [
+                                                        "workout",
+                                                        "activeEnergyBurned",
+                                                        "weight"
+                                    ]
+                    }
+        }
 }

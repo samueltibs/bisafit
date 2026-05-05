@@ -38,10 +38,34 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<false/>
-	</dict>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
+	<key>NSAppleIDServiceDescription</key>
+	<string>BisaFit uses Apple ID to sign you in securely.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>BisaFit uses identifiers to deliver a personalized fitness experience and improve our app. You can change this anytime in Settings.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>BisaFit reads your workout, activity, and health data from Apple Health to personalize your fitness plan and track your progress.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>BisaFit writes your workout sessions and fitness achievements to Apple Health so all your data stays in one place.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>BisaFit uses your camera to scan barcodes for nutrition tracking and to take progress photos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>BisaFit accesses your photo library to upload progress photos and profile images.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>BisaFit uses motion data to count steps and detect workout activity.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>BisaFit uses your location to track outdoor workouts and find nearby gyms.</string>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>BisaFit accesses Apple Music to play your workout playlists.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>BisaFit uses the microphone for voice-guided workout sessions.</string>
 </dict>
 </plist>
