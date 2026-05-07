@@ -143,12 +143,21 @@ async function generatePlanCore(): Promise<GeneratePlanResult> {
   console.log('[PlanGeneration] Received week:', {
     id: generatedWeek.id,
     theme: generatedWeek.theme,
-    workouts: generatedWeek.total_workouts,
+    totalWorkouts: generatedWeek.total_workouts,
+    workoutsArrayLength: generatedWeek.workouts?.length || 0,
+    workoutNames: generatedWeek.workouts?.map((w: any) => `${w.day_name}: ${w.name}`) || [],
   });
 
   if (!generatedWeek.workouts || generatedWeek.workouts.length === 0) {
+    console.error('[PlanGeneration] CRITICAL: No workouts in API response!');
+    console.error('[PlanGeneration] Full response:', JSON.stringify(data, null, 2));
     throw new Error('No workouts were generated. Please try again.');
   }
+
+  console.log('[PlanGeneration] Workouts received from API:');
+  generatedWeek.workouts.forEach((w: any, i: number) => {
+    console.log(`  [${i}] ${w.day_name} (${w.scheduled_date}): ${w.name} - ${w.exercises?.length || 0} exercises`);
+  });
 
   // Create plan in Supabase
   const { data: savedPlan, error: planError } = await supabase
@@ -255,16 +264,32 @@ async function generatePlanCore(): Promise<GeneratePlanResult> {
   });
 
   console.log(`[PlanGeneration] Inserting ${workoutsToInsert.length} workouts...`);
+  console.log(`[PlanGeneration] Workouts data:`, workoutsToInsert.map(w => ({
+    title: w.title,
+    scheduled_date: w.scheduled_date,
+    plan_id: w.plan_id,
+    user_id: w.user_id,
+  })));
 
   if (workoutsToInsert.length > 0) {
-    const { error: workoutsError } = await supabase
+    const { data: insertedWorkouts, error: workoutsError } = await supabase
       .from('workouts')
       .insert(workoutsToInsert)
       .select();
 
     if (workoutsError) {
-      console.error('[PlanGeneration] Error inserting workouts:', workoutsError);
+      console.error('[PlanGeneration] CRITICAL: Error inserting workouts:', workoutsError);
+      console.error('[PlanGeneration] Error code:', workoutsError.code);
+      console.error('[PlanGeneration] Error details:', workoutsError.details);
+      console.error('[PlanGeneration] Error hint:', workoutsError.hint);
+      // Don't silently fail - throw the error
+      throw new Error(`Failed to insert workouts: ${workoutsError.message}`);
     }
+    
+    console.log(`[PlanGeneration] Successfully inserted ${insertedWorkouts?.length || 0} workouts`);
+    console.log(`[PlanGeneration] Inserted workout IDs:`, insertedWorkouts?.map(w => w.id));
+  } else {
+    console.error('[PlanGeneration] WARNING: No workouts to insert - this should not happen!');
   }
 
   // Update user profile
