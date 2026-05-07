@@ -15,9 +15,7 @@
       }
     },
     "production": {
-      "ios": {
-        "bundleIdentifier": "com.bisagroup.bisafit"
-      },
+      "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"
       }

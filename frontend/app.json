@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "BisaFit",
+    "slug": "bisafit",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./public/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#121212"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bisagroup.bisafit",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "BisaFit needs access to your health data to track your workouts and progress.",
+        "NSHealthUpdateUsageDescription": "BisaFit needs access to update your health data with workout information.",
+        "NSUserTrackingUsageDescription": "BisaFit uses this data to provide personalized fitness recommendations and improve your experience."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#121212"
+      },
+      "package": "com.bisagroup.bisafit",
+      "versionCode": 1
+    },
+    "extra": {
+      "eas": {
+        "projectId": "f6be4451-80ff-4a81-b073-3037c2f3bdb5"
+      }
+    },
+    "owner": "bisagroup_llc"
+  }
+}
