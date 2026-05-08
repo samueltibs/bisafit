@@ -296,22 +296,47 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <div className="flex justify-between">
-              {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
-                <div key={i} className="flex flex-col items-center gap-1">
-                  <span className="text-xs text-muted-foreground">{day}</span>
-                  <div
-                    className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium ${
-                      i < 4
-                        ? 'bg-primary text-primary-foreground'
-                        : i === 4
-                        ? 'border-2 border-primary text-primary'
-                        : 'bg-muted text-muted-foreground'
-                    }`}
-                  >
-                    {i < 4 ? '✓' : i + 20}
-                  </div>
-                </div>
-              ))}
+              {(() => {
+                // Calculate current week dates (Monday to Sunday)
+                const today = new Date();
+                const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+                const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                const monday = new Date(today);
+                monday.setDate(today.getDate() - daysSinceMonday);
+                
+                const weekDates = Array.from({ length: 7 }, (_, i) => {
+                  const date = new Date(monday);
+                  date.setDate(monday.getDate() + i);
+                  return date;
+                });
+                
+                const todayDate = today.getDate();
+                const todayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to Monday=0 index
+                
+                return ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => {
+                  const dateNum = weekDates[i].getDate();
+                  const isPast = i < todayIndex;
+                  const isToday = i === todayIndex;
+                  const isFuture = i > todayIndex;
+                  
+                  return (
+                    <div key={i} className="flex flex-col items-center gap-1">
+                      <span className="text-xs text-muted-foreground">{day}</span>
+                      <div
+                        className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium ${
+                          isPast
+                            ? 'bg-primary text-primary-foreground'
+                            : isToday
+                            ? 'border-2 border-primary text-primary'
+                            : 'bg-muted text-muted-foreground'
+                        }`}
+                      >
+                        {isPast ? '✓' : dateNum}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </CardContent>
         </Card>
