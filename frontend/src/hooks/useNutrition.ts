@@ -106,15 +106,36 @@ export function useNutrition(): UseNutritionResult {
       setLoading(true);
       setError(null);
 
+      // First check localStorage for cached data
+      const localKey = `bisafit_nutrition_${user.id}`;
+      const localData = localStorage.getItem(localKey);
+      let localProfile: Partial<NutritionProfile> | null = null;
+      
+      if (localData) {
+        try {
+          localProfile = JSON.parse(localData);
+          console.log('[Nutrition] Found localStorage data');
+        } catch (e) {
+          console.log('[Nutrition] Invalid localStorage data');
+        }
+      }
+
+      // Try nutrition_profiles table
       const { data, error: fetchError } = await supabase
         .from('nutrition_profiles')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (fetchError) throw fetchError;
-
-      if (data) {
+      // If database has data, use it (merge with localStorage)
+      if (!fetchError && data) {
+        const dbTargets = (data as Record<string, unknown>).targets_json as NutritionTargets | null;
+        const dbMealPlan = (data as Record<string, unknown>).meal_plan_json as MealPlan | null;
+        
+        // Prefer localStorage data if DB data is null
+        const finalTargets = dbTargets || localProfile?.targets_json || null;
+        const finalMealPlan = dbMealPlan || localProfile?.meal_plan_json || null;
+        
         setProfile({
           user_id: data.user_id,
           nutrition_goal_style: (data as Record<string, unknown>).nutrition_goal_style as 'simple' | 'macros' || 'simple',
@@ -123,37 +144,55 @@ export function useNutrition(): UseNutritionResult {
           meals_per_day: (data as Record<string, unknown>).meals_per_day as number || 3,
           snacks_per_day: (data as Record<string, unknown>).snacks_per_day as number || 1,
           budget_level: (data as Record<string, unknown>).budget_level as 'low' | 'medium' | 'high' || 'medium',
-          targets_json: (data as Record<string, unknown>).targets_json as NutritionTargets | null,
-          meal_plan_json: (data as Record<string, unknown>).meal_plan_json as MealPlan | null,
+          targets_json: finalTargets,
+          meal_plan_json: finalMealPlan,
           calories_target: data.calories_target,
           protein_g: data.protein_g,
           carbs_g: data.carbs_g,
           fat_g: data.fat_g,
         });
-      } else {
-        // Create default profile
-        const { error: insertError } = await supabase
-          .from('nutrition_profiles')
-          .insert({ user_id: user.id });
-
-        if (!insertError) {
-          setProfile({
-            user_id: user.id,
-            nutrition_goal_style: 'simple',
-            dietary_preferences_json: {},
-            cuisine_preferences_json: [],
-            meals_per_day: 3,
-            snacks_per_day: 1,
-            budget_level: 'medium',
-            targets_json: null,
-            meal_plan_json: null,
-            calories_target: null,
-            protein_g: null,
-            carbs_g: null,
-            fat_g: null,
-          });
-        }
+        setLoading(false);
+        return;
       }
+
+      // If DB failed but we have localStorage data, use it
+      if (localProfile && (localProfile.targets_json || localProfile.meal_plan_json)) {
+        console.log('[Nutrition] Using localStorage data (DB unavailable)');
+        setProfile({
+          user_id: user.id,
+          nutrition_goal_style: localProfile.nutrition_goal_style || 'simple',
+          dietary_preferences_json: localProfile.dietary_preferences_json || {},
+          cuisine_preferences_json: localProfile.cuisine_preferences_json || [],
+          meals_per_day: localProfile.meals_per_day || 3,
+          snacks_per_day: localProfile.snacks_per_day || 1,
+          budget_level: localProfile.budget_level || 'medium',
+          targets_json: localProfile.targets_json || null,
+          meal_plan_json: localProfile.meal_plan_json || null,
+          calories_target: localProfile.calories_target || null,
+          protein_g: localProfile.protein_g || null,
+          carbs_g: localProfile.carbs_g || null,
+          fat_g: localProfile.fat_g || null,
+        });
+        setLoading(false);
+        return;
+      }
+
+      // No data anywhere - set default profile
+      setProfile({
+        user_id: user.id,
+        nutrition_goal_style: 'simple',
+        dietary_preferences_json: {},
+        cuisine_preferences_json: [],
+        meals_per_day: 3,
+        snacks_per_day: 1,
+        budget_level: 'medium',
+        targets_json: null,
+        meal_plan_json: null,
+        calories_target: null,
+        protein_g: null,
+        carbs_g: null,
+        fat_g: null,
+      });
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to load nutrition profile');
       console.error('useNutrition error:', error);
@@ -207,15 +246,64 @@ export function useNutrition(): UseNutritionResult {
     };
   }, [user]);
 
-  // Save targets to database (with fallback to local state if DB fails)
+  // Save nutrition data to localStorage (reliable fallback when DB has RLS issues)
+  const saveToLocalStorage = useCallback((data: Partial<NutritionProfile>) => {
+    if (!user) return;
+    try {
+      const key = `bisafit_nutrition_${user.id}`;
+      const existing = localStorage.getItem(key);
+      const current = existing ? JSON.parse(existing) : {};
+      const updated = { ...current, ...data };
+      localStorage.setItem(key, JSON.stringify(updated));
+      console.log('[Nutrition] Saved to localStorage');
+    } catch (err) {
+      console.error('Error saving to localStorage:', err);
+    }
+  }, [user]);
+
+  // Load nutrition data from localStorage
+  const loadFromLocalStorage = useCallback((): Partial<NutritionProfile> | null => {
+    if (!user) return null;
+    try {
+      const key = `bisafit_nutrition_${user.id}`;
+      const data = localStorage.getItem(key);
+      if (data) {
+        console.log('[Nutrition] Loaded from localStorage');
+        return JSON.parse(data);
+      }
+    } catch (err) {
+      console.error('Error loading from localStorage:', err);
+    }
+    return null;
+  }, [user]);
+
+  // Save targets (localStorage + attempt DB)
   const saveFallbackTargets = useCallback(async (targets: NutritionTargets): Promise<boolean> => {
     if (!user) return false;
 
-    // Cast targets to Json type for Supabase
-    const targetsJson = targets as unknown as Json;
+    // Update local state immediately
+    setProfile(prev => prev ? { ...prev, targets_json: targets } : {
+      user_id: user.id,
+      nutrition_goal_style: 'simple',
+      dietary_preferences_json: {},
+      cuisine_preferences_json: [],
+      meals_per_day: 3,
+      snacks_per_day: 1,
+      budget_level: 'medium',
+      targets_json: targets,
+      meal_plan_json: null,
+      calories_target: targets.calories_target.high,
+      protein_g: targets.protein_g,
+      carbs_g: null,
+      fat_g: null,
+    });
 
+    // Save to localStorage for persistence
+    saveToLocalStorage({ targets_json: targets });
+
+    // Try to save to nutrition_profiles table (may fail due to RLS)
     try {
-      // First check if profile exists
+      const targetsJson = targets as unknown as Json;
       const { data: existing } = await supabase
         .from('nutrition_profiles')
         .select('user_id')
@@ -223,86 +311,21 @@ export function useNutrition(): UseNutritionResult {
         .maybeSingle();
 
       if (existing) {
-        // Update existing
-        const { error } = await supabase
+        await supabase
           .from('nutrition_profiles')
           .update({ targets_json: targetsJson })
           .eq('user_id', user.id);
-
-        if (error) {
-          console.error('Error saving targets to DB:', error);
-          // Still return true - we'll use local state
-          setProfile(prev => prev ? { ...prev, targets_json: targets } : {
-            user_id: user.id,
-            nutrition_goal_style: 'simple',
-            dietary_preferences_json: {},
-            cuisine_preferences_json: [],
-            meals_per_day: 3,
-            snacks_per_day: 1,
-            budget_level: 'medium',
-            targets_json: targets,
-            meal_plan_json: null,
-            calories_target: targets.calories_target.high,
-            protein_g: targets.protein_g,
-            carbs_g: null,
-            fat_g: null,
-          });
-          return true;
-        }
       } else {
-        // Insert new
-        const { error } = await supabase
+        await supabase
           .from('nutrition_profiles')
-          .insert([{ 
-            user_id: user.id, 
-            targets_json: targetsJson 
-          }]);
-
-        if (error) {
-          console.error('Error saving targets to DB:', error);
-          // Still return true - we'll use local state
-          setProfile(prev => prev ? { ...prev, targets_json: targets } : {
-            user_id: user.id,
-            nutrition_goal_style: 'simple',
-            dietary_preferences_json: {},
-            cuisine_preferences_json: [],
-            meals_per_day: 3,
-            snacks_per_day: 1,
-            budget_level: 'medium',
-            targets_json: targets,
-            meal_plan_json: null,
-            calories_target: targets.calories_target.high,
-            protein_g: targets.protein_g,
-            carbs_g: null,
-            fat_g: null,
-          });
-          return true;
-        }
+          .insert([{ user_id: user.id, targets_json: targetsJson }]);
       }
-
-      await fetchProfile();
-      return true;
     } catch (err) {
-      console.error('Error in saveFallbackTargets:', err);
-      // Use local state as fallback with full profile structure
-      setProfile(prev => prev ? { ...prev, targets_json: targets } : {
-        user_id: user.id,
-        nutrition_goal_style: 'simple',
-        dietary_preferences_json: {},
-        cuisine_preferences_json: [],
-        meals_per_day: 3,
-        snacks_per_day: 1,
-        budget_level: 'medium',
-        targets_json: targets,
-        meal_plan_json: null,
-        calories_target: targets.calories_target.high,
-        protein_g: targets.protein_g,
-        carbs_g: null,
-        fat_g: null,
-      });
-      return true;
+      console.log('[Nutrition] DB save failed (using localStorage)');
     }
-  }, [user, fetchProfile]);
+
+    return true;
+  }, [user, saveToLocalStorage]);
 
   const generateTargets = useCallback(async (): Promise<{ success: boolean; isFallback: boolean }> => {
     if (!user) return { success: false, isFallback: false };
@@ -464,6 +487,10 @@ export function useNutrition(): UseNutritionResult {
       if (data.success && data.meal_plan) {
         // Update local state with the meal plan
         setProfile(prev => prev ? { ...prev, meal_plan_json: data.meal_plan } : null);
+        
+        // Save to localStorage for persistence
+        saveToLocalStorage({ meal_plan_json: data.meal_plan as unknown as MealPlan });
+        
         toast.success('Meal plan generated!');
         return true;
       }
@@ -477,7 +504,7 @@ export function useNutrition(): UseNutritionResult {
     } finally {
       setGeneratingMealPlan(false);
     }
-  }, [user, profile?.targets_json]);
+  }, [user, profile?.targets_json, saveToLocalStorage]);
 
   const swapMeal = useCallback(async (dayIndex: number, mealIndex: number, isSnack = false): Promise<boolean> => {
     if (!user) return false;
