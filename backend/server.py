@@ -613,6 +613,96 @@ async def generate_nutrition_targets_endpoint(request: NutritionTargetsRequest):
         }
 
 
+class MealPlanRequest(BaseModel):
+    """Request for generating a meal plan"""
+    user_id: str
+    days: int = 7
+    calories_target: Optional[Dict[str, int]] = None
+    protein_g: Optional[int] = None
+    dietary_preferences: List[str] = []
+    cuisine_preferences: List[str] = []
+
+
+@api_router.post("/generate-meal-plan")
+async def generate_meal_plan_endpoint(request: MealPlanRequest):
+    """
+    Generate a personalized meal plan using OpenAI.
+    """
+    from openai import AsyncOpenAI
+    
+    try:
+        client = AsyncOpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
+        
+        days = request.days
+        calories = request.calories_target or {"low": 2000, "high": 2500}
+        protein = request.protein_g or 140
+        dietary_prefs = ", ".join(request.dietary_preferences) if request.dietary_preferences else "none"
+        cuisine_prefs = ", ".join(request.cuisine_preferences) if request.cuisine_preferences else "varied"
+        
+        prompt = f"""Generate a {days}-day meal plan with the following requirements:
+- Daily calorie target: {calories.get('low', 2000)}-{calories.get('high', 2500)} kcal
+- Daily protein target: {protein}g
+- Dietary preferences: {dietary_prefs}
+- Cuisine preferences: {cuisine_prefs}
+
+For each day, provide:
+- Breakfast, Lunch, Dinner (each with name, estimated calories, protein, and brief ingredients list)
+- 1-2 snacks
+
+Also provide a consolidated grocery list organized by category (produce, proteins, pantry, dairy).
+
+Return as JSON with this structure:
+{{
+  "days": [
+    {{
+      "day": "Monday",
+      "meals": [
+        {{"name": "...", "type": "breakfast", "calories_est": 400, "protein_g_est": 20, "ingredients": ["..."], "instructions": "..."}},
+        {{"name": "...", "type": "lunch", ...}},
+        {{"name": "...", "type": "dinner", ...}}
+      ],
+      "snacks": [{{"name": "...", "calories_est": 150, "protein_g_est": 10, "ingredients": ["..."]}}]
+    }}
+  ],
+  "grocery_list": {{
+    "produce": ["..."],
+    "proteins": ["..."],
+    "pantry": ["..."],
+    "dairy_optional": ["..."]
+  }},
+  "prep_tips": ["..."],
+  "swap_rules": "Feel free to swap meals with similar macros."
+}}"""
+
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a professional nutritionist. Generate practical, healthy meal plans. Return only valid JSON."},
+                {"role": "user", "content": prompt}
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.7,
+            max_tokens=4000
+        )
+        
+        import json
+        meal_plan = json.loads(response.choices[0].message.content)
+        
+        logger.info(f"Generated {days}-day meal plan for user {request.user_id}")
+        
+        return {
+            "success": True,
+            "meal_plan": meal_plan
+        }
+        
+    except Exception as e:
+        logger.error(f"Error generating meal plan: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
 @api_router.post("/generate-week")
 async def generate_single_week_endpoint(request: SingleWeekRequest):
     """
