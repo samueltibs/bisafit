@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Json } from '@/integrations/supabase/types';
 
+const BACKEND_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+
 export interface NutritionTargets {
   calories_target: { low: number; high: number };
   protein_g: number;
@@ -11,7 +13,7 @@ export interface NutritionTargets {
   fat_g_optional?: number | null;
   water_liters: number;
   notes: string;
-  source?: 'ai' | 'fallback';
+  source?: 'ai' | 'fallback' | 'api';
 }
 
 export type InstructionStyle = 'simple' | 'detailed' | 'gourmet';
@@ -255,46 +257,54 @@ export function useNutrition(): UseNutritionResult {
     try {
       setGeneratingTargets(true);
       
-      const { data, error } = await supabase.functions.invoke('generate-nutrition-targets', {});
+      // Get user profile for weight and goal
+      const { data: userProfile } = await supabase
+        .from('users_profile')
+        .select('weight_kg, goal_primary')
+        .eq('id', user.id)
+        .maybeSingle();
 
-      // Check for any errors - Edge Functions may not be deployed, use fallback
-      if (error) {
-        console.error('Generate targets error:', error);
-        
-        // Always use fallback when Edge Function fails (not deployed, server error, etc.)
-        const fallbackTargets = await computeFallbackTargets();
-        const saved = await saveFallbackTargets(fallbackTargets);
+      // Use backend API instead of Supabase Edge Function
+      const response = await fetch(`${BACKEND_URL}/api/generate-nutrition-targets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          weight_kg: userProfile?.weight_kg || null,
+          goal_primary: userProfile?.goal_primary || 'maintenance',
+          activity_level: 'moderate',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate targets');
+      }
+
+      const data = await response.json();
+
+      if (data.success && data.targets) {
+        // Save the targets to nutrition_profiles
+        const saved = await saveFallbackTargets(data.targets);
         
         if (saved) {
-          toast.success('Nutrition targets generated using your profile data!');
+          toast.success('Nutrition targets generated!');
           await fetchProfile();
-          return { success: true, isFallback: true };
+          return { success: true, isFallback: false };
         }
-        
-        toast.error('Failed to generate targets');
-        return { success: false, isFallback: false };
       }
 
-      if (data?.error) {
-        // Also check for error responses from the function itself
-        const fallbackTargets = await computeFallbackTargets();
-        const saved = await saveFallbackTargets(fallbackTargets);
-        
-        if (saved) {
-          toast('Nutrition targets are temporarily unavailable. Using estimated targets for now.', {
-            icon: '⚠️',
-            duration: 5000,
-          });
-          return { success: true, isFallback: true };
-        }
-        
-        toast.error(data.error);
-        return { success: false, isFallback: false };
+      // If API fails, use local fallback
+      const fallbackTargets = await computeFallbackTargets();
+      const saved = await saveFallbackTargets(fallbackTargets);
+      
+      if (saved) {
+        toast.success('Nutrition targets generated using your profile data!');
+        await fetchProfile();
+        return { success: true, isFallback: true };
       }
-
-      toast.success('Nutrition targets generated!');
-      await fetchProfile();
-      return { success: true, isFallback: false };
+      
+      toast.error('Failed to generate targets');
+      return { success: false, isFallback: false };
     } catch (err) {
       console.error('Generate targets error:', err);
       

@@ -537,6 +537,82 @@ class SingleWeekRequest(BaseModel):
     start_date: Optional[str] = None  # YYYY-MM-DD, defaults to current week
 
 
+class NutritionTargetsRequest(BaseModel):
+    """Request for generating nutrition targets"""
+    user_id: str
+    weight_kg: Optional[float] = None
+    goal_primary: str = "maintenance"
+    activity_level: str = "moderate"  # sedentary, light, moderate, active, very_active
+
+
+@api_router.post("/generate-nutrition-targets")
+async def generate_nutrition_targets_endpoint(request: NutritionTargetsRequest):
+    """
+    Generate personalized nutrition targets based on user profile.
+    """
+    try:
+        weight_kg = request.weight_kg or 70  # Default weight if not provided
+        goal = request.goal_primary.lower()
+        activity = request.activity_level.lower()
+        
+        # Base metabolic rate estimation (simplified Mifflin-St Jeor)
+        bmr = 10 * weight_kg + 625  # Simplified for average adult
+        
+        # Activity multipliers
+        activity_multipliers = {
+            "sedentary": 1.2,
+            "light": 1.375,
+            "moderate": 1.55,
+            "active": 1.725,
+            "very_active": 1.9
+        }
+        multiplier = activity_multipliers.get(activity, 1.55)
+        
+        # Calculate TDEE (Total Daily Energy Expenditure)
+        tdee = int(bmr * multiplier)
+        
+        # Adjust based on goal
+        if goal in ["fat_loss", "lose_weight", "cut"]:
+            calories_low = tdee - 500
+            calories_high = tdee - 300
+        elif goal in ["muscle_gain", "gain_weight", "build_muscle", "bulk"]:
+            calories_low = tdee + 200
+            calories_high = tdee + 400
+        else:  # maintenance
+            calories_low = tdee - 100
+            calories_high = tdee + 100
+        
+        # Protein calculation: 1.6-2.2g per kg for active individuals
+        protein_g = int(weight_kg * 1.8)
+        
+        # Water: ~35ml per kg of body weight
+        water_liters = round(weight_kg * 0.035, 1)
+        water_liters = max(2.0, min(4.0, water_liters))  # Clamp between 2-4L
+        
+        return {
+            "success": True,
+            "targets": {
+                "calories_target": {"low": calories_low, "high": calories_high},
+                "protein_g": protein_g,
+                "water_liters": water_liters,
+                "notes": f"Personalized targets based on {weight_kg}kg weight and {goal} goal.",
+                "source": "api"
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error generating nutrition targets: {str(e)}")
+        return {
+            "success": True,
+            "targets": {
+                "calories_target": {"low": 2000, "high": 2500},
+                "protein_g": 140,
+                "water_liters": 3.0,
+                "notes": "Default targets. Update your profile for personalized recommendations.",
+                "source": "default"
+            }
+        }
+
+
 @api_router.post("/generate-week")
 async def generate_single_week_endpoint(request: SingleWeekRequest):
     """
