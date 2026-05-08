@@ -207,48 +207,73 @@ export function useNutrition(): UseNutritionResult {
     };
   }, [user]);
 
-  // Save fallback targets to database
+  // Save targets to database (with fallback to local state if DB fails)
   const saveFallbackTargets = useCallback(async (targets: NutritionTargets): Promise<boolean> => {
     if (!user) return false;
 
-    // First check if profile exists
-    const { data: existing } = await supabase
-      .from('nutrition_profiles')
-      .select('user_id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    // Cast targets to Json type for Supabase - use explicit Json cast
+    // Cast targets to Json type for Supabase
     const targetsJson = targets as unknown as Json;
 
-    if (existing) {
-      // Update existing
-      const { error } = await supabase
+    try {
+      // First check if profile exists
+      const { data: existing } = await supabase
         .from('nutrition_profiles')
-        .update({ targets_json: targetsJson })
-        .eq('user_id', user.id);
+        .select('user_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      if (error) {
-        console.error('Error saving fallback targets:', error);
-        return false;
-      }
-    } else {
-      // Insert new
-      const { error } = await supabase
-        .from('nutrition_profiles')
-        .insert([{ 
-          user_id: user.id, 
-          targets_json: targetsJson 
-        }]);
+      if (existing) {
+        // Update existing
+        const { error } = await supabase
+          .from('nutrition_profiles')
+          .update({ targets_json: targetsJson })
+          .eq('user_id', user.id);
 
-      if (error) {
-        console.error('Error saving fallback targets:', error);
-        return false;
+        if (error) {
+          console.error('Error saving targets to DB:', error);
+          // Still return true - we'll use local state
+          setProfile(prev => prev ? { ...prev, targets_json: targets } : null);
+          return true;
+        }
+      } else {
+        // Insert new
+        const { error } = await supabase
+          .from('nutrition_profiles')
+          .insert([{ 
+            user_id: user.id, 
+            targets_json: targetsJson 
+          }]);
+
+        if (error) {
+          console.error('Error saving targets to DB:', error);
+          // Still return true - we'll use local state
+          setProfile(prev => prev ? { ...prev, targets_json: targets } : {
+            user_id: user.id,
+            targets_json: targets,
+            meal_plan_json: null,
+            dietary_preferences: [],
+            allergies: [],
+            excluded_ingredients: [],
+          });
+          return true;
+        }
       }
+
+      await fetchProfile();
+      return true;
+    } catch (err) {
+      console.error('Error in saveFallbackTargets:', err);
+      // Use local state as fallback
+      setProfile(prev => prev ? { ...prev, targets_json: targets } : {
+        user_id: user.id,
+        targets_json: targets,
+        meal_plan_json: null,
+        dietary_preferences: [],
+        allergies: [],
+        excluded_ingredients: [],
+      });
+      return true;
     }
-
-    await fetchProfile();
-    return true;
   }, [user, fetchProfile]);
 
   const generateTargets = useCallback(async (): Promise<{ success: boolean; isFallback: boolean }> => {
