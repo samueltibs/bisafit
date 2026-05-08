@@ -1,43 +1,33 @@
-import { createClient } from '@supabase/supabase-js';
-import { Capacitor } from '@capacitor/core';
-import { SecureStoragePlugin } from '@capacitor-community/secure-storage-plugin';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-const isNative = Capacitor.isNativePlatform();
-
-const secureStorageAdapter = {
-  async getItem(key: string): Promise<string | null> {
-    if (!isNative) {
-      try { return localStorage.getItem(key); } catch { return null; }
-    }
-    try {
-      const result = await SecureStoragePlugin.get({ key });
-      return result.value;
-    } catch {
-      return null;
+// Simple localStorage-based storage adapter for web
+// On native apps, Capacitor plugins handle secure storage differently
+const webStorageAdapter = {
+  getItem: (key: string): string | null => {
+    try { 
+      return localStorage.getItem(key); 
+    } catch { 
+      return null; 
     }
   },
-  async setItem(key: string, value: string): Promise<void> {
-    if (!isNative) {
-      try { localStorage.setItem(key, value); } catch {}
-      return;
-    }
-    try { await SecureStoragePlugin.set({ key, value }); } catch {}
+  setItem: (key: string, value: string): void => {
+    try { 
+      localStorage.setItem(key, value); 
+    } catch {}
   },
-  async removeItem(key: string): Promise<void> {
-    if (!isNative) {
-      try { localStorage.removeItem(key); } catch {}
-      return;
-    }
-    try { await SecureStoragePlugin.remove({ key }); } catch {}
+  removeItem: (key: string): void => {
+    try { 
+      localStorage.removeItem(key); 
+    } catch {}
   },
 };
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: secureStorageAdapter as any,
+    storage: webStorageAdapter,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,

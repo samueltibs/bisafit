@@ -16,6 +16,15 @@ export default defineConfig(({ mode }) => ({
     },
   },
   
+  // Exclude mobile-only packages from optimization
+  optimizeDeps: {
+    exclude: [
+      '@capacitor-community/app-tracking-transparency',
+      '@capacitor-community/secure-storage-plugin',
+      '@perfood/capacitor-healthkit',
+    ],
+  },
+  
   // Server configuration
   server: {
     port: 3000,

@@ -1,20 +1,14 @@
-import { Capacitor } from '@capacitor/core';
+/**
+ * App Tracking Transparency (ATT) for iOS
+ * 
+ * This is a stub for web builds. The actual ATT functionality
+ * only works on iOS native apps built with Capacitor.
+ * 
+ * On web, this function does nothing.
+ */
 
-let attRequested = false;
-
-export async function requestATTIfNeeded() {
-  if (attRequested) return;
-  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'ios') return;
-  
-  try {
-    // Dynamic import to avoid bundling issues on web
-    const { AppTrackingTransparency } = await import('@capacitor-community/app-tracking-transparency');
-    const status = await AppTrackingTransparency.getStatus();
-    if (status.status === 'notDetermined') {
-      await AppTrackingTransparency.requestPermission();
-    }
-    attRequested = true;
-  } catch (err) {
-    console.error('ATT request failed:', err);
-  }
+export async function requestATTIfNeeded(): Promise<void> {
+  // ATT is only available on iOS native apps
+  // This is a no-op stub for web builds
+  return;
 }
