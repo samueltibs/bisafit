@@ -184,6 +184,9 @@ export default function Plan() {
     // Use background generation with toast notifications
     // This allows user to continue using app while plan generates
     generatePlanInBackground().then(() => {
+      // CRITICAL: Reset selectedPlanId so refetch uses the NEW current_plan_id
+      // Without this, refetch would query workouts for the OLD plan
+      setSelectedPlanId(null);
       // Refetch when complete
       refetch();
       setWeekOffset(0);
