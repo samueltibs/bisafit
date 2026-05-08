@@ -109,6 +109,11 @@ BisaFit is a full-stack AI-powered fitness application built with React/Vite (fr
 ### May 8, 2026 - Critical Bug Fixes
 - **P0 FIX - Blank Screen:** Fixed Vite/Supabase connection error by updating `client.ts` to use correct env var `VITE_SUPABASE_PUBLISHABLE_KEY` instead of `VITE_SUPABASE_ANON_KEY`
 - **P1 FIX - Workout Regeneration Bug:** Fixed issue where regenerated plans showed all rest days. Root cause: `selectedPlanId` was cached to old plan after regeneration. Added `setSelectedPlanId(null)` before refetch in `handleGeneratePlan` (Plan.tsx line 189)
+- **P2 FIX - Supabase Schema Mismatch:** Fixed `column plans.block_number does not exist` error. Removed direct queries to non-existent `block_number` column. Now reads `block_number` from `plan_json` field instead. Updated:
+  - `blockEngine.ts` - recomputeUserBlocks, getNextBlockNumber functions
+  - `usePlan.ts` - plan summaries building
+  - `useCalendarSync.ts` - plan fetching
+  - `useWorkoutReschedule.ts` - calendar event creation
 
 ## Known Stubbed/Mocked Features
 - `att.ts` - App Tracking Transparency stubbed for web (only works on iOS native)

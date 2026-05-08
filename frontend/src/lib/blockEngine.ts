@@ -164,7 +164,6 @@ interface PlanData {
   id: string;
   start_date: string | null;
   created_at: string | null;
-  block_number: number | null;
   plan_json: Record<string, unknown>;
   status: string;
 }
@@ -195,10 +194,10 @@ export async function recomputeUserBlocks(userId: string): Promise<RecomputeResu
   };
 
   try {
-    // 1. Fetch all plans for user
+    // 1. Fetch all plans for user (note: block_number may not exist in DB, use plan_json instead)
     const { data: plans, error: plansError } = await supabase
       .from('plans')
-      .select('id, start_date, created_at, block_number, plan_json, status')
+      .select('id, start_date, created_at, plan_json, status')
       .eq('user_id', userId);
 
     if (plansError || !plans) {
@@ -252,6 +251,8 @@ export async function recomputeUserBlocks(userId: string): Promise<RecomputeResu
       const earliestDate = earliestDateByPlan.get(p.id) || null;
       const workoutCount = workoutCountByPlan.get(p.id) || 0;
       const pJson = (p.plan_json || {}) as Record<string, unknown>;
+      // Get block_number from plan_json (fallback - DB column may not exist)
+      const currentBlockNumber = (pJson.block_number as number) || null;
       
       processedPlans.push({
         id: p.id,
@@ -259,7 +260,7 @@ export async function recomputeUserBlocks(userId: string): Promise<RecomputeResu
         hasWorkouts: workoutCount > 0,
         workoutCount,
         currentStartDate: p.start_date,
-        currentBlockNumber: p.block_number,
+        currentBlockNumber,
         planJson: pJson,
         status: p.status || 'in_progress',
         createdAt: p.created_at || '',
@@ -288,7 +289,7 @@ export async function recomputeUserBlocks(userId: string): Promise<RecomputeResu
       const needsBlockNumberUpdate = plan.currentBlockNumber !== newBlockNumber;
 
       if (needsStartDateUpdate || needsBlockNumberUpdate) {
-        // Update plan_json with new block_number
+        // Update plan_json with new block_number (stored in JSON, not as DB column)
         const updatedPlanJson = {
           ...plan.planJson,
           block_number: newBlockNumber,
@@ -297,11 +298,11 @@ export async function recomputeUserBlocks(userId: string): Promise<RecomputeResu
         // Remove undefined keys
         delete (updatedPlanJson as Record<string, unknown>).needs_regeneration;
 
+        // Note: We only update start_date and plan_json - block_number column may not exist in DB
         const { error } = await supabase
           .from('plans')
           .update({
             start_date: plan.computedStartDate,
-            block_number: newBlockNumber,
             plan_json: updatedPlanJson,
           })
           .eq('id', plan.id);
@@ -400,20 +401,28 @@ export async function recomputeUserBlocks(userId: string): Promise<RecomputeResu
 /**
  * Get the next block number for a new plan.
  * This should be MAX(block_number) + 1 for the user.
+ * Note: block_number is stored in plan_json, not as a DB column.
  */
 export async function getNextBlockNumber(userId: string): Promise<number> {
   const { data, error } = await supabase
     .from('plans')
-    .select('block_number')
-    .eq('user_id', userId)
-    .order('block_number', { ascending: false })
-    .limit(1);
+    .select('plan_json')
+    .eq('user_id', userId);
 
   if (error || !data || data.length === 0) {
     return 1;
   }
 
-  const maxBlockNumber = (data[0] as { block_number: number | null }).block_number || 0;
+  // Extract block_number from plan_json for each plan
+  let maxBlockNumber = 0;
+  for (const plan of data) {
+    const planJson = plan.plan_json as Record<string, unknown> | null;
+    const blockNum = (planJson?.block_number as number) || 0;
+    if (blockNum > maxBlockNumber) {
+      maxBlockNumber = blockNum;
+    }
+  }
+  
   return maxBlockNumber + 1;
 }
 

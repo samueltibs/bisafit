@@ -169,11 +169,15 @@ export function useWorkoutReschedule() {
 
     const { data: plan } = await supabase
       .from('plans')
-      .select('id, block_number, name')
+      .select('id, plan_json')
       .eq('id', workout.plan_id)
       .single();
 
     if (!plan) return null;
+
+    // Get block_number from plan_json (not DB column)
+    const planJson = plan.plan_json as Record<string, unknown> | null;
+    const blockNumber = (planJson?.block_number as number) || 1;
 
     const workoutJson = workout.workout_json as { 
       title?: string;
@@ -191,7 +195,7 @@ export function useWorkoutReschedule() {
 
     const title = workout.title || workoutJson?.focus || 'Workout';
     const description = [
-      `Block ${plan.block_number || 1}: ${title}`,
+      `Block ${blockNumber}: ${title}`,
       '',
       `${duration} min workout`,
       '',

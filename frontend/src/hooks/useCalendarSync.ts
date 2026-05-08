@@ -60,10 +60,10 @@ export function useCalendarSync(): UseCalendarSyncResult {
     }
 
     try {
-      // Fetch current plan
+      // Fetch current plan (block_number stored in plan_json, not DB column)
       const { data: planData, error: planError } = await supabase
         .from('plans')
-        .select('id, block_number, name')
+        .select('id, plan_json')
         .eq('id', currentPlanId)
         .single();
 
@@ -72,7 +72,16 @@ export function useCalendarSync(): UseCalendarSyncResult {
         return;
       }
 
-      setCurrentPlan(planData);
+      // Extract block_number from plan_json
+      const planJson = planData.plan_json as Record<string, unknown> | null;
+      const blockNumber = (planJson?.block_number as number) || 1;
+      const planName = (planJson?.name as string) || `Block ${blockNumber}`;
+      
+      setCurrentPlan({
+        id: planData.id,
+        block_number: blockNumber,
+        name: planName,
+      });
 
       // Fetch workouts for current plan
       const { data: workoutsData, error: workoutsError } = await supabase

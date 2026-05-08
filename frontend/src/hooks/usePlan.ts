@@ -175,7 +175,8 @@ export function usePlan(): UsePlanResult {
 
       for (const p of allPlansData) {
         const pJson = p.plan_json as unknown as PlanJson;
-        const blockNumber = (p as Plan & { block_number?: number }).block_number || pJson?.block_number || 1;
+        // Get block_number from plan_json (canonical source - DB column may not exist)
+        const blockNumber = pJson?.block_number || 1;
         const status = ((p as Plan & { status?: string }).status || 'in_progress') as PlanStatus;
         const workoutCount = workoutCountByPlan.get(p.id) || 0;
         const needsRegeneration = workoutCount === 0 || !!(pJson as unknown as Record<string, unknown>)?.needs_regeneration;
