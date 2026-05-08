@@ -486,7 +486,24 @@ export function useNutrition(): UseNutritionResult {
 
       if (data.success && data.meal_plan) {
         // Update local state with the meal plan
-        setProfile(prev => prev ? { ...prev, meal_plan_json: data.meal_plan } : null);
+        setProfile(prev => {
+          const base = prev || {
+            user_id: user.id,
+            nutrition_goal_style: 'simple' as const,
+            dietary_preferences_json: {},
+            cuisine_preferences_json: [],
+            meals_per_day: 3,
+            snacks_per_day: 1,
+            budget_level: 'medium' as const,
+            targets_json: null,
+            meal_plan_json: null,
+            calories_target: null,
+            protein_g: null,
+            carbs_g: null,
+            fat_g: null,
+          };
+          return { ...base, meal_plan_json: data.meal_plan };
+        });
         
         // Save to localStorage for persistence
         saveToLocalStorage({ meal_plan_json: data.meal_plan as unknown as MealPlan });
