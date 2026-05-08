@@ -56,6 +56,7 @@ export default function Plan() {
     planJson, 
     userProfile,
     loading, 
+    workouts,
     getWorkoutsForWeek, 
     refetch, 
     hasGenerationIssue, 
