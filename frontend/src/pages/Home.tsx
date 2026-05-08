@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { usePlan } from '@/hooks/usePlan';
 import { useNutritionSettings } from '@/hooks/useNutritionSettings';
-import { useNutrition } from '@/hooks/useNutrition';
 import { useRefreshOnResume } from '@/hooks/useAppLifecycle';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,7 +23,6 @@ export default function Home() {
   const { profile, loading, refetch, update } = useUserProfile();
   const { getTodayWorkout, getNextUpcomingWorkout, plan } = usePlan();
   const { enabled: nutritionEnabled, loading: nutritionLoading } = useNutritionSettings();
-  const { profile: nutritionProfile } = useNutrition();
   const [greeting, setGreeting] = useState('');
   const [showIntroTour, setShowIntroTour] = useState(false);
 
@@ -71,17 +69,11 @@ export default function Home() {
   const todayWorkout = getTodayWorkout();
   const nextUpcomingWorkout = getNextUpcomingWorkout();
 
-  // Get nutrition targets from generated profile
-  const nutritionTargets = nutritionProfile?.targets_json;
-  const calorieTarget = nutritionTargets?.calories_target?.high || 2000;
-  const waterTarget = nutritionTargets?.water_liters ? Math.round(nutritionTargets.water_liters * 4) : 8; // Convert liters to glasses (approx 250ml each)
-
-  // Real stats - show 0 if no data logged
-  // Current values should come from meal logs and water logs when implemented
+  // Mock data for today's summary
   const todayStats = {
-    calories: { current: 0, target: calorieTarget },
-    water: { current: 0, target: waterTarget },
-    steps: { current: 0, target: 10000 },
+    calories: { current: 1450, target: 2000 },
+    water: { current: 5, target: 8 },
+    steps: { current: 6234, target: 10000 },
   };
 
   const handleAddName = () => {
@@ -129,41 +121,26 @@ export default function Home() {
         <WeekRecapBanner />
 
         {/* Daily Progress Card - Navigate to full Progress page on click */}
-        {(() => {
-          // Calculate actual weekly progress from completed workouts
-          const todayWorkout = getTodayWorkout();
-          const hasCompletedToday = todayWorkout?.completed || false;
-          
-          // Simple progress calculation: if today's workout is done, show 100% for today
-          // This is a simplified version - real progress would come from workout logs
-          const dailyProgress = hasCompletedToday ? 100 : 0;
-          const progressMessage = hasCompletedToday 
-            ? "Great job! Today's workout is complete." 
-            : (todayWorkout ? "You have a workout scheduled today!" : "No workout scheduled today. Rest day!");
-          
-          return (
-            <Link to="/progress" className="block">
-              <Card className="gradient-primary text-primary-foreground animate-slide-up cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]">
-                <CardContent className="p-6">
-                  <div className="mb-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm opacity-90">Today's Progress</p>
-                      <p className="text-2xl font-bold">{dailyProgress}%</p>
-                    </div>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full icon-bg-trophy">
-                      <Trophy className="h-6 w-6 icon-trophy" />
-                    </div>
-                  </div>
-                  <Progress value={dailyProgress} className="h-2 bg-primary-foreground/20" />
-                  <div className="mt-2 flex items-center justify-between">
-                    <p className="text-sm opacity-90">{progressMessage}</p>
-                    <ChevronRight className="h-5 w-5 opacity-70" />
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          );
-        })()}
+        <Link to="/progress" className="block">
+          <Card className="gradient-primary text-primary-foreground animate-slide-up cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]">
+            <CardContent className="p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm opacity-90">Progress</p>
+                  <p className="text-2xl font-bold">72%</p>
+                </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full icon-bg-trophy">
+                  <Trophy className="h-6 w-6 icon-trophy" />
+                </div>
+              </div>
+              <Progress value={72} className="h-2 bg-primary-foreground/20" />
+              <div className="mt-2 flex items-center justify-between">
+                <p className="text-sm opacity-90">Keep going! You're doing great today.</p>
+                <ChevronRight className="h-5 w-5 opacity-70" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-3 gap-3 animate-slide-up">

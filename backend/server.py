@@ -613,113 +613,6 @@ async def generate_nutrition_targets_endpoint(request: NutritionTargetsRequest):
         }
 
 
-class MealPlanRequest(BaseModel):
-    """Request for generating a meal plan"""
-    user_id: str
-    days: int = 7
-    calories_target: Optional[Dict[str, int]] = None
-    protein_g: Optional[int] = None
-    dietary_preferences: List[str] = []
-    cuisine_preferences: List[str] = []
-
-
-@api_router.post("/generate-meal-plan")
-async def generate_meal_plan_endpoint(request: MealPlanRequest):
-    """
-    Generate a simple meal plan based on user preferences.
-    
-    This is a fallback when Supabase Edge Functions are unavailable.
-    Generates a basic 7-day meal plan with grocery list.
-    """
-    try:
-        days = request.days
-        calories = request.calories_target or {"low": 2000, "high": 2500}
-        protein = request.protein_g or 140
-        
-        # Define meal templates
-        breakfast_options = [
-            {"name": "Oatmeal with Berries", "recipe_title": "Berry Oatmeal Bowl", "protein_g_est": 15, "calories_est": 350, "ingredients": ["1 cup oats", "1/2 cup mixed berries", "1 tbsp honey", "1/4 cup Greek yogurt"], "instructions": "Cook oats, top with berries, honey, and yogurt."},
-            {"name": "Eggs & Toast", "recipe_title": "Classic Eggs on Toast", "protein_g_est": 20, "calories_est": 400, "ingredients": ["2 eggs", "2 slices whole grain bread", "1 avocado", "salt and pepper"], "instructions": "Scramble or fry eggs, serve on toast with avocado."},
-            {"name": "Protein Smoothie", "recipe_title": "Power Smoothie", "protein_g_est": 30, "calories_est": 380, "ingredients": ["1 banana", "1 scoop protein powder", "1 cup milk", "1 tbsp peanut butter"], "instructions": "Blend all ingredients until smooth."},
-            {"name": "Greek Yogurt Parfait", "recipe_title": "Yogurt Parfait", "protein_g_est": 25, "calories_est": 320, "ingredients": ["1 cup Greek yogurt", "1/4 cup granola", "1/2 cup mixed fruit"], "instructions": "Layer yogurt, granola, and fruit in a glass."},
-        ]
-        
-        lunch_options = [
-            {"name": "Grilled Chicken Salad", "recipe_title": "Mediterranean Chicken Salad", "protein_g_est": 35, "calories_est": 450, "ingredients": ["6oz chicken breast", "mixed greens", "cherry tomatoes", "cucumber", "olive oil dressing"], "instructions": "Grill chicken, slice and serve over salad with dressing."},
-            {"name": "Turkey Wrap", "recipe_title": "Turkey Veggie Wrap", "protein_g_est": 30, "calories_est": 420, "ingredients": ["4oz turkey slices", "1 whole wheat wrap", "lettuce", "tomato", "mustard"], "instructions": "Layer turkey and veggies in wrap, roll tightly."},
-            {"name": "Quinoa Bowl", "recipe_title": "Protein Quinoa Bowl", "protein_g_est": 25, "calories_est": 480, "ingredients": ["1 cup cooked quinoa", "black beans", "corn", "avocado", "lime dressing"], "instructions": "Combine all ingredients in a bowl, drizzle with dressing."},
-            {"name": "Tuna Sandwich", "recipe_title": "Classic Tuna Salad Sandwich", "protein_g_est": 28, "calories_est": 400, "ingredients": ["1 can tuna", "2 tbsp Greek yogurt", "celery", "whole grain bread"], "instructions": "Mix tuna with yogurt and celery, serve on bread."},
-        ]
-        
-        dinner_options = [
-            {"name": "Salmon with Vegetables", "recipe_title": "Baked Salmon & Roasted Veggies", "protein_g_est": 40, "calories_est": 520, "ingredients": ["6oz salmon fillet", "broccoli", "sweet potato", "olive oil", "lemon"], "instructions": "Bake salmon at 400°F for 15 min, roast vegetables alongside."},
-            {"name": "Chicken Stir Fry", "recipe_title": "Asian Chicken Stir Fry", "protein_g_est": 35, "calories_est": 480, "ingredients": ["6oz chicken breast", "mixed vegetables", "soy sauce", "rice", "sesame oil"], "instructions": "Stir fry chicken and vegetables, serve over rice."},
-            {"name": "Lean Beef Tacos", "recipe_title": "Healthy Beef Tacos", "protein_g_est": 32, "calories_est": 500, "ingredients": ["5oz lean ground beef", "corn tortillas", "lettuce", "tomato", "Greek yogurt"], "instructions": "Brown beef with taco seasoning, serve in tortillas with toppings."},
-            {"name": "Pasta Primavera", "recipe_title": "Veggie Pasta", "protein_g_est": 18, "calories_est": 450, "ingredients": ["whole wheat pasta", "zucchini", "bell peppers", "marinara sauce", "parmesan"], "instructions": "Cook pasta, sauté vegetables, combine with sauce."},
-        ]
-        
-        snack_options = [
-            {"name": "Apple & Almond Butter", "recipe_title": "Apple Slices with Almond Butter", "protein_g_est": 4, "calories_est": 200, "ingredients": ["1 apple", "2 tbsp almond butter"], "instructions": "Slice apple and serve with almond butter for dipping."},
-            {"name": "Protein Bar", "recipe_title": "Protein Bar", "protein_g_est": 20, "calories_est": 220, "ingredients": ["1 protein bar"], "instructions": "Grab and go!"},
-            {"name": "Trail Mix", "recipe_title": "Homemade Trail Mix", "protein_g_est": 6, "calories_est": 180, "ingredients": ["mixed nuts", "dried fruit", "dark chocolate chips"], "instructions": "Mix ingredients in a container for easy snacking."},
-        ]
-        
-        # Generate meal plan
-        import random
-        day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        
-        meal_days = []
-        all_ingredients = set()
-        
-        for i in range(days):
-            day_plan = {
-                "day": day_names[i % 7],
-                "meals": [
-                    random.choice(breakfast_options).copy(),
-                    random.choice(lunch_options).copy(),
-                    random.choice(dinner_options).copy(),
-                ],
-                "snacks": [random.choice(snack_options).copy()]
-            }
-            
-            # Collect ingredients
-            for meal in day_plan["meals"] + day_plan["snacks"]:
-                all_ingredients.update(meal.get("ingredients", []))
-            
-            meal_days.append(day_plan)
-        
-        # Create grocery list
-        grocery_list = {
-            "produce": [i for i in all_ingredients if any(x in i.lower() for x in ["apple", "banana", "berries", "vegetable", "broccoli", "tomato", "lettuce", "cucumber", "avocado", "zucchini", "pepper", "lemon", "fruit"])],
-            "proteins": [i for i in all_ingredients if any(x in i.lower() for x in ["chicken", "salmon", "tuna", "turkey", "beef", "egg", "protein"])],
-            "pantry": [i for i in all_ingredients if any(x in i.lower() for x in ["oat", "rice", "pasta", "bread", "wrap", "tortilla", "quinoa", "oil", "sauce", "honey", "butter", "nuts"])],
-            "dairy_optional": [i for i in all_ingredients if any(x in i.lower() for x in ["yogurt", "milk", "cheese", "parmesan"])]
-        }
-        
-        meal_plan = {
-            "days": meal_days,
-            "grocery_list": grocery_list,
-            "prep_tips": [
-                "Prep protein sources on Sunday for the week",
-                "Wash and chop vegetables in advance",
-                "Cook grains in batches to save time"
-            ],
-            "swap_rules": "Feel free to swap any meal with a similar option from the same category."
-        }
-        
-        return {
-            "success": True,
-            "meal_plan": meal_plan
-        }
-        
-    except Exception as e:
-        logger.error(f"Error generating meal plan: {str(e)}")
-        return {
-            "success": False,
-            "error": str(e)
-        }
-
-
 @api_router.post("/generate-week")
 async def generate_single_week_endpoint(request: SingleWeekRequest):
     """
@@ -770,6 +663,201 @@ async def generate_single_week_endpoint(request: SingleWeekRequest):
         logger.error(f"Error generating week: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+
+# =====================
+# Stripe Subscription Routes
+# =====================
+
+from stripe_service import (
+    get_or_create_stripe_customer,
+    create_checkout_session,
+    create_portal_session,
+    handle_webhook_event,
+    get_subscription_status,
+)
+import stripe as stripe_lib
+from fastapi import Request as FastAPIRequest
+
+class StripeCheckoutRequest(BaseModel):
+    user_id: str
+    email: str
+    price_lookup_key: str
+    name: Optional[str] = None
+    success_url: str
+    cancel_url: str
+
+class StripePortalRequest(BaseModel):
+    customer_id: str
+    return_url: str
+
+@api_router.post("/stripe/checkout")
+async def create_stripe_checkout(request: StripeCheckoutRequest):
+    """Create a Stripe checkout session for subscription."""
+    try:
+        customer_id = await get_or_create_stripe_customer(
+            user_id=request.user_id,
+            email=request.email,
+            name=request.name,
+        )
+        session = await create_checkout_session(
+            customer_id=customer_id,
+            price_lookup_key=request.price_lookup_key,
+            success_url=request.success_url,
+            cancel_url=request.cancel_url,
+        )
+        return {"success": True, "checkout_url": session.get("url"), "session_id": session.get("id")}
+    except Exception as e:
+        logger.error(f"Stripe checkout error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/stripe/portal")
+async def create_stripe_portal(request: StripePortalRequest):
+    """Create a Stripe customer portal session."""
+    try:
+        session = await create_portal_session(
+            customer_id=request.customer_id,
+            return_url=request.return_url,
+        )
+        return {"success": True, "portal_url": session.get("url")}
+    except Exception as e:
+        logger.error(f"Stripe portal error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/stripe/webhook")
+async def stripe_webhook(request: FastAPIRequest):
+    """Handle Stripe webhook events."""
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+    try:
+        result = await handle_webhook_event(payload, sig_header)
+        return {"success": True, "result": result}
+    except Exception as e:
+        logger.error(f"Stripe webhook error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.get("/stripe/subscription/{customer_id}")
+async def get_stripe_subscription(customer_id: str):
+    """Get subscription status for a Stripe customer."""
+    try:
+        status = await get_subscription_status(customer_id)
+        return {"success": True, "subscription": status}
+    except Exception as e:
+        logger.error(f"Stripe subscription lookup error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+# =====================
+# Fitness OAuth Routes (Strava + Fitbit)
+# =====================
+
+from fitness_oauth_service import (
+    FitbitService,
+    StravaService,
+    normalize_fitbit_activity,
+    normalize_strava_activity,
+)
+
+class FitnessOAuthCallbackRequest(BaseModel):
+    code: str
+    state: str
+    code_verifier: Optional[str] = None
+
+class FitnessTokenRefreshRequest(BaseModel):
+    user_id: str
+    access_token: str
+    refresh_token: str
+
+# --- Fitbit Routes ---
+
+@api_router.get("/fitbit/auth-url")
+async def fitbit_auth_url(state: str, code_challenge: str):
+    """Get Fitbit OAuth authorization URL."""
+    url = FitbitService.get_authorization_url(state, code_challenge)
+    return {"auth_url": url}
+
+@api_router.post("/fitbit/callback")
+async def fitbit_callback(request: FitnessOAuthCallbackRequest):
+    """Handle Fitbit OAuth callback and exchange code for tokens."""
+    try:
+        tokens = await FitbitService.exchange_code(request.code, request.code_verifier or "")
+        return {"success": True, "tokens": tokens}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/fitbit/refresh")
+async def fitbit_refresh(request: FitnessTokenRefreshRequest):
+    """Refresh Fitbit access token."""
+    try:
+        tokens = await FitbitService.refresh_token(request.refresh_token)
+        return {"success": True, "tokens": tokens}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/fitbit/activities")
+async def fitbit_activities(access_token: str, date: Optional[str] = None):
+    """Get Fitbit activities for a user."""
+    try:
+        activities = await FitbitService.get_activities(access_token, date)
+        normalized = [normalize_fitbit_activity(a) for a in activities.get("activities", [])]
+        return {"success": True, "activities": normalized}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/fitbit/heart-rate")
+async def fitbit_heart_rate(access_token: str, date: Optional[str] = None):
+    """Get Fitbit heart rate data."""
+    try:
+        data = await FitbitService.get_heart_rate(access_token, date)
+        return {"success": True, "heart_rate": data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- Strava Routes ---
+
+@api_router.get("/strava/auth-url")
+async def strava_auth_url(state: str):
+    """Get Strava OAuth authorization URL."""
+    url = StravaService.get_authorization_url(state)
+    return {"auth_url": url}
+
+@api_router.post("/strava/callback")
+async def strava_callback(request: FitnessOAuthCallbackRequest):
+    """Handle Strava OAuth callback and exchange code for tokens."""
+    try:
+        tokens = await StravaService.exchange_code(request.code)
+        return {"success": True, "tokens": tokens}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/strava/refresh")
+async def strava_refresh(request: FitnessTokenRefreshRequest):
+    """Refresh Strava access token."""
+    try:
+        tokens = await StravaService.refresh_token(request.refresh_token)
+        return {"success": True, "tokens": tokens}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/strava/activities")
+async def strava_activities(access_token: str, per_page: int = 30, page: int = 1):
+    """Get Strava activities for a user."""
+    try:
+        activities = await StravaService.get_activities(access_token, per_page=per_page, page=page)
+        normalized = [normalize_strava_activity(a) for a in activities]
+        return {"success": True, "activities": normalized}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/strava/athlete")
+async def strava_athlete(access_token: str):
+    """Get Strava athlete profile."""
+    try:
+        athlete = await StravaService.get_athlete(access_token)
+        return {"success": True, "athlete": athlete}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Include the router in the main app
 app.include_router(api_router)

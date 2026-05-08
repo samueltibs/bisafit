@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # Initialize Resend
 resend.api_key = os.environ.get('RESEND_API_KEY')
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'samuel.m.tibs@gmail.com')
-SENDER_EMAIL = "BisaFit <onboarding@resend.dev>"  # Use Resend's test domain
+SENDER_EMAIL = "BisaFit <bisafit@bisagroup.org>"  # Verified production domain
 
 async def send_email(
     to_email: str,

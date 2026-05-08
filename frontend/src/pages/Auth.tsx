@@ -13,6 +13,7 @@ import { sendWelcomeEmail } from '@/lib/emailService';
 import { APP_NAME, SUPPORT_MESSAGE_SHORT } from '@/lib/branding';
 import { supabase } from '@/integrations/supabase/client';
 import { LegalCheckbox, LegalConsentText, LegalFooter } from '@/components/legal';
+import { AppleSignInButton } from '@/components/auth/AppleSignInButton';
 
 export default function Auth() {
   const { user, loading: authLoading } = useAuth();
@@ -218,7 +219,7 @@ export default function Auth() {
                     <Input
                       id="signin-password"
                       type="password"
-                      placeholder="••••••••"
+                      placeholder="â¢â¢â¢â¢â¢â¢â¢â¢"
                       className="pl-10"
                       value={signInData.password}
                       onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
@@ -241,6 +242,9 @@ export default function Auth() {
                   Forgot your password?
                 </button>
               </form>
+              <div className="mt-4">
+                <AppleSignInButton />
+              </div>
             </TabsContent>
 
             <TabsContent value="signup" className="mt-0">
@@ -267,7 +271,7 @@ export default function Auth() {
                     <Input
                       id="signup-password"
                       type="password"
-                      placeholder="••••••••"
+                      placeholder="â¢â¢â¢â¢â¢â¢â¢â¢"
                       className="pl-10"
                       value={signUpData.password}
                       onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
@@ -282,7 +286,7 @@ export default function Auth() {
                     <Input
                       id="signup-confirm"
                       type="password"
-                      placeholder="••••••••"
+                      placeholder="â¢â¢â¢â¢â¢â¢â¢â¢"
                       className="pl-10"
                       value={signUpData.confirmPassword}
                       onChange={(e) => setSignUpData({ ...signUpData, confirmPassword: e.target.value })}
