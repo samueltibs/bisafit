@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { usePlan } from '@/hooks/usePlan';
 import { useNutritionSettings } from '@/hooks/useNutritionSettings';
+import { useNutrition } from '@/hooks/useNutrition';
 import { useRefreshOnResume } from '@/hooks/useAppLifecycle';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +24,7 @@ export default function Home() {
   const { profile, loading, refetch, update } = useUserProfile();
   const { getTodayWorkout, getNextUpcomingWorkout, plan } = usePlan();
   const { enabled: nutritionEnabled, loading: nutritionLoading } = useNutritionSettings();
+  const { profile: nutritionProfile } = useNutrition();
   const [greeting, setGreeting] = useState('');
   const [showIntroTour, setShowIntroTour] = useState(false);
 
@@ -69,11 +71,16 @@ export default function Home() {
   const todayWorkout = getTodayWorkout();
   const nextUpcomingWorkout = getNextUpcomingWorkout();
 
+  // Get nutrition targets from generated profile
+  const nutritionTargets = nutritionProfile?.targets_json;
+  const calorieTarget = nutritionTargets?.calories_target?.high || 2000;
+  const waterTarget = nutritionTargets?.water_liters ? Math.round(nutritionTargets.water_liters * 4) : 8; // Convert liters to glasses (approx 250ml each)
+
   // Real stats - show 0 if no data logged
-  // These should be populated from actual user data (meal logs, water logs, health platform)
+  // Current values should come from meal logs and water logs when implemented
   const todayStats = {
-    calories: { current: 0, target: 2000 },
-    water: { current: 0, target: 8 },
+    calories: { current: 0, target: calorieTarget },
+    water: { current: 0, target: waterTarget },
     steps: { current: 0, target: 10000 },
   };
 
