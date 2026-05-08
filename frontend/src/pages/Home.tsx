@@ -122,26 +122,41 @@ export default function Home() {
         <WeekRecapBanner />
 
         {/* Daily Progress Card - Navigate to full Progress page on click */}
-        <Link to="/progress" className="block">
-          <Card className="gradient-primary text-primary-foreground animate-slide-up cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]">
-            <CardContent className="p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm opacity-90">Progress</p>
-                  <p className="text-2xl font-bold">72%</p>
-                </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-full icon-bg-trophy">
-                  <Trophy className="h-6 w-6 icon-trophy" />
-                </div>
-              </div>
-              <Progress value={72} className="h-2 bg-primary-foreground/20" />
-              <div className="mt-2 flex items-center justify-between">
-                <p className="text-sm opacity-90">Keep going! You're doing great today.</p>
-                <ChevronRight className="h-5 w-5 opacity-70" />
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
+        {(() => {
+          // Calculate actual weekly progress from completed workouts
+          const todayWorkout = getTodayWorkout();
+          const hasCompletedToday = todayWorkout?.completed || false;
+          
+          // Simple progress calculation: if today's workout is done, show 100% for today
+          // This is a simplified version - real progress would come from workout logs
+          const dailyProgress = hasCompletedToday ? 100 : 0;
+          const progressMessage = hasCompletedToday 
+            ? "Great job! Today's workout is complete." 
+            : (todayWorkout ? "You have a workout scheduled today!" : "No workout scheduled today. Rest day!");
+          
+          return (
+            <Link to="/progress" className="block">
+              <Card className="gradient-primary text-primary-foreground animate-slide-up cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]">
+                <CardContent className="p-6">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm opacity-90">Today's Progress</p>
+                      <p className="text-2xl font-bold">{dailyProgress}%</p>
+                    </div>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full icon-bg-trophy">
+                      <Trophy className="h-6 w-6 icon-trophy" />
+                    </div>
+                  </div>
+                  <Progress value={dailyProgress} className="h-2 bg-primary-foreground/20" />
+                  <div className="mt-2 flex items-center justify-between">
+                    <p className="text-sm opacity-90">{progressMessage}</p>
+                    <ChevronRight className="h-5 w-5 opacity-70" />
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })()}
 
         {/* Quick Stats */}
         <div className="grid grid-cols-3 gap-3 animate-slide-up">
