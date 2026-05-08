@@ -83,3 +83,17 @@ export function getLocalDayName(date: Date): string {
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   return dayNames[date.getDay()];
 }
+
+/**
+ * Get the Monday of the current week in user's local timezone.
+ * @returns Date string in YYYY-MM-DD format representing this week's Monday
+ */
+export function getLocalWeekMonday(): string {
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  // Calculate days since Monday (handle Sunday specially)
+  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - daysSinceMonday);
+  return format(monday, 'yyyy-MM-dd');
+}

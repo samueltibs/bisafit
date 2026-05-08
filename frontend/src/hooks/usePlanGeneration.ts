@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getLocalWeekMonday } from '@/lib/dateUtils';
 
 const BACKEND_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
 
@@ -117,6 +118,10 @@ async function generatePlanCore(): Promise<GeneratePlanResult> {
 
   console.log('[PlanGeneration] Generating single week plan...');
 
+  // Get user's local Monday to ensure dates match their timezone
+  const userLocalMonday = getLocalWeekMonday();
+  console.log('[PlanGeneration] Using user local Monday:', userLocalMonday);
+
   // Call the single week endpoint
   const response = await fetch(`${BACKEND_URL}/api/generate-week`, {
     method: 'POST',
@@ -129,6 +134,7 @@ async function generatePlanCore(): Promise<GeneratePlanResult> {
       equipment: profile.equipment_json || ['bodyweight'],
       session_minutes: profile.session_minutes || 45,
       week_number: 1,
+      start_date: userLocalMonday,  // Use user's local timezone Monday
     }),
   });
 

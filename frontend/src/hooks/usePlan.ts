@@ -401,7 +401,13 @@ export function usePlan(): UsePlanResult {
   const currentWeekNumber = currentWeekIndex + 1;
 
   // Check if any week has 0 workout days (generation issue)
+  // Also check if there are no actual workouts in the database
   const hasGenerationIssue = (() => {
+    // If no workouts exist in the database, definitely a generation issue
+    if (workouts.length === 0 && plan) {
+      return true;
+    }
+    
     if (!planJson?.weeks) return false;
     return planJson.weeks.some(week => {
       const workoutDays = week.days.filter(d => {
