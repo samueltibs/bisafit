@@ -232,7 +232,21 @@ export function useNutrition(): UseNutritionResult {
         if (error) {
           console.error('Error saving targets to DB:', error);
           // Still return true - we'll use local state
-          setProfile(prev => prev ? { ...prev, targets_json: targets } : null);
+          setProfile(prev => prev ? { ...prev, targets_json: targets } : {
+            user_id: user.id,
+            nutrition_goal_style: 'simple',
+            dietary_preferences_json: {},
+            cuisine_preferences_json: [],
+            meals_per_day: 3,
+            snacks_per_day: 1,
+            budget_level: 'medium',
+            targets_json: targets,
+            meal_plan_json: null,
+            calories_target: targets.calories_target.high,
+            protein_g: targets.protein_g,
+            carbs_g: null,
+            fat_g: null,
+          });
           return true;
         }
       } else {
@@ -249,11 +263,18 @@ export function useNutrition(): UseNutritionResult {
           // Still return true - we'll use local state
           setProfile(prev => prev ? { ...prev, targets_json: targets } : {
             user_id: user.id,
+            nutrition_goal_style: 'simple',
+            dietary_preferences_json: {},
+            cuisine_preferences_json: [],
+            meals_per_day: 3,
+            snacks_per_day: 1,
+            budget_level: 'medium',
             targets_json: targets,
             meal_plan_json: null,
-            dietary_preferences: [],
-            allergies: [],
-            excluded_ingredients: [],
+            calories_target: targets.calories_target.high,
+            protein_g: targets.protein_g,
+            carbs_g: null,
+            fat_g: null,
           });
           return true;
         }
@@ -263,14 +284,21 @@ export function useNutrition(): UseNutritionResult {
       return true;
     } catch (err) {
       console.error('Error in saveFallbackTargets:', err);
-      // Use local state as fallback
+      // Use local state as fallback with full profile structure
       setProfile(prev => prev ? { ...prev, targets_json: targets } : {
         user_id: user.id,
+        nutrition_goal_style: 'simple',
+        dietary_preferences_json: {},
+        cuisine_preferences_json: [],
+        meals_per_day: 3,
+        snacks_per_day: 1,
+        budget_level: 'medium',
         targets_json: targets,
         meal_plan_json: null,
-        dietary_preferences: [],
-        allergies: [],
-        excluded_ingredients: [],
+        calories_target: targets.calories_target.high,
+        protein_g: targets.protein_g,
+        carbs_g: null,
+        fat_g: null,
       });
       return true;
     }
