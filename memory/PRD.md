@@ -114,6 +114,17 @@ BisaFit is a full-stack AI-powered fitness application built with React/Vite (fr
   - `usePlan.ts` - plan summaries building
   - `useCalendarSync.ts` - plan fetching
   - `useWorkoutReschedule.ts` - calendar event creation
+- **P3 FIX - Plan Page Crash:** Added missing `workouts` to destructured variables in Plan.tsx
+- **P4 FIX - Stale Date Detection:** Plan page now detects if plan start_date is >8 weeks old and falls back to current calendar week
+- **P5 FIX - Home Page "This Week" Calendar:** Fixed hardcoded dates to show actual current week dates (May 4-10)
+- **P6 FIX - Timezone Support:** Plan generation now sends user's local Monday date to backend
+- **P7 FIX - Program Start Date Sync:** Updates `program_start_date` in users_profile when regenerating plan
+- **P8 FIX - Legal Pages Fallback:** Added fallback content for Terms and Privacy pages when Supabase data unavailable
+
+### Testing Report (May 8, 2026)
+- Backend API: 100% pass (9/9 tests)
+- Frontend: All pages rendering correctly
+- Test specs created: landing-page.spec.ts, auth-pages.spec.ts, core-flows.spec.ts, test_api.py
 
 ## Known Stubbed/Mocked Features
 - `att.ts` - App Tracking Transparency stubbed for web (only works on iOS native)
