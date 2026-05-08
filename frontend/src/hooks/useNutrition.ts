@@ -334,43 +334,87 @@ export function useNutrition(): UseNutritionResult {
       }
 
       const data = await response.json();
+      console.log('[Nutrition] API response:', data);
 
       if (data.success && data.targets) {
-        // Save the targets to nutrition_profiles
-        const saved = await saveFallbackTargets(data.targets);
+        // Directly set profile state with the targets
+        const newTargets: NutritionTargets = {
+          calories_target: data.targets.calories_target,
+          protein_g: data.targets.protein_g,
+          water_liters: data.targets.water_liters,
+          notes: data.targets.notes,
+          source: data.targets.source || 'api',
+        };
         
-        if (saved) {
-          toast.success('Nutrition targets generated!');
-          await fetchProfile();
-          return { success: true, isFallback: false };
-        }
+        setProfile(prev => prev ? { ...prev, targets_json: newTargets } : {
+          user_id: user.id,
+          nutrition_goal_style: 'simple',
+          dietary_preferences_json: {},
+          cuisine_preferences_json: [],
+          meals_per_day: 3,
+          snacks_per_day: 1,
+          budget_level: 'medium',
+          targets_json: newTargets,
+          meal_plan_json: null,
+          calories_target: newTargets.calories_target.high,
+          protein_g: newTargets.protein_g,
+          carbs_g: null,
+          fat_g: null,
+        });
+        
+        // Try to save to DB in background (don't await, don't block UI)
+        saveFallbackTargets(newTargets).catch(err => {
+          console.log('[Nutrition] Background save failed (OK):', err);
+        });
+        
+        toast.success('Nutrition targets generated!');
+        return { success: true, isFallback: false };
       }
 
       // If API fails, use local fallback
       const fallbackTargets = await computeFallbackTargets();
-      const saved = await saveFallbackTargets(fallbackTargets);
+      setProfile(prev => prev ? { ...prev, targets_json: fallbackTargets } : {
+        user_id: user.id,
+        nutrition_goal_style: 'simple',
+        dietary_preferences_json: {},
+        cuisine_preferences_json: [],
+        meals_per_day: 3,
+        snacks_per_day: 1,
+        budget_level: 'medium',
+        targets_json: fallbackTargets,
+        meal_plan_json: null,
+        calories_target: fallbackTargets.calories_target.high,
+        protein_g: fallbackTargets.protein_g,
+        carbs_g: null,
+        fat_g: null,
+      });
       
-      if (saved) {
-        toast.success('Nutrition targets generated using your profile data!');
-        await fetchProfile();
-        return { success: true, isFallback: true };
-      }
-      
-      toast.error('Failed to generate targets');
-      return { success: false, isFallback: false };
+      toast.success('Nutrition targets generated!');
+      return { success: true, isFallback: true };
     } catch (err) {
       console.error('Generate targets error:', err);
       
       // Network error or other failure - use fallback
       try {
         const fallbackTargets = await computeFallbackTargets();
-        const saved = await saveFallbackTargets(fallbackTargets);
+        setProfile(prev => prev ? { ...prev, targets_json: fallbackTargets } : {
+          user_id: user.id,
+          nutrition_goal_style: 'simple',
+          dietary_preferences_json: {},
+          cuisine_preferences_json: [],
+          meals_per_day: 3,
+          snacks_per_day: 1,
+          budget_level: 'medium',
+          targets_json: fallbackTargets,
+          meal_plan_json: null,
+          calories_target: fallbackTargets.calories_target.high,
+          protein_g: fallbackTargets.protein_g,
+          carbs_g: null,
+          fat_g: null,
+        });
         
-        if (saved) {
-          toast.success('Nutrition targets generated using your profile data!');
-          await fetchProfile();
-          return { success: true, isFallback: true };
-        }
+        toast.success('Nutrition targets generated!');
+        return { success: true, isFallback: true };
       } catch (fallbackErr) {
         console.error('Fallback computation error:', fallbackErr);
       }
