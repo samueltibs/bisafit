@@ -138,9 +138,27 @@ export default function Plan() {
 
   // Calculate week start based on plan start + current week offset
   // For non-current plans, start from Week 1 (offset 0)
+  // IMPORTANT: If plan dates are stale (no workouts match), fall back to current calendar week
   const getWeekStartForOffset = (offset: number): Date => {
     const planWeekStart = getPlanWeekStart();
-    if (planWeekStart) {
+    
+    // First, check if using the plan week start would actually show workouts
+    // If not, we should fall back to current calendar week (today's week)
+    if (planWeekStart && workouts.length > 0) {
+      // Check if any workouts fall within a reasonable range of the plan start
+      const planStartTime = planWeekStart.getTime();
+      const today = new Date();
+      const todayTime = today.getTime();
+      const msPerDay = 24 * 60 * 60 * 1000;
+      const daysSincePlanStart = Math.floor((todayTime - planStartTime) / msPerDay);
+      
+      // If plan start is more than 8 weeks (56 days) old, the dates are likely stale
+      // Fall back to current calendar week
+      if (daysSincePlanStart > 56) {
+        console.log('[Plan] Plan start date is stale, using current calendar week');
+        return addDays(startOfWeek(today, { weekStartsOn: 1 }), offset * 7);
+      }
+      
       // For current plan, use currentWeekIndex; for others, start from week 0
       const baseWeekIndex = isViewingCurrentPlan ? currentWeekIndex : 0;
       return addDays(planWeekStart, (baseWeekIndex + offset) * 7);

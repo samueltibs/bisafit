@@ -298,11 +298,18 @@ async function generatePlanCore(): Promise<GeneratePlanResult> {
     console.error('[PlanGeneration] WARNING: No workouts to insert - this should not happen!');
   }
 
-  // Update user profile
+  // Update user profile with new plan and program_start_date
+  // CRITICAL: program_start_date must be updated to match new plan's start_date
+  // This ensures the Plan page shows correct week dates
   await supabase
     .from('users_profile')
-    .update({ current_plan_id: savedPlan.id })
+    .update({ 
+      current_plan_id: savedPlan.id,
+      program_start_date: generatedWeek.start_date,  // Sync program start with new plan
+    })
     .eq('id', session.user.id);
+  
+  console.log('[PlanGeneration] Updated user profile with current_plan_id and program_start_date:', generatedWeek.start_date);
 
   // Trigger background image pre-generation
   try {
