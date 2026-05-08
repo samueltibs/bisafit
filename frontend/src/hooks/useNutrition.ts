@@ -257,31 +257,21 @@ export function useNutrition(): UseNutritionResult {
       
       const { data, error } = await supabase.functions.invoke('generate-nutrition-targets', {});
 
-      // Check for 5xx errors or deployment unavailability
+      // Check for any errors - Edge Functions may not be deployed, use fallback
       if (error) {
         console.error('Generate targets error:', error);
         
-        // Check if it's a server error (5xx) or network/deployment issue
-        const isServerError = error.message?.includes('5') || 
-                              error.message?.toLowerCase().includes('unavailable') ||
-                              error.message?.toLowerCase().includes('internal') ||
-                              error.message?.toLowerCase().includes('failed to fetch');
+        // Always use fallback when Edge Function fails (not deployed, server error, etc.)
+        const fallbackTargets = await computeFallbackTargets();
+        const saved = await saveFallbackTargets(fallbackTargets);
         
-        if (isServerError) {
-          // Use fallback
-          const fallbackTargets = await computeFallbackTargets();
-          const saved = await saveFallbackTargets(fallbackTargets);
-          
-          if (saved) {
-            toast('Nutrition targets are temporarily unavailable. Using estimated targets for now.', {
-              icon: '⚠️',
-              duration: 5000,
-            });
-            return { success: true, isFallback: true };
-          }
+        if (saved) {
+          toast.success('Nutrition targets generated using your profile data!');
+          await fetchProfile();
+          return { success: true, isFallback: true };
         }
         
-        toast.error(error.message || 'Failed to generate targets');
+        toast.error('Failed to generate targets');
         return { success: false, isFallback: false };
       }
 
@@ -314,10 +304,8 @@ export function useNutrition(): UseNutritionResult {
         const saved = await saveFallbackTargets(fallbackTargets);
         
         if (saved) {
-          toast('Nutrition targets are temporarily unavailable. Using estimated targets for now.', {
-            icon: '⚠️',
-            duration: 5000,
-          });
+          toast.success('Nutrition targets generated using your profile data!');
+          await fetchProfile();
           return { success: true, isFallback: true };
         }
       } catch (fallbackErr) {
