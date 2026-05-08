@@ -437,24 +437,39 @@ export function useNutrition(): UseNutritionResult {
     try {
       setGeneratingMealPlan(true);
       
-      const { data, error } = await supabase.functions.invoke('generate-meal-plan', {
-        body: { days },
+      // Get current targets for the meal plan
+      const targets = profile?.targets_json;
+      
+      // Use backend API instead of Supabase Edge Function
+      const response = await fetch(`${BACKEND_URL}/api/generate-meal-plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          days,
+          calories_target: targets?.calories_target || null,
+          protein_g: targets?.protein_g || null,
+          dietary_preferences: [],
+          cuisine_preferences: [],
+        }),
       });
 
-      if (error) {
-        console.error('Generate meal plan error:', error);
-        toast.error(error.message || 'Failed to generate meal plan');
-        return false;
+      if (!response.ok) {
+        throw new Error('Failed to generate meal plan');
       }
 
-      if (data?.error) {
-        toast.error(data.error);
-        return false;
+      const data = await response.json();
+      console.log('[Nutrition] Meal plan API response:', data);
+
+      if (data.success && data.meal_plan) {
+        // Update local state with the meal plan
+        setProfile(prev => prev ? { ...prev, meal_plan_json: data.meal_plan } : null);
+        toast.success('Meal plan generated!');
+        return true;
       }
 
-      toast.success('Meal plan generated!');
-      await fetchProfile();
-      return true;
+      toast.error(data.error || 'Failed to generate meal plan');
+      return false;
     } catch (err) {
       console.error('Generate meal plan error:', err);
       toast.error('Failed to generate meal plan');
@@ -462,7 +477,7 @@ export function useNutrition(): UseNutritionResult {
     } finally {
       setGeneratingMealPlan(false);
     }
-  }, [user, fetchProfile]);
+  }, [user, profile?.targets_json]);
 
   const swapMeal = useCallback(async (dayIndex: number, mealIndex: number, isSnack = false): Promise<boolean> => {
     if (!user) return false;

@@ -613,6 +613,113 @@ async def generate_nutrition_targets_endpoint(request: NutritionTargetsRequest):
         }
 
 
+class MealPlanRequest(BaseModel):
+    """Request for generating a meal plan"""
+    user_id: str
+    days: int = 7
+    calories_target: Optional[Dict[str, int]] = None
+    protein_g: Optional[int] = None
+    dietary_preferences: List[str] = []
+    cuisine_preferences: List[str] = []
+
+
+@api_router.post("/generate-meal-plan")
+async def generate_meal_plan_endpoint(request: MealPlanRequest):
+    """
+    Generate a simple meal plan based on user preferences.
+    
+    This is a fallback when Supabase Edge Functions are unavailable.
+    Generates a basic 7-day meal plan with grocery list.
+    """
+    try:
+        days = request.days
+        calories = request.calories_target or {"low": 2000, "high": 2500}
+        protein = request.protein_g or 140
+        
+        # Define meal templates
+        breakfast_options = [
+            {"name": "Oatmeal with Berries", "recipe_title": "Berry Oatmeal Bowl", "protein_g_est": 15, "calories_est": 350, "ingredients": ["1 cup oats", "1/2 cup mixed berries", "1 tbsp honey", "1/4 cup Greek yogurt"], "instructions": "Cook oats, top with berries, honey, and yogurt."},
+            {"name": "Eggs & Toast", "recipe_title": "Classic Eggs on Toast", "protein_g_est": 20, "calories_est": 400, "ingredients": ["2 eggs", "2 slices whole grain bread", "1 avocado", "salt and pepper"], "instructions": "Scramble or fry eggs, serve on toast with avocado."},
+            {"name": "Protein Smoothie", "recipe_title": "Power Smoothie", "protein_g_est": 30, "calories_est": 380, "ingredients": ["1 banana", "1 scoop protein powder", "1 cup milk", "1 tbsp peanut butter"], "instructions": "Blend all ingredients until smooth."},
+            {"name": "Greek Yogurt Parfait", "recipe_title": "Yogurt Parfait", "protein_g_est": 25, "calories_est": 320, "ingredients": ["1 cup Greek yogurt", "1/4 cup granola", "1/2 cup mixed fruit"], "instructions": "Layer yogurt, granola, and fruit in a glass."},
+        ]
+        
+        lunch_options = [
+            {"name": "Grilled Chicken Salad", "recipe_title": "Mediterranean Chicken Salad", "protein_g_est": 35, "calories_est": 450, "ingredients": ["6oz chicken breast", "mixed greens", "cherry tomatoes", "cucumber", "olive oil dressing"], "instructions": "Grill chicken, slice and serve over salad with dressing."},
+            {"name": "Turkey Wrap", "recipe_title": "Turkey Veggie Wrap", "protein_g_est": 30, "calories_est": 420, "ingredients": ["4oz turkey slices", "1 whole wheat wrap", "lettuce", "tomato", "mustard"], "instructions": "Layer turkey and veggies in wrap, roll tightly."},
+            {"name": "Quinoa Bowl", "recipe_title": "Protein Quinoa Bowl", "protein_g_est": 25, "calories_est": 480, "ingredients": ["1 cup cooked quinoa", "black beans", "corn", "avocado", "lime dressing"], "instructions": "Combine all ingredients in a bowl, drizzle with dressing."},
+            {"name": "Tuna Sandwich", "recipe_title": "Classic Tuna Salad Sandwich", "protein_g_est": 28, "calories_est": 400, "ingredients": ["1 can tuna", "2 tbsp Greek yogurt", "celery", "whole grain bread"], "instructions": "Mix tuna with yogurt and celery, serve on bread."},
+        ]
+        
+        dinner_options = [
+            {"name": "Salmon with Vegetables", "recipe_title": "Baked Salmon & Roasted Veggies", "protein_g_est": 40, "calories_est": 520, "ingredients": ["6oz salmon fillet", "broccoli", "sweet potato", "olive oil", "lemon"], "instructions": "Bake salmon at 400°F for 15 min, roast vegetables alongside."},
+            {"name": "Chicken Stir Fry", "recipe_title": "Asian Chicken Stir Fry", "protein_g_est": 35, "calories_est": 480, "ingredients": ["6oz chicken breast", "mixed vegetables", "soy sauce", "rice", "sesame oil"], "instructions": "Stir fry chicken and vegetables, serve over rice."},
+            {"name": "Lean Beef Tacos", "recipe_title": "Healthy Beef Tacos", "protein_g_est": 32, "calories_est": 500, "ingredients": ["5oz lean ground beef", "corn tortillas", "lettuce", "tomato", "Greek yogurt"], "instructions": "Brown beef with taco seasoning, serve in tortillas with toppings."},
+            {"name": "Pasta Primavera", "recipe_title": "Veggie Pasta", "protein_g_est": 18, "calories_est": 450, "ingredients": ["whole wheat pasta", "zucchini", "bell peppers", "marinara sauce", "parmesan"], "instructions": "Cook pasta, sauté vegetables, combine with sauce."},
+        ]
+        
+        snack_options = [
+            {"name": "Apple & Almond Butter", "recipe_title": "Apple Slices with Almond Butter", "protein_g_est": 4, "calories_est": 200, "ingredients": ["1 apple", "2 tbsp almond butter"], "instructions": "Slice apple and serve with almond butter for dipping."},
+            {"name": "Protein Bar", "recipe_title": "Protein Bar", "protein_g_est": 20, "calories_est": 220, "ingredients": ["1 protein bar"], "instructions": "Grab and go!"},
+            {"name": "Trail Mix", "recipe_title": "Homemade Trail Mix", "protein_g_est": 6, "calories_est": 180, "ingredients": ["mixed nuts", "dried fruit", "dark chocolate chips"], "instructions": "Mix ingredients in a container for easy snacking."},
+        ]
+        
+        # Generate meal plan
+        import random
+        day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        
+        meal_days = []
+        all_ingredients = set()
+        
+        for i in range(days):
+            day_plan = {
+                "day": day_names[i % 7],
+                "meals": [
+                    random.choice(breakfast_options).copy(),
+                    random.choice(lunch_options).copy(),
+                    random.choice(dinner_options).copy(),
+                ],
+                "snacks": [random.choice(snack_options).copy()]
+            }
+            
+            # Collect ingredients
+            for meal in day_plan["meals"] + day_plan["snacks"]:
+                all_ingredients.update(meal.get("ingredients", []))
+            
+            meal_days.append(day_plan)
+        
+        # Create grocery list
+        grocery_list = {
+            "produce": [i for i in all_ingredients if any(x in i.lower() for x in ["apple", "banana", "berries", "vegetable", "broccoli", "tomato", "lettuce", "cucumber", "avocado", "zucchini", "pepper", "lemon", "fruit"])],
+            "proteins": [i for i in all_ingredients if any(x in i.lower() for x in ["chicken", "salmon", "tuna", "turkey", "beef", "egg", "protein"])],
+            "pantry": [i for i in all_ingredients if any(x in i.lower() for x in ["oat", "rice", "pasta", "bread", "wrap", "tortilla", "quinoa", "oil", "sauce", "honey", "butter", "nuts"])],
+            "dairy_optional": [i for i in all_ingredients if any(x in i.lower() for x in ["yogurt", "milk", "cheese", "parmesan"])]
+        }
+        
+        meal_plan = {
+            "days": meal_days,
+            "grocery_list": grocery_list,
+            "prep_tips": [
+                "Prep protein sources on Sunday for the week",
+                "Wash and chop vegetables in advance",
+                "Cook grains in batches to save time"
+            ],
+            "swap_rules": "Feel free to swap any meal with a similar option from the same category."
+        }
+        
+        return {
+            "success": True,
+            "meal_plan": meal_plan
+        }
+        
+    except Exception as e:
+        logger.error(f"Error generating meal plan: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
 @api_router.post("/generate-week")
 async def generate_single_week_endpoint(request: SingleWeekRequest):
     """
