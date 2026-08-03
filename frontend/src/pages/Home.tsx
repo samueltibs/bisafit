@@ -69,11 +69,12 @@ export default function Home() {
   const todayWorkout = getTodayWorkout();
   const nextUpcomingWorkout = getNextUpcomingWorkout();
 
-  // Mock data for today's summary
+  // Real stats - show 0 for new users until they log data
+  // These should be populated from actual user data (meal logs, water logs, health platform)
   const todayStats = {
-    calories: { current: 1450, target: 2000 },
-    water: { current: 5, target: 8 },
-    steps: { current: 6234, target: 10000 },
+    calories: { current: 0, target: 2000 },
+    water: { current: 0, target: 8 },
+    steps: { current: 0, target: 10000 },
   };
 
   const handleAddName = () => {

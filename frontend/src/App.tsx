@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SubscriptionGate } from "@/components/subscription/SubscriptionGate";
 import { AppLanguageProvider } from "@/components/AppLanguageProvider";
 import { LegalGate } from "@/components/legal";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import Index from "./pages/Index";
 import LandingPage from "./pages/LandingPage";
@@ -78,6 +79,7 @@ const App = () => {
   }, []);
 
   return (
+  <ErrorBoundary>
   <QueryClientProvider client={queryClient}>
     <PlatformProvider>
       <AuthProvider>
@@ -208,6 +210,7 @@ const App = () => {
       </AuthProvider>
     </PlatformProvider>
   </QueryClientProvider>
+  </ErrorBoundary>
   );
 };
 

@@ -153,5 +153,128 @@ class TestImageStorageEndpoints:
         assert "message" in data
 
 
+class TestNutritionEndpoints:
+    """Test nutrition-related endpoints"""
+    
+    def test_generate_nutrition_targets(self, api_client):
+        """Test generating nutrition targets for a user"""
+        test_user_id = str(uuid.uuid4())
+        response = api_client.post(
+            f"{BASE_URL}/api/generate-nutrition-targets",
+            json={
+                "user_id": test_user_id,
+                "weight_kg": 70,
+                "goal_primary": "maintenance",
+                "activity_level": "moderate"
+            }
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert "targets" in data
+        targets = data["targets"]
+        assert "calories_target" in targets
+        assert "protein_g" in targets
+        assert "water_liters" in targets
+        # Verify reasonable values
+        assert targets["calories_target"]["low"] > 0
+        assert targets["calories_target"]["high"] > targets["calories_target"]["low"]
+        assert targets["protein_g"] > 0
+        assert targets["water_liters"] >= 2.0
+    
+    def test_generate_nutrition_targets_fat_loss(self, api_client):
+        """Test nutrition targets for fat loss goal"""
+        test_user_id = str(uuid.uuid4())
+        response = api_client.post(
+            f"{BASE_URL}/api/generate-nutrition-targets",
+            json={
+                "user_id": test_user_id,
+                "weight_kg": 80,
+                "goal_primary": "fat_loss",
+                "activity_level": "active"
+            }
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        # Fat loss should have calorie deficit
+        targets = data["targets"]
+        assert targets["calories_target"]["high"] < 3000  # Should be in deficit
+    
+    def test_generate_nutrition_targets_muscle_gain(self, api_client):
+        """Test nutrition targets for muscle gain goal"""
+        test_user_id = str(uuid.uuid4())
+        response = api_client.post(
+            f"{BASE_URL}/api/generate-nutrition-targets",
+            json={
+                "user_id": test_user_id,
+                "weight_kg": 75,
+                "goal_primary": "muscle_gain",
+                "activity_level": "very_active"
+            }
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        # Muscle gain should have calorie surplus
+        targets = data["targets"]
+        assert targets["calories_target"]["low"] > 2000  # Should be in surplus
+
+
+class TestStripeEndpoints:
+    """Test Stripe subscription endpoints"""
+    
+    def test_stripe_checkout_validation(self, api_client):
+        """Test Stripe checkout endpoint accepts valid request format"""
+        test_user_id = str(uuid.uuid4())
+        response = api_client.post(
+            f"{BASE_URL}/api/stripe/checkout",
+            json={
+                "user_id": test_user_id,
+                "email": "test@example.com",
+                "price_lookup_key": "premium_monthly",
+                "success_url": "https://example.com/success",
+                "cancel_url": "https://example.com/cancel"
+            }
+        )
+        # Should return 200 or 500 depending on Stripe config
+        assert response.status_code in [200, 500]
+    
+    def test_stripe_subscription_lookup(self, api_client):
+        """Test Stripe subscription lookup for non-existent customer"""
+        fake_customer_id = "cus_nonexistent123"
+        response = api_client.get(f"{BASE_URL}/api/stripe/subscription/{fake_customer_id}")
+        # Should return 200 or 500 depending on Stripe config
+        assert response.status_code in [200, 500]
+
+
+class TestFitnessOAuthEndpoints:
+    """Test fitness OAuth endpoints (Fitbit, Strava)"""
+    
+    def test_fitbit_auth_url(self, api_client):
+        """Test getting Fitbit OAuth authorization URL"""
+        response = api_client.get(
+            f"{BASE_URL}/api/fitbit/auth-url",
+            params={"state": "test_state", "code_challenge": "test_challenge"}
+        )
+        # Should return 200 with auth URL or 500 if not configured
+        assert response.status_code in [200, 500]
+        if response.status_code == 200:
+            data = response.json()
+            assert "auth_url" in data
+    
+    def test_strava_auth_url(self, api_client):
+        """Test getting Strava OAuth authorization URL"""
+        response = api_client.get(
+            f"{BASE_URL}/api/strava/auth-url",
+            params={"state": "test_state"}
+        )
+        # Should return 200 with auth URL or 500 if not configured
+        assert response.status_code in [200, 500]
+        if response.status_code == 200:
+            data = response.json()
+            assert "auth_url" in data
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])

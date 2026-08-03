@@ -23,22 +23,15 @@ import { PhotoUploadDialog } from '@/components/progress/PhotoUploadDialog';
 import { useProgressMetrics } from '@/hooks/useProgressMetrics';
 import { useProgressPhotos } from '@/hooks/useProgressPhotos';
 
-const weightData = [
-  { date: 'Jan 1', weight: 82 },
-  { date: 'Jan 8', weight: 81.5 },
-  { date: 'Jan 15', weight: 81.2 },
-  { date: 'Jan 22', weight: 80.8 },
-  { date: 'Jan 29', weight: 80.3 },
-  { date: 'Feb 5', weight: 79.8 },
-  { date: 'Feb 12', weight: 79.5 },
-];
+// Empty data for new users - will be populated from actual user data
+const weightData: { date: string; weight: number }[] = [];
 
-const measurements = [
-  { part: 'Chest', current: 102, previous: 104, unit: 'cm' },
-  { part: 'Waist', current: 84, previous: 88, unit: 'cm' },
-  { part: 'Hips', current: 98, previous: 100, unit: 'cm' },
-  { part: 'Arms', current: 36, previous: 35, unit: 'cm' },
-  { part: 'Thighs', current: 58, previous: 60, unit: 'cm' },
+const measurements: { part: string; current: number | null; previous: number | null; unit: string }[] = [
+  { part: 'Chest', current: null, previous: null, unit: 'cm' },
+  { part: 'Waist', current: null, previous: null, unit: 'cm' },
+  { part: 'Hips', current: null, previous: null, unit: 'cm' },
+  { part: 'Arms', current: null, previous: null, unit: 'cm' },
+  { part: 'Thighs', current: null, previous: null, unit: 'cm' },
 ];
 
 export default function Progress() {
@@ -47,10 +40,11 @@ export default function Progress() {
   const { summary, loading: metricsLoading } = useProgressMetrics();
   const { photos, loading: photosLoading, uploading, uploadPhoto, deletePhoto } = useProgressPhotos();
 
-  const currentWeight = weightData[weightData.length - 1].weight;
-  const previousWeight = weightData[weightData.length - 2].weight;
-  const weightChange = currentWeight - previousWeight;
-  const totalChange = currentWeight - weightData[0].weight;
+  // Use real data if available, otherwise show placeholder
+  const currentWeight = weightData.length > 0 ? weightData[weightData.length - 1].weight : null;
+  const previousWeight = weightData.length > 1 ? weightData[weightData.length - 2].weight : null;
+  const weightChange = currentWeight && previousWeight ? currentWeight - previousWeight : 0;
+  const totalChange = currentWeight && weightData.length > 0 ? currentWeight - weightData[0].weight : 0;
 
   // Use real streak data if available
   const streakDays = summary?.streak.current ?? 0;
@@ -63,7 +57,7 @@ export default function Progress() {
           <Card className="border-border">
             <CardContent className="p-4 text-center">
               <Scale className="mx-auto mb-2 h-5 w-5 text-primary" />
-              <p className="text-xl font-bold">{currentWeight}</p>
+              <p className="text-xl font-bold">{currentWeight ?? '--'}</p>
               <p className="text-xs text-muted-foreground">kg</p>
             </CardContent>
           </Card>
@@ -76,7 +70,7 @@ export default function Progress() {
                   <TrendingUp className="h-5 w-5 icon-steps" />
                 )}
               </div>
-              <p className="text-xl font-bold">{totalChange.toFixed(1)}</p>
+              <p className="text-xl font-bold">{totalChange !== 0 ? totalChange.toFixed(1) : '--'}</p>
               <p className="text-xs text-muted-foreground">kg total</p>
             </CardContent>
           </Card>
