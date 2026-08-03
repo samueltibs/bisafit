@@ -122,9 +122,20 @@ BisaFit is a full-stack AI-powered fitness application built with React/Vite (fr
 - **P8 FIX - Legal Pages Fallback:** Added fallback content for Terms and Privacy pages when Supabase data unavailable
 
 ### Testing Report (May 8, 2026)
-- Backend API: 100% pass (9/9 tests)
+- Backend API: 100% pass (16/16 tests)
 - Frontend: All pages rendering correctly
-- Test specs created: landing-page.spec.ts, auth-pages.spec.ts, core-flows.spec.ts, test_api.py
+- Test specs created: landing-page.spec.ts, auth-pages.spec.ts, core-flows.spec.ts, new-user-clean-slate.spec.ts, test_api.py
+
+### May 8, 2026 - New User Clean Slate & iOS Fixes
+- **P9 FIX - Mock Data Removed:** New users now see clean slate:
+  - Home.tsx: todayStats show 0 for calories, water, steps (was 1450, 5, 6234)
+  - Progress.tsx: weightData is empty array, measurements have null values
+  - Daily progress shows 0% instead of fake 72%
+- **P10 FIX - iOS Blank Screen:** 
+  - Added ErrorBoundary component to catch JS errors and show fallback UI
+  - Added Supabase config validation with helpful error messages for native builds
+  - Ensures app shows error message instead of blank screen on crash
+- **P11 FIX - OpenAI Integration:** Updated OPENAI_API_KEY and added AI-powered meal plan generation endpoint
 
 ## Known Stubbed/Mocked Features
 - `att.ts` - App Tracking Transparency stubbed for web (only works on iOS native)
