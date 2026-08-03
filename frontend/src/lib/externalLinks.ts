@@ -5,7 +5,6 @@
  * On native apps, uses system browser. On web, uses default behavior.
  */
 
-import { Browser } from '@capacitor/browser';
 import { isNativePlatform } from '@/hooks/usePlatform';
 
 /**
@@ -16,6 +15,8 @@ import { isNativePlatform } from '@/hooks/usePlatform';
 export async function openExternalLink(url: string): Promise<void> {
   if (isNativePlatform()) {
     try {
+      // Dynamic import to avoid crashing if plugin not available
+      const { Browser } = await import('@capacitor/browser');
       await Browser.open({ url });
     } catch (error) {
       console.error('Failed to open browser:', error);
@@ -38,6 +39,8 @@ export async function openMailto(email: string, subject?: string): Promise<void>
   
   if (isNativePlatform()) {
     try {
+      // Dynamic import to avoid crashing if plugin not available
+      const { Browser } = await import('@capacitor/browser');
       await Browser.open({ url: mailto });
     } catch (error) {
       // Fallback for native

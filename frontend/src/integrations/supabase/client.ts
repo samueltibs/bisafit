@@ -5,11 +5,16 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
+// Fallback values for development/debugging - these won't work but prevent crashes
+const FALLBACK_URL = 'https://placeholder.supabase.co';
+const FALLBACK_KEY = 'placeholder-key';
+
 // Validate Supabase configuration
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('[Supabase] Missing configuration. URL:', !!supabaseUrl, 'Key:', !!supabaseAnonKey);
+  console.error('[Supabase] Ensure VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY are set in .env');
   // On iOS/native, this could crash the app - provide helpful error
-  if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
+  if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform?.()) {
     console.error('[Supabase] Native app detected but Supabase config missing. Ensure web app was built with correct .env before `npx cap sync`');
   }
 }
@@ -36,11 +41,17 @@ const webStorageAdapter = {
   },
 };
 
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: webStorageAdapter,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  },
-});
+// Use actual values or fallbacks to prevent crash on initialization
+// The app will show errors on API calls if using fallbacks
+export const supabase: SupabaseClient = createClient(
+  supabaseUrl || FALLBACK_URL, 
+  supabaseAnonKey || FALLBACK_KEY, 
+  {
+    auth: {
+      storage: webStorageAdapter,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+    },
+  }
+);

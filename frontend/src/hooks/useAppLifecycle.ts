@@ -5,8 +5,7 @@
  * Provides callbacks for app resume (foreground) and pause (background).
  */
 
-import { useEffect, useCallback } from 'react';
-import { App, type AppState } from '@capacitor/app';
+import { useEffect, useCallback, useRef } from 'react';
 import { isNativePlatform } from '@/hooks/usePlatform';
 
 interface AppLifecycleOptions {
@@ -21,8 +20,9 @@ interface AppLifecycleOptions {
  */
 export function useAppLifecycle(options: AppLifecycleOptions = {}) {
   const { onResume, onPause } = options;
+  const listenerRef = useRef<any>(null);
 
-  const handleStateChange = useCallback((state: AppState) => {
+  const handleStateChange = useCallback((state: { isActive: boolean }) => {
     if (state.isActive) {
       onResume?.();
     } else {
@@ -48,11 +48,22 @@ export function useAppLifecycle(options: AppLifecycleOptions = {}) {
       };
     }
 
-    // Set up Capacitor App listener
-    const listener = App.addListener('appStateChange', handleStateChange);
+    // Set up Capacitor App listener using dynamic import
+    const setupListener = async () => {
+      try {
+        const { App } = await import('@capacitor/app');
+        listenerRef.current = await App.addListener('appStateChange', handleStateChange);
+      } catch (err) {
+        console.warn('[AppLifecycle] Failed to set up native listener:', err);
+      }
+    };
+
+    setupListener();
 
     return () => {
-      listener.then(l => l.remove());
+      if (listenerRef.current) {
+        listenerRef.current.remove?.();
+      }
     };
   }, [handleStateChange, onResume, onPause]);
 }
