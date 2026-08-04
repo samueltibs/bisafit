@@ -1,7 +1,7 @@
 {
         "appId": "com.bisagroup.bisafit",
         "appName": "BisaFit",
-        "webDir": "dist",
+        "webDir": "build",
         "plugins": {
                     "HealthKit": {
                                     "readPermissions": [
