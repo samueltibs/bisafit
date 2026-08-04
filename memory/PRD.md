@@ -38,9 +38,13 @@ BisaFit is a full-stack AI-powered fitness application built with React/Vite (fr
 - Fitbit OAuth (requires API keys)
 - Strava OAuth (requires API keys)
 
-### 5. Mobile App Preparation
-- Capacitor configured for Android
-- ANDROID_BUILD_GUIDE.md created for local builds
+### 5. Mobile App - React Native (Expo)
+- **NEW:** Complete React Native app rebuilt using Expo SDK 52
+- Replaces Capacitor-wrapped web app that had WebView issues
+- Same bundle ID (`com.bisagroup.bisafit`) for App Store/Play Store continuity
+- Features: Auth, Home, Plan, Nutrition, Progress, Settings, Workout Player
+- Connects to same Supabase backend and bisafit.com API
+- Location: `/app/mobile/`
 
 ### 6. Landing Page
 - Professional multi-section design
@@ -141,49 +145,22 @@ BisaFit is a full-stack AI-powered fitness application built with React/Vite (fr
 - `att.ts` - App Tracking Transparency stubbed for web (only works on iOS native)
 - `client.ts` - Secure storage simplified for web (only uses localStorage)
 
-### August 4, 2026 - Production Environment Configuration
-- **P0 FIX - TestFlight 402 Error:** Updated all environment variables to point to production domain `bisafit.com`:
-  - `/app/frontend/.env`: `VITE_REACT_APP_BACKEND_URL=https://bisafit.com`
-  - `/app/backend/.env`: `APP_BASE_URL=https://bisafit.com`, OAuth redirect URIs updated
-- **Config Fix:** Fixed Capacitor `webDir` mismatch - changed from `dist` to `build` to match Vite output
-- **Production Ready:** App is now configured for production deployment to bisafit.com
-
-## Production Build Instructions for iOS
-
-### Prerequisites
-1. macOS with Xcode installed
-2. Apple Developer account
-3. BisaFit project cloned from GitHub
-
-### Steps to Build for Production
-1. **Pull latest changes** from the repository
-2. **Install dependencies:**
-   ```bash
-   cd frontend
-   yarn install
-   ```
-3. **Build the web app:**
-   ```bash
-   yarn build
-   ```
-4. **Sync with Capacitor:**
-   ```bash
-   npx cap sync ios
-   ```
-5. **Open in Xcode:**
-   ```bash
-   npx cap open ios
-   ```
-6. **In Xcode:**
-   - Select your team/signing certificate
-   - Select "Any iOS Device" as target
-   - Product → Archive
-   - Distribute to TestFlight
-
-### Critical Notes
-- The `.env` file contains `VITE_REACT_APP_BACKEND_URL=https://bisafit.com`
-- This URL is baked into the build at compile time
-- Always run `yarn build` before `npx cap sync` to ensure latest env vars are included
+### August 4, 2026 - React Native (Expo) App Created
+- **NEW APP:** Built complete React Native app using Expo SDK 52 + Expo Router v4
+- **Why:** Capacitor WebView was causing blank screen on iOS TestFlight
+- **Location:** `/app/mobile/`
+- **Screens implemented:**
+  - Auth: Login, Signup, Forgot Password
+  - Home: Dashboard with today's workout, stats, goals
+  - Plan: Weekly workout calendar with navigation
+  - Nutrition: Calorie/macro tracking, meal logging
+  - Progress: Weight tracking, simple charts, entry history
+  - Settings: Profile, subscription, support links
+  - Workout Player: Exercise list with checkboxes, completion tracking
+  - Onboarding: 4-step flow (name, goal, experience, days)
+  - Paywall: Subscription plans with Stripe web checkout
+- **Connects to:** Same Supabase database and bisafit.com backend API
+- **Bundle ID:** `com.bisagroup.bisafit` (unchanged for App Store continuity)
 
 ---
 Last Updated: August 4, 2026
