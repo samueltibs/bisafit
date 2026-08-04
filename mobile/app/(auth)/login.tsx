@@ -13,6 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { AppleSignInButton } from '../../src/components/AppleSignInButton';
+import { GoogleSignInButton } from '../../src/components/GoogleSignInButton';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -37,6 +39,10 @@ export default function LoginScreen() {
     }
   };
 
+  const handleSocialSignInSuccess = () => {
+    router.replace('/(app)/home');
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#0F0F23' }}>
       <KeyboardAvoidingView
@@ -48,7 +54,7 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* Logo */}
-          <View style={{ alignItems: 'center', marginBottom: 48 }}>
+          <View style={{ alignItems: 'center', marginBottom: 40 }}>
             <Text style={{ fontSize: 48, fontWeight: 'bold', color: '#7C3AED' }}>
               BisaFit
             </Text>
@@ -57,7 +63,22 @@ export default function LoginScreen() {
             </Text>
           </View>
 
-          {/* Form */}
+          {/* Social Sign In Buttons */}
+          <View style={{ gap: 12, marginBottom: 24 }}>
+            {Platform.OS === 'ios' && (
+              <AppleSignInButton onSuccess={handleSocialSignInSuccess} />
+            )}
+            <GoogleSignInButton onSuccess={handleSocialSignInSuccess} />
+          </View>
+
+          {/* Divider */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
+            <View style={{ flex: 1, height: 1, backgroundColor: '#374151' }} />
+            <Text style={{ color: '#6B7280', marginHorizontal: 16, fontSize: 14 }}>or</Text>
+            <View style={{ flex: 1, height: 1, backgroundColor: '#374151' }} />
+          </View>
+
+          {/* Email/Password Form */}
           <View style={{ gap: 16 }}>
             <View>
               <Text style={{ color: '#D1D5DB', marginBottom: 8, fontSize: 14 }}>Email</Text>

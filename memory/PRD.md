@@ -150,15 +150,20 @@ BisaFit is a full-stack AI-powered fitness application built with React/Vite (fr
 - **Why:** Capacitor WebView was causing blank screen on iOS TestFlight
 - **Location:** `/app/mobile/`
 - **Screens implemented:**
-  - Auth: Login, Signup, Forgot Password
+  - Auth: Login, Signup, Forgot Password + Apple Sign In + Google Sign In
   - Home: Dashboard with today's workout, stats, goals
   - Plan: Weekly workout calendar with navigation
   - Nutrition: Calorie/macro tracking, meal logging
   - Progress: Weight tracking, simple charts, entry history
-  - Settings: Profile, subscription, support links
-  - Workout Player: Exercise list with checkboxes, completion tracking
+  - Settings: Profile, subscription, health connections, support links
+  - Workout Player: Exercise list with checkboxes, completion tracking, health sync
   - Onboarding: 4-step flow (name, goal, experience, days)
   - Paywall: Subscription plans with Stripe web checkout
+- **Native Integrations:**
+  - Apple Sign In (expo-apple-authentication)
+  - Google Sign In (@react-native-google-signin/google-signin)
+  - Apple HealthKit (@kayzmann/expo-healthkit) - read steps/HR/workouts, write workouts
+  - Health Connect (react-native-health-connect) - read steps/HR/sessions, write sessions
 - **Connects to:** Same Supabase database and bisafit.com backend API
 - **Bundle ID:** `com.bisagroup.bisafit` (unchanged for App Store continuity)
 

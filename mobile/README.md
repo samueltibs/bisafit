@@ -84,6 +84,8 @@ mobile/
 - [x] Email/password signup
 - [x] Password reset
 - [x] Session persistence (AsyncStorage)
+- [x] **Apple Sign In** (iOS native)
+- [x] **Google Sign In** (native)
 
 ### Home Dashboard
 - [x] Daily greeting
@@ -120,8 +122,19 @@ mobile/
 - [x] Account info display
 - [x] Subscription management link
 - [x] Profile edit link
+- [x] **Health platform connections** (Apple Health / Health Connect)
 - [x] Support links
 - [x] Sign out
+
+### Health Integrations
+- [x] **Apple HealthKit** (iOS)
+  - Read: Steps, heart rate, active calories, workouts
+  - Write: Workouts from BisaFit
+- [x] **Health Connect** (Android)
+  - Read: Steps, heart rate, exercise sessions
+  - Write: Exercise sessions from BisaFit
+- [x] Unified health service that works on both platforms
+- [x] Auto-sync completed workouts to health platform
 
 ### Subscription (Paywall)
 - [x] Plan selection UI
