@@ -1,0 +1,55 @@
+{
+  "cli": {
+    "version": ">= 5.0.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://qteefcujottugvwnhvix.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0ZWVmY3Vqb3R0dWd2d25odml4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNTI0MzIsImV4cCI6MjA4NTYyODQzMn0.06G4MRXNHvnXdmVy5xGmQaK_nuv3boeCSrWddlbpQmA",
+        "EXPO_PUBLIC_API_URL": "https://bisafit.com"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "buildConfiguration": "Release"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://qteefcujottugvwnhvix.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0ZWVmY3Vqb3R0dWd2d25odml4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNTI0MzIsImV4cCI6MjA4NTYyODQzMn0.06G4MRXNHvnXdmVy5xGmQaK_nuv3boeCSrWddlbpQmA",
+        "EXPO_PUBLIC_API_URL": "https://bisafit.com"
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "ios": {
+        "buildConfiguration": "Release",
+        "credentialsSource": "remote"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://qteefcujottugvwnhvix.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0ZWVmY3Vqb3R0dWd2d25odml4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNTI0MzIsImV4cCI6MjA4NTYyODQzMn0.06G4MRXNHvnXdmVy5xGmQaK_nuv3boeCSrWddlbpQmA",
+        "EXPO_PUBLIC_API_URL": "https://bisafit.com"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "samuel.m.tibs@gmail.com",
+        "ascAppId": "6763073801",
+        "appleTeamId": "HN5DB7S9DB"
+      }
+    }
+  }
+}

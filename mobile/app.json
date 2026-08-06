@@ -7,19 +7,29 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "scheme": "bisafit",
+    "owner": "bisagroup_llc",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bisagroup.bisafit",
-      "buildNumber": "1",
+      "buildNumber": "4",
       "usesAppleSignIn": true,
+      "config": {
+        "usesNonExemptEncryption": false
+      },
       "infoPlist": {
         "NSHealthShareUsageDescription": "BisaFit uses your health data to track your fitness progress and sync workouts.",
-        "NSHealthUpdateUsageDescription": "BisaFit needs to write workout data to Apple Health."
+        "NSHealthUpdateUsageDescription": "BisaFit needs to write workout data to Apple Health.",
+        "NSCameraUsageDescription": "BisaFit uses the camera to take progress photos.",
+        "NSPhotoLibraryUsageDescription": "BisaFit accesses your photos to save and upload progress pictures."
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true,
+        "com.apple.developer.healthkit.background-delivery": true
       }
     },
     "android": {
       "package": "com.bisagroup.bisafit",
-      "versionCode": 1,
+      "versionCode": 3,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#7C3AED"
@@ -39,13 +49,6 @@
       "expo-apple-authentication",
       "@react-native-google-signin/google-signin",
       "react-native-health-connect",
-      [
-        "@kayzmann/expo-healthkit",
-        {
-          "healthShareUsageDescription": "BisaFit uses your health data to track your fitness progress and sync workouts.",
-          "healthUpdateUsageDescription": "BisaFit needs to write workout data to Apple Health."
-        }
-      ],
       [
         "expo-build-properties",
         {
