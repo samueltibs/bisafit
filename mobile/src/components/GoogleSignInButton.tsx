@@ -8,10 +8,9 @@ interface GoogleSignInButtonProps {
   onError?: (error: Error) => void;
 }
 
-// Configure Google Sign In
-// IMPORTANT: Replace with your actual Google OAuth Client IDs from Google Cloud Console
-const GOOGLE_WEB_CLIENT_ID = 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com';
-const GOOGLE_IOS_CLIENT_ID = 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com';
+// Google OAuth Client IDs from Google Cloud Console
+const GOOGLE_WEB_CLIENT_ID = '848182182705-ssof1qrt27lh6uuesga4avng65j51no4.apps.googleusercontent.com';
+const GOOGLE_IOS_CLIENT_ID = '848182182705-jiko6v3bon544jrdnmnk75roa0kes8ki.apps.googleusercontent.com';
 
 export function GoogleSignInButton({ onSuccess, onError }: GoogleSignInButtonProps) {
   const [loading, setLoading] = useState(false);
