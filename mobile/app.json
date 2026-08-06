@@ -11,20 +11,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bisagroup.bisafit",
-      "buildNumber": "4",
+      "buildNumber": "5",
       "usesAppleSignIn": true,
       "config": {
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
         "NSHealthShareUsageDescription": "BisaFit uses your health data to track your fitness progress and sync workouts.",
-        "NSHealthUpdateUsageDescription": "BisaFit needs to write workout data to Apple Health.",
-        "NSCameraUsageDescription": "BisaFit uses the camera to take progress photos.",
-        "NSPhotoLibraryUsageDescription": "BisaFit accesses your photos to save and upload progress pictures."
-      },
-      "entitlements": {
-        "com.apple.developer.healthkit": true,
-        "com.apple.developer.healthkit.background-delivery": true
+        "NSHealthUpdateUsageDescription": "BisaFit needs to write workout data to Apple Health."
       }
     },
     "android": {
@@ -33,22 +27,12 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#7C3AED"
-      },
-      "permissions": [
-        "android.permission.health.READ_STEPS",
-        "android.permission.health.WRITE_STEPS",
-        "android.permission.health.READ_HEART_RATE",
-        "android.permission.health.WRITE_HEART_RATE",
-        "android.permission.health.READ_EXERCISE",
-        "android.permission.health.WRITE_EXERCISE"
-      ]
+      }
     },
     "plugins": [
       "expo-router",
       "expo-secure-store",
       "expo-apple-authentication",
-      "@react-native-google-signin/google-signin",
-      "react-native-health-connect",
       [
         "expo-build-properties",
         {
@@ -56,9 +40,6 @@
             "newArchEnabled": false
           },
           "android": {
-            "minSdkVersion": 26,
-            "compileSdkVersion": 34,
-            "targetSdkVersion": 34,
             "newArchEnabled": false
           }
         }
@@ -72,7 +53,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "your-eas-project-id"
+        "projectId": "f6be4451-80ff-4a81-b073-3037c2f3bdb5"
       }
     }
   }

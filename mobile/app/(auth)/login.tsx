@@ -14,7 +14,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { AppleSignInButton } from '../../src/components/AppleSignInButton';
-import { GoogleSignInButton } from '../../src/components/GoogleSignInButton';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -68,7 +67,6 @@ export default function LoginScreen() {
             {Platform.OS === 'ios' && (
               <AppleSignInButton onSuccess={handleSocialSignInSuccess} />
             )}
-            <GoogleSignInButton onSuccess={handleSocialSignInSuccess} />
           </View>
 
           {/* Divider */}

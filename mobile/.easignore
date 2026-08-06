@@ -1,0 +1,34 @@
+# Ignore dependencies - EAS will install fresh
+node_modules/
+
+# Expo cache
+.expo/
+
+# Build outputs
+dist/
+build/
+web-build/
+
+# Logs
+*.log
+
+# Git
+.git/
+
+# macOS
+.DS_Store
+
+# TypeScript
+*.tsbuildinfo
+
+# Lock files - EAS will create its own
+yarn.lock
+package-lock.json
+
+# Generated native folders (if any)
+ios/
+android/
+
+# Misc
+*.md
+LICENSE

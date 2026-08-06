@@ -11,7 +11,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { supabase } from '../../../src/lib/supabase';
-import * as HealthService from '../../../src/lib/healthService';
 
 interface Exercise {
   name: string;
@@ -107,24 +106,6 @@ export default function WorkoutScreen() {
         exercises_completed: completedExercises.size,
         total_exercises: content?.exercises?.length || 0,
       });
-
-      // Try to sync to health platform
-      try {
-        const healthAvailable = await HealthService.isHealthAvailable();
-        if (healthAvailable) {
-          await HealthService.saveWorkoutToHealth({
-            startTime: workoutStartTime.current,
-            endTime,
-            type: 'strength', // Default to strength training
-            duration: durationSeconds,
-            calories: Math.round(durationSeconds / 60 * 5), // Rough estimate: 5 cal/min
-          });
-          console.log('Workout synced to health platform');
-        }
-      } catch (healthError) {
-        // Don't fail the workout completion if health sync fails
-        console.log('Health sync skipped:', healthError);
-      }
 
       Alert.alert(
         'Workout Complete! 🎉',

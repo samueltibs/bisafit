@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,11 @@ import {
   Alert,
   Linking,
   Platform,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { ENV } from '../../src/lib/config';
-import * as HealthService from '../../src/lib/healthService';
 
 interface SettingsItem {
   icon: string;
@@ -27,39 +25,6 @@ interface SettingsItem {
 export default function SettingsScreen() {
   const { user, signOut } = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
-  const [healthAvailable, setHealthAvailable] = useState(false);
-  const [healthConnected, setHealthConnected] = useState(false);
-  const [connectingHealth, setConnectingHealth] = useState(false);
-
-  useEffect(() => {
-    checkHealthAvailability();
-  }, []);
-
-  const checkHealthAvailability = async () => {
-    const available = await HealthService.isHealthAvailable();
-    setHealthAvailable(available);
-  };
-
-  const handleConnectHealth = async () => {
-    setConnectingHealth(true);
-    try {
-      const success = await HealthService.requestHealthPermissions();
-      if (success) {
-        setHealthConnected(true);
-        Alert.alert(
-          'Connected!',
-          `Successfully connected to ${HealthService.getHealthAppName()}. Your workouts will now sync automatically.`
-        );
-      }
-    } catch (error: any) {
-      Alert.alert(
-        'Connection Failed',
-        error?.message || `Could not connect to ${HealthService.getHealthAppName()}`
-      );
-    } finally {
-      setConnectingHealth(false);
-    }
-  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -81,7 +46,6 @@ export default function SettingsScreen() {
   };
 
   const handleManageSubscription = () => {
-    // Open Stripe billing portal in browser
     Linking.openURL(`${ENV.BACKEND_URL}/api/stripe/create-portal-session?user_id=${user?.id}`);
   };
 
@@ -130,50 +94,6 @@ export default function SettingsScreen() {
       </View>
     </View>
   );
-
-  // Build health items based on platform
-  const healthItems: SettingsItem[] = [];
-  
-  if (Platform.OS === 'ios' && healthAvailable) {
-    healthItems.push({
-      icon: '❤️',
-      title: 'Apple Health',
-      subtitle: healthConnected ? 'Connected' : 'Sync workouts and activity',
-      onPress: handleConnectHealth,
-      rightElement: connectingHealth ? (
-        <ActivityIndicator color="#7C3AED" size="small" />
-      ) : healthConnected ? (
-        <Text style={{ color: '#10B981', fontSize: 14 }}>✓</Text>
-      ) : (
-        <Text style={{ color: '#7C3AED', fontSize: 14 }}>Connect</Text>
-      ),
-    });
-  }
-  
-  if (Platform.OS === 'android' && healthAvailable) {
-    healthItems.push({
-      icon: '💚',
-      title: 'Health Connect',
-      subtitle: healthConnected ? 'Connected' : 'Sync workouts and activity',
-      onPress: handleConnectHealth,
-      rightElement: connectingHealth ? (
-        <ActivityIndicator color="#7C3AED" size="small" />
-      ) : healthConnected ? (
-        <Text style={{ color: '#10B981', fontSize: 14 }}>✓</Text>
-      ) : (
-        <Text style={{ color: '#7C3AED', fontSize: 14 }}>Connect</Text>
-      ),
-    });
-  }
-
-  if (healthItems.length === 0) {
-    healthItems.push({
-      icon: Platform.OS === 'ios' ? '❤️' : '💚',
-      title: Platform.OS === 'ios' ? 'Apple Health' : 'Health Connect',
-      subtitle: 'Not available on this device',
-      onPress: () => {},
-    });
-  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#0F0F23' }}>
@@ -256,7 +176,14 @@ export default function SettingsScreen() {
         {/* Health */}
         <SettingsSection
           title="HEALTH CONNECTIONS"
-          items={healthItems}
+          items={[
+            {
+              icon: Platform.OS === 'ios' ? '❤️' : '💚',
+              title: Platform.OS === 'ios' ? 'Apple Health' : 'Health Connect',
+              subtitle: 'Coming soon',
+              onPress: () => Alert.alert('Coming Soon', 'Health integrations will be available in a future update.'),
+            },
+          ]}
         />
 
         {/* Support */}
